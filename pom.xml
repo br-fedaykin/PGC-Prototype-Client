@@ -2,13 +2,21 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.brunoarruda.hyper_dcpabe</groupId>
-    <artifactId>pgc-prototype</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>pgc-prototype-client</artifactId>
+    <version>0.1-SNAPSHOT</version>
+
+    <scm>
+        <connection>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</connection>
+        <url>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</url>
+        <developerConnection>scm:git:git@github.com:brunoarruda/PGC-Prototype-Client.git</developerConnection>
+    </scm>
+    
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -16,7 +24,19 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.bitcoinj/bitcoinj-core -->
+        <dependency>
+            <groupId>org.bitcoinj</groupId>
+            <artifactId>bitcoinj-core</artifactId>
+            <version>0.12</version>
+        </dependency>
+        <dependency>
+            <groupId>sg.edu.ntu.sce.sands.crypto</groupId>
+            <artifactId>dcpabe</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
+    
     <build>
         <pluginManagement>
             <plugins>
