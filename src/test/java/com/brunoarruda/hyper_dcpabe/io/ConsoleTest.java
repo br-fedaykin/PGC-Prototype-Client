@@ -52,25 +52,12 @@ public class ConsoleTest {
         List<String> options = new ArrayList<String>();
         options.add("sim");
 
-        Thread t = new Thread(new Runnable() {
+        String inputLines = "opção invalida" + System.lineSeparator();
+        inputLines = inputLines + "sim"+ System.lineSeparator();
+        systemInput.send(inputLines);
+        String received = console.input("Escreva sim", options);
 
-            @Override
-            public void run() {
-                console.input("Escreva sim\n", options);
-            }
-        });
-        t.start();
-        String lines = "opção invalida" + System.lineSeparator();
-        lines = lines + "sim"+ System.lineSeparator();
-        systemInput.send(lines);
-        
-        try {
-            t.join();    
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        
-        assertThat(console.getInput(), containsString("sim"));
+        assertThat(received, is("sim"));
 
         // make sure that input will be requested again
         assertThat(systemOutput.stop(), endsWith("(sim): "));

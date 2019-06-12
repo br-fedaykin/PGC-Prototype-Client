@@ -5,15 +5,6 @@ import java.util.Scanner;
 
 public class Console {
 
-    private String input = "";
-
-    /**
-     * @return the input
-     */
-    public String getInput() {
-        return input;
-    }
-
     public void display(String msg) {
         System.out.println(msg);
     }
@@ -22,7 +13,7 @@ public class Console {
 
     }
 
-    public void input(String msg, List<String> options) {
+    public String input(String msg, List<String> options) {
         Scanner scn = new Scanner(System.in);
         System.out.println(msg);
         writeOptions(options);
@@ -34,8 +25,7 @@ public class Console {
                 input = scn.nextLine();
             }
         }
-        
-        this.input = input;
+        return input;
     }
 
     private void writeOptions(List<String> options) {
