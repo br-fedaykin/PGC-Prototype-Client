@@ -10,22 +10,15 @@ import utils.*;
 
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.brunoarruda.hyper_dcpabe.Client;
 import com.brunoarruda.hyper_dcpabe.Session;
 
 public class FunctionalTest {
 
     private static ConsoleOutputCapturer systemOutput;
     private static ConsoleInputFake systemInput;
+    private Session session;
+    private StubBlockChain blockchain;
+    private String response;
 
     @BeforeClass
     public static void beforeAll() {
@@ -37,6 +30,9 @@ public class FunctionalTest {
     public void setUp() {        
         systemOutput.start();
         systemInput.start();
+        blockchain = new StubBlockChain();
+        session = new Session(blockchain);
+        response = "";
     }
 
     @After
@@ -45,25 +41,34 @@ public class FunctionalTest {
     }
 
     @Test
-    public void testPatientCanPublishData() {        
+    public void testPatientCanPublishData() {
+        
         /**
          * Alice wants to publish her EHR on Hyper-DCPABE
          * She starts a new session on Desktop
-         */
-        Session session = new Session();
+         */        
 
         // She agree to receive a pair of blockchain keys
-        String inputLines = "sim" + System.lineSeparator();
+        StringBuilder inputs = new StringBuilder();
+        inputs
+            .append("sim")
+            .append("Alice")
+            .append("alice@email.com")
+            .append(System.lineSeparator());
+
+        String inputLines = String.join(System.lineSeparator(), inputs);
+
         systemInput.send(inputLines);
-                
         session.runClient();
 
-        // The keys are printed on the console so she can save them on a secure database
-        String response = systemOutput.stop();
+        // The keys are printed on the console so she can save them on a secure database        
+        response = systemOutput.stop();
         
         assertThat(response, CoreMatchers.containsString("chave privada: "));
         assertThat(response, CoreMatchers.containsString("chave pública: "));
+        
         // After she kept the keys, the client asks for name and e-mail and publish them on the chain
+        assertThat(response, CoreMatchers.containsString("publicado na blockchain"));
         fail("Finish the test!");
         
         /**

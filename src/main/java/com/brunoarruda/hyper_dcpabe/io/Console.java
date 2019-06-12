@@ -1,5 +1,6 @@
 package com.brunoarruda.hyper_dcpabe.io;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -11,6 +12,10 @@ public class Console {
 
     public void processUserInput() {
 
+    }
+
+    public String input(String msg, String ... options) {
+        return input(msg, Arrays.asList(options));
     }
 
     public String input(String msg, List<String> options) {
@@ -25,21 +30,24 @@ public class Console {
                 input = scn.nextLine();
             }
         }
+        scn.close();
         return input;
     }
 
     private void writeOptions(List<String> options) {
-        boolean reduceOptions = false;
-        for (String s : options) {
-            if (s.contains(" ")){
-                reduceOptions  = true;
+        if (options.size() > 0) {
+            boolean reduceOptions = false;
+            for (String s : options) {
+                if (s.contains(" ")){
+                    reduceOptions  = true;
+                }
             }
-        }
-        if (reduceOptions) {
-            System.out.println(String.join(".\n", options));
-            System.out.println("digite uma opção:");
-        } else {
-            System.out.printf("(%s): ", String.join("/", options));
+            if (reduceOptions) {
+                System.out.println(String.join(".\n", options));
+                System.out.println("digite uma opção:");
+            } else {
+                System.out.printf("(%s): ", String.join("/", options));
+            }
         }
     }
 }

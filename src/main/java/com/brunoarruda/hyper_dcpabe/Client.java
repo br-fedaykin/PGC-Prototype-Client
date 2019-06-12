@@ -6,16 +6,20 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyper_dcpabe.blockchain.Transaction;
+
 import org.bitcoinj.core.ECKey;
+import org.json.JSONObject;
 
 import sg.edu.ntu.sce.sands.crypto.DCPABETool;
 
 public final class Client {
-
-    private ECKey userECKeys;
     private String dataPath = "data";
     private File dataFolder = null;
 
+    private ECKey userECKeys;
+    
     public void generateECKeys() {
         this.userECKeys = new ECKey();
     }
@@ -61,4 +65,13 @@ public final class Client {
         }
         return true;
     }
+
+	public void publishECKeys(BlockchainConnection blockchain, String name, String email) {
+        
+        JSONObject json = new JSONObject();
+        json.put("name", name);
+        json.put("email", email);
+        Transaction tx = blockchain.createTransaction(this.userECKeys, json);
+        tx.send();
+	}
 }
