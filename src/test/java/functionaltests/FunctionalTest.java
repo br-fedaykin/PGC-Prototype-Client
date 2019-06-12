@@ -23,23 +23,24 @@ import com.brunoarruda.hyper_dcpabe.Client;
 
 public class FunctionalTest {
 
-    private InputStream stdin;
     private static ConsoleOutputCapturer systemOutput;
+    private static ConsoleInputFake systemInput;
 
     @BeforeClass
     public static void beforeAll() {
         systemOutput = new ConsoleOutputCapturer();
+        systemInput = new ConsoleInputFake();
     }
 
     @Before
-    public void setUp() {
-        stdin = System.in;
+    public void setUp() {        
         systemOutput.start();
+        systemInput.start();
     }
 
     @After
     public void tearDown() {
-        System.setIn(stdin);
+        systemInput.stop();
     }
 
     @Test
@@ -54,7 +55,7 @@ public class FunctionalTest {
         client.runOnConsole();
 
         // She agree to receive a pair of blockchain keys
-        Util.simulateUserInput("yes");
+        systemInput.send("yes");
 
         // The keys are printed on the console so she can save them on a secure database
         String response = systemOutput.stop();
