@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.brunoarruda.hyper_dcpabe.Client;
+import com.brunoarruda.hyper_dcpabe.Session;
 
 public class FunctionalTest {
 
@@ -44,24 +45,24 @@ public class FunctionalTest {
     }
 
     @Test
-    public void testPatientCanPublishData() {
-
+    public void testPatientCanPublishData() {        
         /**
          * Alice wants to publish her EHR on Hyper-DCPABE
-         * She runs the jar application on Desktop
+         * She starts a new session on Desktop
          */
-
-        Client client = new Client();
-        client.runOnConsole();
+        Session session = new Session();
 
         // She agree to receive a pair of blockchain keys
-        systemInput.send("yes");
+        String inputLines = "sim" + System.lineSeparator();
+        systemInput.send(inputLines);
+                
+        session.runClient();
 
         // The keys are printed on the console so she can save them on a secure database
         String response = systemOutput.stop();
         
-        assertThat(response, CoreMatchers.containsString("private key: (.*?)$"));
-        assertThat(response, CoreMatchers.containsString("public key: (.*?)$"));
+        assertThat(response, CoreMatchers.containsString("chave privada: "));
+        assertThat(response, CoreMatchers.containsString("chave pública: "));
         // After she kept the keys, the client asks for name and e-mail and publish them on the chain
         fail("Finish the test!");
         
