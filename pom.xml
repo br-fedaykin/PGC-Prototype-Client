@@ -30,6 +30,13 @@
             <artifactId>bitcoinj-core</artifactId>
             <version>0.15.2</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
+        </dependency>
+        <!-- https://github.com/stefano81/dcpabe -->
         <dependency>
             <groupId>sg.edu.ntu.sce.sands.crypto</groupId>
             <artifactId>dcpabe</artifactId>
