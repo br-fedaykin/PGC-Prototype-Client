@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.bitcoinj</groupId>
             <artifactId>bitcoinj-core</artifactId>
-            <version>0.12</version>
+            <version>0.15.2</version>
         </dependency>
         <dependency>
             <groupId>sg.edu.ntu.sce.sands.crypto</groupId>
