@@ -1,6 +1,10 @@
 package com.brunoarruda.hyper_dcpabe;
 
-import java.util.Scanner;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bitcoinj.core.ECKey;
 
@@ -8,25 +12,53 @@ import sg.edu.ntu.sce.sands.crypto.DCPABETool;
 
 public final class Client {
 
-    public static final int OUTPUT_AS_OBJECT = 0;
+    private ECKey userECKeys;
+    private String dataPath = "data";
+    private File dataFolder = null;
 
-    public Client() {
+    public void generateECKeys() {
+        this.userECKeys = new ECKey();
     }
 
-    public static void main(String[] args) {
-        Client client = new Client();        
+    public void setDataPath(String dataPath) {
+        this.dataPath = dataPath;
     }
 
-    public void runOnConsole() {        
-        StringBuilder msg = new StringBuilder();
-        Scanner scn = new Scanner(System.in);
-
-        System.out.println("Bem Vindo ao Hyper-DCPABE\n");
-        System.out.println("Você aceita a geração de novas chaves para acesso à rede?\n (sim/não):");
-        
+    public String getDataPath() {        
+        return dataPath;
     }
 
-    public ECKey generateECKeys(int outputMode) {
-        return new ECKey();
+    public ECKey getKey() {
+        return userECKeys;
+    }
+
+    public Map<String, String> getKeyAsString() {
+        Map<String, String> keys = new HashMap<String, String>();
+        keys.put("private", userECKeys.getPrivateKeyAsHex());
+        keys.put("public", userECKeys.getPublicKeyAsHex());
+        return keys;
+    }
+
+    public boolean writeKeyOnFile() {
+        return writeKeyOnFile(dataPath);
+    }
+
+    public boolean writeKeyOnFile(String path) {
+        dataFolder = new File(dataPath);
+        if (!dataFolder.exists() && !dataFolder.isDirectory()) {
+            dataFolder.mkdirs();
+        }
+        String privateKeyFileName = dataPath + "\\userPrivateKey";
+        String publicKeyFileName = dataPath + "\\userPublicKey";
+        Map<String, String> keys = getKeyAsString();
+        try (FileOutputStream privateStream = new FileOutputStream(new File(privateKeyFileName));
+                FileOutputStream publicStream = new FileOutputStream(new File(publicKeyFileName))) {
+            privateStream.write(keys.get("private").getBytes());
+            publicStream.write(keys.get("public").getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 }
