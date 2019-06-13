@@ -21,27 +21,12 @@ public class Session {
     }
     
     private void runOnConsole() {
-        List<String> options;
         String msg;
         String input;
 
         Console console = new Console();
-        console.display("Bem Vindo ao Hyper-DCPABE\n");
-        msg = "Você aceita a geração de novas chaves para acesso à rede?";
-        input = console.input(msg, "sim", "não");
-        console.display("");
-        if (input.equals("sim")) {
-            client.generateECKeys();
-            Map<String, String> keys = client.getKeyAsString();
-            msg = String.format("chave privada: %s", keys.get("private"));
-            console.display(msg);
-            msg = String.format("chave pública: %s", keys.get("public"));
-            console.display(msg);
-        }
-        console.display("Para publicar seu endereço na Blockchain, precisamos de seus dados pessoais.");
-        String name = console.input("Digite seu nome:");
-        String email = console.input("Digite seu e-mail:");
-        client.publishECKeys(blockchain, name, email);
+        console.init();
+        console.showMenu();
     }
 
     public static void main(String[] args) {

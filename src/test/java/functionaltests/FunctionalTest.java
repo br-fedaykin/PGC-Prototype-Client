@@ -42,34 +42,37 @@ public class FunctionalTest {
 
     @Test
     public void testPatientCanPublishData() {
-        
-        /**
-         * Alice wants to publish her EHR on Hyper-DCPABE
-         * She starts a new session on Desktop
-         * 
-         * She agree to receive a pair of blockchain keys
-         */
         String[] inputSequence = {
             "sim",
             "Alice",
             "alice@email.com",
             ""
         };
-        
         String inputLines = String.join(System.lineSeparator(), inputSequence);
+        
+        /**
+         * Alice wants to publish her EHR on Hyper-DCPABE
+         * She starts a new session on Desktop
+         * 
+        */
 
         systemInput.send(inputLines);
         session.runClient();
         allOutput = systemOutput.stop();
+        
+        
+        // She sees a list of available commands
+        assertThat(allOutput, CoreMatchers.containsString("Menu Principal:"));
 
-        // The keys are printed on the console so she can save them on a secure database        
-                
+        // She chooses the command to generate keys.
+        // The keys are printed on the console so she can save them on a secure database
         assertThat(allOutput, CoreMatchers.containsString("chave privada: "));
         assertThat(allOutput, CoreMatchers.containsString("chave pública: "));
         
-        // After she kept the keys, the client asks for name and e-mail and publish them on the chain
+        // She returns to main menu and choose to publish its user.
+        // The client asks for name and e-mail and publish them on the chain
+        assertThat(allOutput, CoreMatchers.containsString("publicado na Blockchain"));
         
-        assertThat(allOutput, CoreMatchers.containsString("publicado na blockchain"));
         fail("Finish the test!");
         
         /**
