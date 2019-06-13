@@ -54,13 +54,22 @@ public class Console {
         return response;
 	}
 
-	public String input(String msg) {
-        display(msg, 0);
+	public String input(String message) {
+        display(message, 0);
         String response = scn.nextLine();
+        display("", 1);
         return response;
 	}
 
 	public void showOutput(String string) {
         display(string, 2);
 	}
+
+	public String[] inputMany(String ... messages) {
+        String[] result = new String[messages.length];
+        for (int i = 0; i < messages.length; i++) {
+            result[i] = input(messages[i]);
+        }
+        return result;
+    }
 }
