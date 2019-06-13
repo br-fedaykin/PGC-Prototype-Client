@@ -17,9 +17,15 @@ public class ConsoleInputFake {
     }
 
     public void send(String message) {
+        message = message + System.lineSeparator();
         sending = true;
         mockInput = new ByteArrayInputStream(message.getBytes());
         System.setIn(mockInput);
+    }
+
+    public void sendMany(String ... messages) {
+        String message = String.join(System.lineSeparator(), messages);
+        send(message);
     }
 
     public void stop() {
