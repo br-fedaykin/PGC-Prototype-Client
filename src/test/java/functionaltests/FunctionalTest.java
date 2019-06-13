@@ -53,7 +53,8 @@ public class FunctionalTest {
             "2",
             "Alice",
             "alice@email.com",
-            "3"
+            "3",
+            "0"
         );
         session.runClient("console");
         allOutput = systemOutput.stop();
