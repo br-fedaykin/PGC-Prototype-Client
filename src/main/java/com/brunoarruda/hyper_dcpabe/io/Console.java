@@ -1,8 +1,11 @@
 package com.brunoarruda.hyper_dcpabe.io;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.SortedMap;
 
 public class Console {
 
@@ -17,22 +20,47 @@ public class Console {
     }
 
     public void display(String msg) {
-        System.out.println(msg);
+        display(msg, 1);
+    }
+
+    public void display(String msg, int lineSeparations) {
+        String lineBreaks = "";
+        for (int i = 0; i < lineSeparations; i++) {
+            lineBreaks = lineBreaks + System.lineSeparator();
+        }        
+        System.out.print(msg + lineBreaks);
     }
 
 	public void init() {
-        display("Bem vindo ao Hyper-DCPABE");
+        display("Bem vindo ao Hyper-DCPABE", 2);
     }
     
-    public void showMenu() {
-        display("Menu Principal:");
+    public String showMenu(String menuName, SortedMap<String, String> menu) {
+        if (scn == null) {
+            scn = new Scanner(System.in);
+        }
+        
+        display(menuName);
+        for (String key : menu.keySet()) {
+            String line = String.format("%s. %s", key, menu.get(key));
+            display(line);
+        }
+        display("Opção:", 2);
+        String response = scn.nextLine();
+        if (!menu.containsKey(response)) {
+            display("Entrada inválida");
+            return showMenu(menuName, menu);
+        }
+        return response;
 	}
 
-	public String input(String msg, String ... string) {
-		return null;
+	public String input(String msg) {
+        display(msg, 0);
+        String response = scn.nextLine();
+        return response;
 	}
 
-	public String input(String msg, List<String> options) {
-		return null;
+	public void showOutput(String string) {
+        display(string, 2);
 	}
 }

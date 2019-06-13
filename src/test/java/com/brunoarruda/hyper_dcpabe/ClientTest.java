@@ -61,10 +61,10 @@ public class ClientTest {
     }
 
     @Test
-    public void testOutputsECKeysAsInput() {
+    public void testOutputsECKeysAstStringOrFileOrObject() {
         client.generateECKeys();
         assertThat(client.getKey(), CoreMatchers.instanceOf(ECKey.class));
-        assertThat(client.getKeyAsString(), CoreMatchers.isA(Map.class));
+        assertThat(client.getECKeysAsString(), CoreMatchers.isA(Map.class));
         assertTrue(client.writeKeyOnFile());
     }
 }

@@ -36,7 +36,7 @@ public final class Client {
         return userECKeys;
     }
 
-    public Map<String, String> getKeyAsString() {
+    public Map<String, String> getECKeysAsString() {
         Map<String, String> keys = new HashMap<String, String>();
         keys.put("private", userECKeys.getPrivateKeyAsHex());
         keys.put("public", userECKeys.getPublicKeyAsHex());
@@ -54,7 +54,7 @@ public final class Client {
         }
         String privateKeyFileName = dataPath + "\\userPrivateKey";
         String publicKeyFileName = dataPath + "\\userPublicKey";
-        Map<String, String> keys = getKeyAsString();
+        Map<String, String> keys = getECKeysAsString();
         try (FileOutputStream privateStream = new FileOutputStream(new File(privateKeyFileName));
                 FileOutputStream publicStream = new FileOutputStream(new File(publicKeyFileName))) {
             privateStream.write(keys.get("private").getBytes());
@@ -67,7 +67,6 @@ public final class Client {
     }
 
 	public void publishECKeys(BlockchainConnection blockchain, String name, String email) {
-        
         JSONObject json = new JSONObject();
         json.put("name", name);
         json.put("email", email);

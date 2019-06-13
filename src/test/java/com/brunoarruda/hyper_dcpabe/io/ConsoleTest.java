@@ -7,6 +7,8 @@ import static org.hamcrest.CoreMatchers.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,24 +44,18 @@ public class ConsoleTest {
 
     @Test
     public void testCanStartConsoleInterface() {
-        console.display("Bem Vindo!");
+        console.init();
         String output = systemOutput.stop();
-        assertThat(output, is("Bem Vindo!" + System.lineSeparator()));
+        assertThat(output, containsString("Bem vindo ao Hyper-DCPABE" + System.lineSeparator()));
     }
 
     @Test
     public void testClientRejectsWrongInputs() {
-        List<String> options = new ArrayList<String>();
-        options.add("sim");
-
-        String inputLines = "opção invalida" + System.lineSeparator();
-        inputLines = inputLines + "sim"+ System.lineSeparator();
-        systemInput.send(inputLines);
-        String received = console.input("Escreva sim", options);
-
-        assertThat(received, is("sim"));
-
-        // make sure that input will be requested again
-        assertThat(systemOutput.stop(), endsWith("(sim): "));
+        systemInput.sendMany("foo","1");
+        SortedMap<String, String> menu = new TreeMap<String, String>();
+        menu.put("1", "única opção");
+        console.showMenu("menu teste", menu);
+        String output = systemOutput.stop();
+        assertThat(output, containsString("Entrada inválida"));
     }
 }

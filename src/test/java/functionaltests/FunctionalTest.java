@@ -41,23 +41,21 @@ public class FunctionalTest {
     }
 
     @Test
-    public void testPatientCanPublishData() {
-        String[] inputSequence = {
-            "sim",
-            "Alice",
-            "alice@email.com",
-            ""
-        };
-        String inputLines = String.join(System.lineSeparator(), inputSequence);
-        
+    public void testPatientCanPublishData() {        
         /**
          * Alice wants to publish her EHR on Hyper-DCPABE
          * She starts a new session on Desktop
          * 
         */
 
-        systemInput.send(inputLines);
-        session.runClient();
+        systemInput.sendMany(
+            "1",
+            "2",
+            "Alice",
+            "alice@email.com",
+            "3"
+        );
+        session.runClient("console");
         allOutput = systemOutput.stop();
         
         
