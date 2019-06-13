@@ -65,4 +65,12 @@ public class SessionTest {
         String output = systemOutput.stop();
         assertThat(output, CoreMatchers.containsString("usuário publicado na blockchain"));
     }
+    
+    @Test
+    public void testConfirmsReceivingOfAttributes() {
+        systemInput.sendMany("1", "2","test", "test@email.com", "3", "0");
+        session.runClient("console");
+        String output = systemOutput.stop();
+        assertThat(output, CoreMatchers.containsString("atributos recebidos"));
+    }
 }

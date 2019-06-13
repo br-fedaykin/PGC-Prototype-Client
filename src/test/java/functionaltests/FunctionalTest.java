@@ -58,10 +58,10 @@ public class FunctionalTest {
         );
         session.runClient("console");
         allOutput = systemOutput.stop();
-        
+        allOutput = allOutput.toLowerCase();        
         
         // She sees a list of available commands
-        assertThat(allOutput, CoreMatchers.containsString("Menu Principal:"));
+        assertThat(allOutput, CoreMatchers.containsString("menu principal:"));
 
         // She chooses the command to generate keys.
         // The keys are printed on the console so she can save them on a secure database
@@ -70,9 +70,7 @@ public class FunctionalTest {
         
         // She returns to main menu and choose to publish its user.
         // The client asks for name and e-mail and publish them on the chain
-        assertThat(allOutput, CoreMatchers.containsString("publicado na Blockchain"));
-        
-        fail("Finish the test!");
+        assertThat(allOutput, CoreMatchers.containsString("publicado na blockchain"));
         
         /**
          * Alice asks on blockchain for public keys of attributes "CRM" and "CFM" to make
@@ -80,33 +78,39 @@ public class FunctionalTest {
          *
          * Obs: CFM and CRM means in Brazil respectively Federal an Regional Council
          * of Medicine.
-         */
+        */
+
+        assertThat(allOutput, CoreMatchers.containsString("atributos recebidos"));
 
         // she receives the public key of attributes CRM and CFM after sometime.
-
+        fail("Finish the test!");
         /**
          * she creates the attribute "authorized", and send its public key to the
          * blockchain
-         */
+        */
 
         // with all keys, she encrypts the data: a PDF document.
 
         /**
          * The client digests the hash of the resulting file and encrypt with the same
          * policy used on that.
-         */
+        */
 
         // She agrees to client sending both files to a known server
 
         // The client receives from the server an key that should be used to find the file
-
+        
         /**
          * Finally, its published in blockchain a transaction containing:
-         * 1. the address of the transaction with her personal data
+        */
+
+        // 1. the address of the transaction with her personal data
+
+        /**
          * 2. an JSON object, encrypted with the same policy used to encrypt the
          * sent file, containing the server address of the file and the code to
          * find the file.
-         */
+        */
     }
 
     @Test

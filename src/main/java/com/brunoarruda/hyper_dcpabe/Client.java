@@ -73,4 +73,9 @@ public final class Client {
         Transaction tx = blockchain.createTransaction(this.userECKeys, json);
         tx.send();
 	}
+
+	public void getABEPublicKeys() {
+        
+    }
+    
 }

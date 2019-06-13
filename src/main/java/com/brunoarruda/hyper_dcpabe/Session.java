@@ -22,11 +22,12 @@ public class Session {
         mainMenu = new TreeMap<String, String>();
         mainMenu.put("1", "gerar chaves");
         mainMenu.put("2", "publicar chaves na Blockchain");
+        mainMenu.put("3", "receber atributos para publicar documento");
         mainMenu.put("0", "sair");
     }
 
-    public void runClient(String userInterface) {
-        switch (userInterface.toLowerCase()) {
+    public void runClient(String interfaceType) {
+        switch (interfaceType.toLowerCase()) {
             case "console":
                 runOnConsole();
                 break;
@@ -48,6 +49,11 @@ public class Session {
             String email = console.input("Insira seu email: ");            
             client.publishECKeys(blockchain, name, email);
             console.showOutput("usuário publicado na blockchain");
+        }
+
+        if (option.equals("3")) {
+            client.getABEPublicKeys();
+            console.showOutput("atributos recebidos");
         }
     }
 
