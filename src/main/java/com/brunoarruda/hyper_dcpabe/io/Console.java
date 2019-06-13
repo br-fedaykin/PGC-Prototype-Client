@@ -6,12 +6,10 @@ import java.util.Scanner;
 
 public class Console {
 
+    private Scanner scn;
+
     public void display(String msg) {
         System.out.println(msg);
-    }
-
-    public void processUserInput() {
-
     }
 
     public String input(String msg, String ... options) {
@@ -19,21 +17,24 @@ public class Console {
     }
 
     public String input(String msg, List<String> options) {
-        Scanner scn = new Scanner(System.in);
+        if (scn == null) {
+            scn = new Scanner(System.in);
+        }
         System.out.println(msg);
         writeOptions(options);
         String input = scn.nextLine();
-        while (!options.contains(input)) {
-            System.out.println("Entrada invalida");
-            writeOptions(options);
-            if (scn.hasNext()) {
-                input = scn.nextLine();
+        if (options.size() > 0) {
+            while (!options.contains(input)) {
+                System.out.println("Entrada invalida");
+                writeOptions(options);
+                if (scn.hasNext()) {
+                    input = scn.nextLine();
+                }
             }
         }
-        scn.close();
         return input;
     }
-
+    
     private void writeOptions(List<String> options) {
         if (options.size() > 0) {
             boolean reduceOptions = false;
@@ -49,5 +50,13 @@ public class Console {
                 System.out.printf("(%s): ", String.join("/", options));
             }
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (scn != null) {
+            scn.close();
+        }
+        super.finalize();
     }
 }

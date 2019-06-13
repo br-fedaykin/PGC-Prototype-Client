@@ -18,7 +18,7 @@ public class FunctionalTest {
     private static ConsoleInputFake systemInput;
     private Session session;
     private StubBlockChain blockchain;
-    private String response;
+    private String allOutput;
 
     @BeforeClass
     public static void beforeAll() {
@@ -32,7 +32,7 @@ public class FunctionalTest {
         systemInput.start();
         blockchain = new StubBlockChain();
         session = new Session(blockchain);
-        response = "";
+        allOutput = "";
     }
 
     @After
@@ -46,29 +46,30 @@ public class FunctionalTest {
         /**
          * Alice wants to publish her EHR on Hyper-DCPABE
          * She starts a new session on Desktop
-         */        
-
-        // She agree to receive a pair of blockchain keys
-        StringBuilder inputs = new StringBuilder();
-        inputs
-            .append("sim")
-            .append("Alice")
-            .append("alice@email.com")
-            .append(System.lineSeparator());
-
-        String inputLines = String.join(System.lineSeparator(), inputs);
+         * 
+         * She agree to receive a pair of blockchain keys
+         */
+        String[] inputSequence = {
+            "sim",
+            "Alice",
+            "alice@email.com",
+            ""
+        };
+        
+        String inputLines = String.join(System.lineSeparator(), inputSequence);
 
         systemInput.send(inputLines);
         session.runClient();
+        allOutput = systemOutput.stop();
 
         // The keys are printed on the console so she can save them on a secure database        
-        response = systemOutput.stop();
-        
-        assertThat(response, CoreMatchers.containsString("chave privada: "));
-        assertThat(response, CoreMatchers.containsString("chave pública: "));
+                
+        assertThat(allOutput, CoreMatchers.containsString("chave privada: "));
+        assertThat(allOutput, CoreMatchers.containsString("chave pública: "));
         
         // After she kept the keys, the client asks for name and e-mail and publish them on the chain
-        assertThat(response, CoreMatchers.containsString("publicado na blockchain"));
+        
+        assertThat(allOutput, CoreMatchers.containsString("publicado na blockchain"));
         fail("Finish the test!");
         
         /**
