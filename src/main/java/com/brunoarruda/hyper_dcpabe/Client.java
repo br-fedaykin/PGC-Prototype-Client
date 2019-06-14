@@ -19,8 +19,15 @@ public final class Client {
     private File dataFolder = null;
 
     private ECKey userECKeys;
-    
-    public void generateECKeys() {
+    private Map<String, JSONObject> ABEKeys;
+
+    private BlockchainConnection blockchain;
+
+    public Client(BlockchainConnection blockchain) {
+        this.blockchain = blockchain;
+	}
+
+	public void generateECKeys() {
         this.userECKeys = new ECKey();
     }
 
@@ -28,7 +35,7 @@ public final class Client {
         this.dataPath = dataPath;
     }
 
-    public String getDataPath() {        
+    public String getDataPath() {
         return dataPath;
     }
 
@@ -66,7 +73,7 @@ public final class Client {
         return true;
     }
 
-	public void publishECKeys(BlockchainConnection blockchain, String name, String email) {
+	public void publishECKeys(String name, String email) {
         JSONObject json = new JSONObject();
         json.put("name", name);
         json.put("email", email);
@@ -74,8 +81,15 @@ public final class Client {
         tx.send();
 	}
 
-	public void getABEPublicKeys() {
-        
+	public void getABEPublicKeys(String ... attributes) {
+        for (String attribute : attributes) {
+            if(ABEKeys.containsKey(attribute)) {
+                JSONObject ABEKey = blockchain.getABEPublicKey(attribute);
+                if (ABEKey != null) {
+                    ABEKeys.put(attribute, ABEKey);
+                }
+            }
+        }
     }
-    
+
 }
