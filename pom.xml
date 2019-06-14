@@ -10,7 +10,7 @@
         <url>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</url>
         <developerConnection>scm:git:git@github.com:brunoarruda/PGC-Prototype-Client.git</developerConnection>
     </scm>
-    
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -31,6 +31,13 @@
             <version>1.7.24</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
+        <dependency>
+            <groupId>org.mock-server</groupId>
+            <artifactId>mockserver-netty</artifactId>
+            <version>5.5.4</version>
+            <scope>test</scope>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.bitcoinj/bitcoinj-core -->
         <dependency>
             <groupId>org.bitcoinj</groupId>
@@ -49,8 +56,14 @@
             <artifactId>dcpabe</artifactId>
             <version>1.1-SNAPSHOT</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.hyperledger.fabric-chaincode-java/fabric-chaincode-shim -->
+        <dependency>
+            <groupId>org.hyperledger.fabric-chaincode-java</groupId>
+            <artifactId>fabric-chaincode-shim</artifactId>
+            <version>1.4.1</version>
+        </dependency>
     </dependencies>
-    
+
     <build>
         <pluginManagement>
             <plugins>
