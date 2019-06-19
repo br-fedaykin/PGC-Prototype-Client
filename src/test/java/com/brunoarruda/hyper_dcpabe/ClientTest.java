@@ -1,6 +1,9 @@
 package com.brunoarruda.hyper_dcpabe;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockserver.integration.ClientAndServer;
 
 import static org.mockserver.stop.Stop.stopQuietly;
@@ -17,15 +20,19 @@ import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
 
 import org.bitcoinj.core.ECKey;
 import org.hamcrest.CoreMatchers;
+import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.junit.After;
 import org.junit.Before;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ClientTest {
 
     private static final int TEST_PORT = 8080;
     private Client client;
     private String testDataPath;
 
+    @Mock
+    private ChaincodeStub chaincodeStub;
     private ClientAndServer mockServer;
 
     @Before
@@ -89,8 +96,10 @@ public class ClientTest {
         assertTrue(client.writeKeyOnFile());
     }
 
+    @Test
     public void testGetABEKeys() {
         // TODO: usar StubBlockchain para obter as chaves aqui
+        fail("Finish this test");
     }
 
     public void testSendFileToServer() {
@@ -106,5 +115,16 @@ public class ClientTest {
                         .withStatusCode(302));
 
         // TODO: call some Client.sendFiles() with params
+        fail("Finish this test");
+    }
+
+    @Test
+    public void testCanSendAndReceivaDataFromBlockchain() {
+        fail("Finish this test");
+    }
+
+    @Test
+    public void testCanConnectWithSockets() {
+        fail("Finish this test");
     }
 }
