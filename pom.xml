@@ -2,13 +2,21 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.brunoarruda.hyper_dcpabe</groupId>
-    <artifactId>pgc-prototype</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>pgc-prototype-client</artifactId>
+    <version>0.1-SNAPSHOT</version>
+
+    <scm>
+        <connection>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</connection>
+        <url>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</url>
+        <developerConnection>scm:git:git@github.com:brunoarruda/PGC-Prototype-Client.git</developerConnection>
+    </scm>
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -16,7 +24,53 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-nop -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>1.7.24</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
+        <dependency>
+            <groupId>org.mock-server</groupId>
+            <artifactId>mockserver-netty</artifactId>
+            <version>5.5.4</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.28.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.bitcoinj/bitcoinj-core -->
+        <dependency>
+            <groupId>org.bitcoinj</groupId>
+            <artifactId>bitcoinj-core</artifactId>
+            <version>0.15.2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
+        </dependency>
+        <!-- https://github.com/stefano81/dcpabe -->
+        <dependency>
+            <groupId>sg.edu.ntu.sce.sands.crypto</groupId>
+            <artifactId>dcpabe</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.hyperledger.fabric-chaincode-java/fabric-chaincode-shim -->
+        <dependency>
+            <groupId>org.hyperledger.fabric-chaincode-java</groupId>
+            <artifactId>fabric-chaincode-shim</artifactId>
+            <version>1.4.1</version>
+        </dependency>
     </dependencies>
+
     <build>
         <pluginManagement>
             <plugins>

@@ -1,3 +1,8 @@
+#
+# local folder for output files
+#
+data/
+
 # Compiled class file
 *.class
 
