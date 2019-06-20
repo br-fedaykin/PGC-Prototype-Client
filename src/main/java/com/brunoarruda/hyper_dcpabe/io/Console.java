@@ -1,16 +1,12 @@
 package com.brunoarruda.hyper_dcpabe.io;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.SortedMap;
 
 public class Console {
 
     public Scanner scn;
-    
+
     @Override
     protected void finalize() throws Throwable {
         if (scn != null) {
@@ -27,19 +23,19 @@ public class Console {
         String lineBreaks = "";
         for (int i = 0; i < lineSeparations; i++) {
             lineBreaks = lineBreaks + System.lineSeparator();
-        }        
+        }
         System.out.print(msg + lineBreaks);
     }
 
 	public void init() {
         display("Bem vindo ao Hyper-DCPABE", 2);
     }
-    
+
     public String showMenu(String menuName, SortedMap<String, String> menu) {
         if (scn == null) {
             scn = new Scanner(System.in);
         }
-        
+
         display(menuName);
         for (String key : menu.keySet()) {
             String line = String.format("%s. %s", key, menu.get(key));

@@ -2,8 +2,6 @@ package com.brunoarruda.hyper_dcpabe;
 
 import static org.junit.Assert.assertThat;
 
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -18,7 +16,7 @@ import utils.StubBlockChain;
  * SessionTest
  */
 public class SessionTest {
-    
+
     private Session session;
     private StubBlockChain blockchain;
     private static ConsoleInputFake systemInput;
@@ -29,7 +27,7 @@ public class SessionTest {
         systemInput = new ConsoleInputFake();
         systemOutput = new ConsoleOutputCapturer();
     }
-    
+
     @Before
     public void setUp() {
         blockchain = new StubBlockChain();
@@ -65,7 +63,7 @@ public class SessionTest {
         String output = systemOutput.stop();
         assertThat(output, CoreMatchers.containsString("usuário publicado na blockchain"));
     }
-    
+
     @Test
     public void testConfirmsReceivingOfAttributes() {
         systemInput.sendMany("1", "2","test", "test@email.com", "3", "0");
