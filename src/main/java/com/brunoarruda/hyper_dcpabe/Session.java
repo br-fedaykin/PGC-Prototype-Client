@@ -34,7 +34,7 @@ public class Session {
 
     private void runOption(Console console, String option) {
         if (option.equals("1")) {
-            client.generateECKeys();
+            client.createUser("Alice", "alice@email.com");
             Map<String, String> keys = client.getECKeysAsString();
             String output = "chave privada: %s"+ System.lineSeparator() + "chave pública: %s";
             console.showOutput(String.format(output, keys.get("private"), keys.get("public")));

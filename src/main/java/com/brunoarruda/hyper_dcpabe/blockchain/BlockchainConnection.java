@@ -18,4 +18,8 @@ public class BlockchainConnection {
         // Get result
         return null;
 	}
+
+	public ECKey generateKeys() {
+		return new ECKey();
+	}
 }

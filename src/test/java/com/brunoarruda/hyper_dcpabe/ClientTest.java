@@ -77,23 +77,25 @@ public class ClientTest {
 
     @Test
     public void testGenerateECKeys() {
-        client.generateECKeys();
-        ECKey keys = client.getKey();
-        assertNotNull(keys);
+        fail("Test should be remade. Change it to test user creation.");
+        // client.generateECKeys();
+        // ECKey keys = client.getKey();
+        // assertNotNull(keys);
 
-        // private key are compressed, its hex size is 64
-        assertEquals(64, keys.getPrivateKeyAsHex().length());
+        // // private key are compressed, its hex size is 64
+        // assertEquals(64, keys.getPrivateKeyAsHex().length());
 
-        // public key are compressed, its hex size is 66
-        assertEquals(66, keys.getPublicKeyAsHex().length());
+        // // public key are compressed, its hex size is 66
+        // assertEquals(66, keys.getPublicKeyAsHex().length());
     }
 
     @Test
     public void testOutputsECKeysAstStringOrFileOrObject() {
-        client.generateECKeys();
-        assertThat(client.getKey(), CoreMatchers.instanceOf(ECKey.class));
-        assertThat(client.getECKeysAsString(), CoreMatchers.isA(Map.class));
-        assertTrue(client.writeKeyOnFile());
+        fail("Test should be moved to FileController or User");
+        // client.generateECKeys();
+        // assertThat(client.getKey(), CoreMatchers.instanceOf(ECKey.class));
+        // assertThat(client.getECKeysAsString(), CoreMatchers.isA(Map.class));
+        // assertTrue(client.writeKeyOnFile());
     }
 
     @Test
