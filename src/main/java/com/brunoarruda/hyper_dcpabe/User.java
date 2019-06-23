@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.bitcoinj.core.ECKey;
+
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 
@@ -17,6 +18,7 @@ public class User {
 
     private String name;
     private String email;
+    private String userID;
     private ECKey keys;
     private Map<String, String> keysPlainText;
     private PersonalKeys ABEKeys;
@@ -30,27 +32,29 @@ public class User {
         keysPlainText = new HashMap<String, String>();
         keysPlainText.put("private", ecKey.getPrivateKeyAsHex());
         keysPlainText.put("public", ecKey.getPublicKeyAsHex());
+
+        String userID = String.format("%s-%s", name, ecKey.getPublicKeyAsHex().substring(0, 8));
+        this.setUserID(userID);
     }
 
-    @JsonProperty("PersonalABEKeys")
-    public PersonalKeys getABEKeys() {
-        return ABEKeys;
+    public void addPublicKeys(String authority, Map<String, PublicKey> keys) {
+        this.publishedABEKeys.put(authority, keys);
     }
 
-    public Map<String, PublicKey> getPublicABEKeys(String authority) {
-        return publishedABEKeys.get(authority);
+    public boolean hasPublicKeysOfAuthority(String authority) {
+        return publishedABEKeys.containsKey(authority);
     }
 
-    public Map<String, Map<String, PublicKey>> getAllPulicABEKeys() {
-        return publishedABEKeys;
+    /**
+     * Getters and Setters that are written as json properties
+     */
+    @JsonProperty
+    public String getUserID() {
+        return userID;
     }
 
-    public void setABEKeys(PersonalKeys ABEKeys) {
-        this.ABEKeys = ABEKeys;
-    }
-
-    public String getPublicECKey() {
-        return this.keysPlainText.get("public");
+    public void setUserID(String userID) {
+        this.userID = userID;
     }
 
     @JsonProperty("ECKeys")
@@ -58,21 +62,9 @@ public class User {
         return keysPlainText;
     }
 
-    public String getPrivateECKey() {
-        return keysPlainText.get("private");
-    }
-
-    public void setECKeyAsString(Map<String, String> keys) {
+    @JsonProperty("ECKeys")
+    public void setECKeysFromString(Map<String, String> keys) {
         this.keysPlainText = keys;
-    }
-
-    @JsonIgnore
-    public ECKey getECKeys() {
-        return keys;
-    }
-
-    public void setECKeys(ECKey pairKeys) {
-        this.keys = pairKeys;
     }
 
     @JsonProperty
@@ -89,8 +81,50 @@ public class User {
         return name;
     }
 
-    public void setName (String name) {
+    public void setName(String name) {
         this.name = name;
+    }
+
+    @JsonProperty("personalABEKeys")
+    public PersonalKeys getABEKeys() {
+        return ABEKeys;
+    }
+
+    public void setABEKeys(PersonalKeys ABEKeys) {
+        this.ABEKeys = ABEKeys;
+    }
+
+    /**
+     * Getters methods excluded from serialization
+     */
+
+    @JsonIgnore
+    public ECKey getECKeys() {
+        return keys;
+    }
+
+    public void setECKeys(ECKey pairKeys) {
+        this.keys = pairKeys;
+    }
+
+    @JsonIgnore
+    public Map<String, PublicKey> getPublicABEKeys(String authority) {
+        return publishedABEKeys.get(authority);
+    }
+
+    @JsonIgnore
+    public Map<String, Map<String, PublicKey>> getAllPulicABEKeys() {
+        return publishedABEKeys;
+    }
+
+    @JsonIgnore
+    public String getPublicECKey() {
+        return this.keysPlainText.get("public");
+    }
+
+    @JsonIgnore
+    public String getPrivateECKey() {
+        return keysPlainText.get("private");
     }
 
     @Override
@@ -104,12 +138,4 @@ public class User {
         return String.format(format,name, email, keysPlainText.get("private"),
             keysPlainText.get("public"));
     }
-
-	public void addPublicKeys(String authority, Map<String, PublicKey> keys) {
-        this.publishedABEKeys.put(authority, keys);
-	}
-
-	public boolean hasPublicKeysOfAuthority(String authority) {
-		return publishedABEKeys.containsKey(authority);
-	}
 }
