@@ -2,17 +2,14 @@ package com.brunoarruda.hyper_dcpabe.io;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import com.brunoarruda.hyper_dcpabe.User;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-
-import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
-import sg.edu.ntu.sce.sands.crypto.utility.Utility;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * FileController
@@ -44,6 +41,10 @@ public final class FileController {
         return this;
     }
 
+    public ObjectMapper getMapper() {
+        return mapper;
+    }
+
     public String getDataDirectory() {
         return dataFolder + "\\";
     }
@@ -57,9 +58,7 @@ public final class FileController {
         if (!subDirectory.equals("")) {
             postfix = subDirectory + "\\";
         }
-        String dir = String.format("%s%s-%s", getDataDirectory(), user.getName(),
-                user.getPublicECKey().substring(0, 8));
-        return dir + "\\" + postfix;
+        return getDataDirectory() + "client\\" + user.getUserID() + "\\" + postfix;
     }
 
     public <T> void writeToDir(String path, String fileName, T obj) {
@@ -88,25 +87,15 @@ public final class FileController {
         return obj;
     }
 
-    public void writeUser(User user) {
-        String userFileName = user.getClass().getSimpleName() + ".json";
-        writeToDir(getUserDirectory(user), userFileName, user);
-    }
-
-    public User readUser(User user) {
-        String userFileName = user.getClass().getSimpleName() + ".json";
-        return readFromDir(getUserDirectory(user), userFileName, user.getClass());
-    }
-
-    public void writeAllPublicKeys(User user) {
-        for (Entry<String, Map<String, PublicKey>> auth : user.getAllPulicABEKeys().entrySet()) {
-            String path = getUserDirectory(user, "PublicABEKeys");
-            writeToDir(path, auth.getKey() + ".json", auth.getValue());
-            try {
-                Utility.writePublicKeys(path + auth.getKey(), auth.getValue());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    public ObjectNode loadAsJSON(String path, String file) {
+        ObjectNode obj = null;
+        try {
+            obj = (ObjectNode) mapper.readTree(new File(path, file));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return obj;
     }
 }
