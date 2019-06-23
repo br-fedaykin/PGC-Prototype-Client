@@ -17,7 +17,7 @@ public class Certifier extends User {
         super(name, email, keys);
     }
 
-    @JsonProperty("AuthorityKeys")
+    @JsonProperty("authorityKeys")
     public AuthorityKeys getAuthorityABEKeys() {
         return authorityABEKeys;
     }
