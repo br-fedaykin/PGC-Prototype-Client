@@ -12,25 +12,52 @@ import com.brunoarruda.hyper_dcpabe.io.FileController;
 import org.bitcoinj.core.ECKey;
 import org.json.JSONObject;
 
-import sg.edu.ntu.sce.sands.crypto.DCPABETool;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
+import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
-    private String dataPath = "data";
-    private File dataFolder = null;
 
+    private String gpPath;
+    private final FileController fc;
+    private File dataFolder;
+
+    private GlobalParameters gp;
     private User user;
+    private Certifier certifier;
 
     private BlockchainConnection blockchain;
+    private String dataPath;
 
     public Client(BlockchainConnection blockchain) {
+        this(blockchain, "data");
+    }
+
+    public Client(BlockchainConnection blockchain, String dataPath) {
         this.blockchain = blockchain;
+        fc = FileController.getInstance().configure(dataPath);
+        blockchain.init();
+        init();
+    }
+
+    private void init() {
+        gpPath = fc.getDataDirectory() + "globalParameters";
+        gp = DCPABE.globalSetup(160);
+        fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
+        try {
+            Utility.writeGlobalParameters(gpPath, gp);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        this.blockchain.init();
     }
 
     public void createUser(String name, String email) {
         ECKey newKeys = this.blockchain.generateKeys();
         user = new User(name, email, newKeys);
-        FileController fc = FileController.getInstance();
-        fc.writeUser(dataPath, user);
+        fc.writeUser(user);
     }
 
     public void setDataPath(String dataPath) {
@@ -49,29 +76,17 @@ public final class Client {
         return user.getECKeysAsString();
     }
 
+    @Deprecated
     public boolean writeKeyOnFile() {
-        return writeKeyOnFile(dataPath);
+        return writeKeyOnFile(fc.getDataDirectory());
     }
 
+    @Deprecated
     public boolean writeKeyOnFile(String path) {
-        dataFolder = new File(dataPath);
-        if (!dataFolder.exists() && !dataFolder.isDirectory()) {
-            dataFolder.mkdirs();
-        }
-        String privateKeyFileName = dataPath + "\\userPrivateKey";
-        String publicKeyFileName = dataPath + "\\userPublicKey";
-        Map<String, String> keys = user.getECKeysAsString();
-        try (FileOutputStream privateStream = new FileOutputStream(new File(privateKeyFileName));
-                FileOutputStream publicStream = new FileOutputStream(new File(publicKeyFileName))) {
-            privateStream.write(keys.get("private").getBytes());
-            publicStream.write(keys.get("public").getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        return false;
     }
 
+    @Deprecated
 	public void publishECKeys(String name, String email) {
         JSONObject json = new JSONObject();
         json.put("name", name);
@@ -80,18 +95,44 @@ public final class Client {
         tx.send();
 	}
 
-	public void getABEPublicKeys(String ... attributes) {
-        for (String attribute : attributes) {
-            if(user.getABEKeys().containsKey(attribute)) {
-                JSONObject ABEKey = blockchain.getABEPublicKey(attribute);
-                if (ABEKey != null) {
-                    user.getABEKeys().put(attribute, ABEKey);
-                }
+    public void getAttributes(String authority, String[] attributes) {
+        if (user.hasPublicKeysOfAuthority(authority)) {
+            Map<String, PublicKey> ABEKeys = blockchain.getABEPublicKeys(authority);
+            if (ABEKeys.size() != 0) {
+                user.addPublicKeys(authority, ABEKeys);
             }
         }
     }
 
-	public void getAttributes(String authorityName, String[] attributes) {
+    @Deprecated
+	public void getABEPublicKeys(String string, String string2) {
+        System.out.println("Not Implemented");
+	}
 
+	public void createABEKeys(String[] attributes) {
+        String name = certifier.getPrivateECKey();
+        AuthorityKeys ak = DCPABE.authoritySetup(name, gp, attributes);
+        certifier.setAuthorityABEKeys(ak);
+        String path = fc.getUserDirectory(certifier);
+        fc.writeToDir(path, "authorityPublicKeys.json", ak.getPublicKeys());
+        fc.writeUser(certifier);
+        try {
+            Utility.writeSecretKeys(path + "authoritySecretKey", ak.getSecretKeys());
+            Utility.writePublicKeys(path + "authorityPublicKey", ak.getPublicKeys());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
+
+	public void createCertifier(String name, String email) {
+        certifier = new Certifier(name, email, new ECKey());
+	}
+
+	public void createCertifier() {
+        if (user != null) {
+            certifier = new Certifier(user);
+        } else {
+            System.out.println("Crie um usuário ou informe nome e e-mail");
+        }
 	}
 }

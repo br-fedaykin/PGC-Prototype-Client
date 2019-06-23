@@ -22,6 +22,7 @@ public class CommandLine {
 
     private static void populateCommands() {
         COMMAND_ALIAS.put("-u", "--create-user");
+        COMMAND_ALIAS.put("-c", "--create-certifier");
         COMMAND_ALIAS.put("-a", "--create-attributes");
         COMMAND_ALIAS.put("-y", "--yield-attributes");
         COMMAND_ALIAS.put("-r", "--request-attributes");
@@ -42,7 +43,7 @@ public class CommandLine {
         case "--milestone":
             runMilestone(Integer.parseInt(args[1]));
             break;
-        case "-c":
+        case "-u":
         case "--create-user":
             String name = args[1];
             String email = args[2];
@@ -50,12 +51,31 @@ public class CommandLine {
             break;
         case "-g":
         case "--get-attribute":
+            String authorityName = args[1];
             String[] attributes = new String[args.length - 2];
+            for (int i = 0; i < attributes.length; i++) {
+                attributes[i] = args[i + 2];
+            }
+            client.getAttributes(authorityName, attributes);
+            break;
+        case "-c":
+        case "--create-certifier":
+            if (args.length == 3) {
+                name = args[1];
+                email = args[2];
+                client.createCertifier(name, email);
+            } else {
+                client.createCertifier();
+            }
+            break;
+        case "-a":
+        case "--create-attributes":
+            attributes = new String[args.length - 1];
             for (int i = 0; i < attributes.length; i++) {
                 attributes[i] = args[i + 1];
             }
-            String authorityName = args[args.length - 1];
-            client.getAttributes(authorityName, attributes);
+            client.createABEKeys(attributes);
+            break;
         }
     }
 
@@ -68,8 +88,12 @@ public class CommandLine {
          * codificado e o decodifica)
          */
         if (milestone == 1) {
-            multiArgs.add("-c Alice alice@email.com".split(" "));
-            multiArgs.add("-g atributo1 Bob".split(" "));
+            multiArgs.add("-u Bob bob@email.com".split(" "));
+            multiArgs.add("-c".split(" "));
+            multiArgs.add("-a atributo1".split(" "));
+            // multiArgs.add("-p user".split(" "));
+            // multiArgs.add("-u Alice alice@email.com".split(" "));
+            // multiArgs.add("-g atributo1 Bob".split(" "));
         }
 
         if (milestone > 1) {
