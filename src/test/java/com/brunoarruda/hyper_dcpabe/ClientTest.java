@@ -14,12 +14,8 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.util.Map;
-
 import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
 
-import org.bitcoinj.core.ECKey;
-import org.hamcrest.CoreMatchers;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.junit.After;
 import org.junit.Before;
@@ -121,7 +117,7 @@ public class ClientTest {
     }
 
     @Test
-    public void testCanSendAndReceivaDataFromBlockchain() {
+    public void testCanSendAndReceiveDataFromBlockchain() {
         fail("Finish this test");
     }
 
