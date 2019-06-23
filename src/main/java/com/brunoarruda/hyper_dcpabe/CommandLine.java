@@ -76,6 +76,12 @@ public class CommandLine {
             }
             client.createABEKeys(attributes);
             break;
+        case "-p":
+        case "--publish":
+            for (int i = 1; i < args.length; i++) {
+                client.publish(args[i]);
+            }
+            break;
         }
     }
 
@@ -91,7 +97,7 @@ public class CommandLine {
             multiArgs.add("-u Bob bob@email.com".split(" "));
             multiArgs.add("-c".split(" "));
             multiArgs.add("-a atributo1".split(" "));
-            // multiArgs.add("-p user".split(" "));
+            multiArgs.add("-p user certifier attributes".split(" "));
             // multiArgs.add("-u Alice alice@email.com".split(" "));
             // multiArgs.add("-g atributo1 Bob".split(" "));
         }
