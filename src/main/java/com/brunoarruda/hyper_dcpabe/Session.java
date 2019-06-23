@@ -7,6 +7,7 @@ import java.util.TreeMap;
 import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyper_dcpabe.io.Console;
 
+@Deprecated
 public class Session {
 
     private Client client;
