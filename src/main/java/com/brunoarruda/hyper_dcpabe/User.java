@@ -1,15 +1,16 @@
 package com.brunoarruda.hyper_dcpabe;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.bitcoinj.core.ECKey;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 
 /**
  * User
@@ -22,7 +23,16 @@ public class User {
     private ECKey keys;
     private Map<String, String> keysPlainText;
     private PersonalKeys ABEKeys;
-    private Map<String, Map<String, PublicKey>> publishedABEKeys;
+
+    @JsonCreator
+    public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID, @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys) {
+        setName(name);
+        setUserID(userID);
+        setEmail(email);
+        setECKeysFromString(ECKeys);
+        BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
+        setECKeys(ECKey.fromPrivate(privateKey));
+    }
 
     public User(String name, String email, ECKey ecKey) {
         this.setName(name);
@@ -35,14 +45,6 @@ public class User {
 
         String userID = String.format("%s-%s", name, ecKey.getPublicKeyAsHex().substring(0, 8));
         this.setUserID(userID);
-    }
-
-    public void addPublicKeys(String authority, Map<String, PublicKey> keys) {
-        this.publishedABEKeys.put(authority, keys);
-    }
-
-    public boolean hasPublicKeysOfAuthority(String authority) {
-        return publishedABEKeys.containsKey(authority);
     }
 
     /**
@@ -105,16 +107,6 @@ public class User {
 
     public void setECKeys(ECKey pairKeys) {
         this.keys = pairKeys;
-    }
-
-    @JsonIgnore
-    public Map<String, PublicKey> getPublicABEKeys(String authority) {
-        return publishedABEKeys.get(authority);
-    }
-
-    @JsonIgnore
-    public Map<String, Map<String, PublicKey>> getAllPulicABEKeys() {
-        return publishedABEKeys;
     }
 
     @JsonIgnore
