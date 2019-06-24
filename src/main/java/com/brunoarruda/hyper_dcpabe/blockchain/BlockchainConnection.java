@@ -10,7 +10,6 @@ import org.bitcoinj.core.ECKey;
 import org.json.JSONObject;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
-import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public class BlockchainConnection {
     private String dataPath = "blockchain";
@@ -39,16 +38,17 @@ public class BlockchainConnection {
         return null;
     }
 
-    public Map<String, PublicKey> getABEPublicKeys(String authority) {
-        File dir = new File(getBlockchainDataPath() + authority);
+    public Map<String, PublicKey> getABEPublicKeys(String authority, String[] attributes) {
+        String path = getBlockchainDataPath() + "PublicABEKeys\\";
+        File dir = new File(path);
         if (!dir.exists()) {
-            System.out.println("A autoridade " + authority + "não publicou nenhum atributo.");
+            System.out.println("A autoridade " + authority + " não publicou nenhum atributo.");
             return null;
         } else {
-            for (String s : dir.list()) {
-                if (s.equals(authority)) {
+            for (String json : dir.list()) {
+                if (json.equals(authority)) {
                     try {
-                        return Utility.readPublicKeys(s);
+                        return fc.readAsMap(path, json, String.class, PublicKey.class);
                     } catch (Exception e) {
                     }
                 }

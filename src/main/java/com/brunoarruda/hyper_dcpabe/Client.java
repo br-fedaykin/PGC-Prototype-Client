@@ -2,6 +2,7 @@ package com.brunoarruda.hyper_dcpabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.Map;
 
 import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
@@ -28,6 +29,8 @@ public final class Client {
     private BlockchainConnection blockchain;
     private String dataPath;
 
+    private Map<String, Map<String, PublicKey>> publishedAttributes;
+
     public Client(BlockchainConnection blockchain) {
         this(blockchain, "data");
     }
@@ -40,6 +43,9 @@ public final class Client {
     }
 
     private void init() {
+        loadAttributes();
+        this.blockchain.init();
+
         gpPath = fc.getDataDirectory() + "globalParameters";
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
@@ -48,7 +54,6 @@ public final class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.blockchain.init();
     }
 
     public void createUser(String name, String email) {
@@ -57,11 +62,22 @@ public final class Client {
         fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
     }
 
+    private String getClientDirectory() {
+        return fc.getDataDirectory() + "client\\";
+    }
+
     public void getAttributes(String authority, String[] attributes) {
-        if (user.hasPublicKeysOfAuthority(authority)) {
-            Map<String, PublicKey> ABEKeys = blockchain.getABEPublicKeys(authority);
-            if (ABEKeys.size() != 0) {
-                user.addPublicKeys(authority, ABEKeys);
+        Map<String, PublicKey> keys = null;
+        if (!hasPublicKeysOfAuthority(authority)) {
+            keys = blockchain.getABEPublicKeys(authority, attributes);
+            if (keys != null) {
+                if (hasPublicKeysOfAuthority(authority)) {
+                    publishedAttributes.replace(authority, keys);
+                } else {
+                    publishedAttributes.put(authority, keys);
+                }
+                String path = getClientDirectory() + "PublicKeys\\";
+                fc.writeToDir(path, authority + ".json", keys);
             }
         }
     }
@@ -79,21 +95,21 @@ public final class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-	}
+    }
 
-	public void createCertifier(String name, String email) {
+    public void createCertifier(String name, String email) {
         certifier = new Certifier(name, email, new ECKey());
-	}
+    }
 
-	public void createCertifier() {
+    public void createCertifier() {
         if (user != null) {
             certifier = new Certifier(user);
         } else {
             System.out.println("Crie um usuário ou informe nome e e-mail");
         }
-	}
+    }
 
-	public void publish(String content) {
+    public void publish(String content) {
         String path = fc.getUserDirectory(user);
         ObjectNode obj;
         if (content.equals("user")) {
@@ -103,8 +119,7 @@ public final class Client {
         }
         if (content.equals("certifier")) {
             obj = fc.loadAsJSON(path, "Certifier.json");
-            obj = removeFieldFromJSON(obj, "ECKeys.private", "authorityKeys.authorityID",
-                                        "authorityKeys.secretKeys");
+            obj = removeFieldFromJSON(obj, "ECKeys.private", "authorityKeys.authorityID", "authorityKeys.secretKeys");
             blockchain.publishAuthority(certifier.getUserID(), obj);
         }
         if (content.equals("attributes")) {
@@ -113,7 +128,7 @@ public final class Client {
         }
     }
 
-    private ObjectNode removeFieldFromJSON(ObjectNode obj, String ... fieldSequences) {
+    private ObjectNode removeFieldFromJSON(ObjectNode obj, String... fieldSequences) {
         ObjectNode rootObj = obj;
         for (String fieldSequence : fieldSequences) {
             String[] fields = fieldSequence.split("\\.");
@@ -124,6 +139,36 @@ public final class Client {
             obj = rootObj;
         }
         return obj;
+    }
+
+    public void loadAttributes() {
+        publishedAttributes = new Hashtable<String, Map<String, PublicKey>>();
+        String path = getClientDirectory() + "PublicKeys";
+        File folder = new File(path);
+
+        Map<String, PublicKey> attributes = new Hashtable<String, PublicKey>();
+        if (folder.exists()) {
+            for (String json : folder.list()) {
+                attributes = fc.readAsMap(path, json, String.class, PublicKey.class);
+                String authority = json.split("\\.")[0];
+                publishedAttributes.put(authority, attributes);
+            }
+        }
+    }
+
+    public Map<String, Map<String, PublicKey>> getAllPublishedAttributes() {
+        return publishedAttributes;
+    }
+
+    public Map<String, PublicKey> getPublishedAttributes(String authority) {
+        return publishedAttributes.get(authority);
+    }
+
+    public boolean hasPublicKeysOfAuthority(String authority) {
+        if (publishedAttributes == null) {
+            return false;
+        }
+        return publishedAttributes.containsKey(authority);
     }
 
     /**
@@ -164,21 +209,10 @@ public final class Client {
     public void getABEPublicKeys(String string, String string2) {
         System.out.println("Not Implemented");
     }
-    // private ObjectNode addFieldToJSON(ObjectNode obj, String fieldSequence, String value) {
-    //     String[] fields = fieldSequence.split(".");
-    //     for (int i = 0; i < fields.length - 1; i++) {
-    //         if (obj.get(fields[i]) != null) {
-    //             obj = (ObjectNode) obj.get(fields[i]);
-    //         } else {
-    //             try {
-    //                 obj.set(fields[i], fc.getMapper().readTree("{}"));
-    //             } catch (IOException e) {
-    //                 e.printStackTrace();
-    //             }
-    //             obj = (ObjectNode) obj.get(fields[i]);
-    //         }
-    //     }
-    //     obj.put(fields[fields.length - 1], value);
-    //     return obj;
-    // }
+
+    public void loadUserData(String userID) {
+        String path = getClientDirectory() + userID;
+        user = fc.readFromDir(path, "user.json", User.class);
+        certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
+	}
 }

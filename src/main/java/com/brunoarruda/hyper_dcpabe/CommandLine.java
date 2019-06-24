@@ -22,6 +22,7 @@ public class CommandLine {
 
     private static void populateCommands() {
         COMMAND_ALIAS.put("-u", "--create-user");
+        COMMAND_ALIAS.put("-l", "--load");
         COMMAND_ALIAS.put("-c", "--create-certifier");
         COMMAND_ALIAS.put("-a", "--create-attributes");
         COMMAND_ALIAS.put("-y", "--yield-attributes");
@@ -38,25 +39,21 @@ public class CommandLine {
         if (client == null) {
             client = new Client(new BlockchainConnection());
         }
+        String[] attributes;
         switch (args[0]) {
         case "-m":
         case "--milestone":
             runMilestone(Integer.parseInt(args[1]));
+            break;
+        case "-l":
+        case "load":
+            client.loadUserData(args[1]);
             break;
         case "-u":
         case "--create-user":
             String name = args[1];
             String email = args[2];
             client.createUser(name, email);
-            break;
-        case "-g":
-        case "--get-attribute":
-            String authorityName = args[1];
-            String[] attributes = new String[args.length - 2];
-            for (int i = 0; i < attributes.length; i++) {
-                attributes[i] = args[i + 2];
-            }
-            client.getAttributes(authorityName, attributes);
             break;
         case "-c":
         case "--create-certifier":
@@ -82,6 +79,14 @@ public class CommandLine {
                 client.publish(args[i]);
             }
             break;
+        case "-g":
+        case "-get-attributes":
+            attributes = new String[args.length - 2];
+            for (int i = 0; i < attributes.length; i++) {
+                attributes[i] = args[i + 2];
+            }
+            client.getAttributes(args[1], attributes);
+            break;
         }
     }
 
@@ -94,12 +99,13 @@ public class CommandLine {
          * codificado e o decodifica)
          */
         if (milestone == 1) {
-            multiArgs.add("-u Bob bob@email.com".split(" "));
-            multiArgs.add("-c".split(" "));
-            multiArgs.add("-a atributo1".split(" "));
-            multiArgs.add("-p user certifier attributes".split(" "));
+            // multiArgs.add("-u Bob bob@email.com".split(" "));
+            // multiArgs.add("-c".split(" "));
+            // multiArgs.add("-a atributo1".split(" "));
+            // multiArgs.add("-p user certifier attributes".split(" "));
             // multiArgs.add("-u Alice alice@email.com".split(" "));
-            // multiArgs.add("-g atributo1 Bob".split(" "));
+            multiArgs.add("-l Bob-029b5e51".split(" "));
+            multiArgs.add("-g Bob atributo1".split(" "));
         }
 
         if (milestone > 1) {
