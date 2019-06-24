@@ -2,10 +2,12 @@ package com.brunoarruda.hyper_dcpabe.io;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import com.brunoarruda.hyper_dcpabe.User;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -72,8 +74,19 @@ public final class FileController {
         }
     }
 
+    public <K extends Object, V extends Object> Map<K, V> readAsMap(String path, String file, Class<K> key, Class<V> value) {
+        File f = new File(path, file);
+        try {
+            TypeReference<Map<K, V>> typeRef = new TypeReference<Map<K, V>>() {
+            };
+            return mapper.readValue(f, typeRef);
+        } catch (Exception e) {
+            throw new RuntimeException("Couldnt parse json:" + file, e);
+        }
+    }
+
     public <T> T readFromDir(String path, String fileName, Class<T> typeReference) {
-        File f = new File(path + fileName);
+        File f = new File(path, fileName);
         T obj = null;
         try {
             obj = mapper.readValue(f, typeReference);
