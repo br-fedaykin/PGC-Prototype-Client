@@ -5,7 +5,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.bitcoinj.core.ECKey;
+import org.ethereum.crypto.ECKey;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
 

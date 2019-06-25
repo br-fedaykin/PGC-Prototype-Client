@@ -11,7 +11,7 @@ import com.brunoarruda.hyper_dcpabe.blockchain.CiphertextJSON;
 import com.brunoarruda.hyper_dcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.bitcoinj.core.ECKey;
+import org.ethereum.crypto.ECKey;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;

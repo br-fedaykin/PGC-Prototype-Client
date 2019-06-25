@@ -1,19 +1,22 @@
 package com.brunoarruda.hyper_dcpabe.blockchain;
 
 import java.io.File;
+import java.security.SecureRandom;
 import java.util.Map;
 
 import com.brunoarruda.hyper_dcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.bitcoinj.core.ECKey;
-import org.json.JSONObject;
+import org.ethereum.crypto.ECKey;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 
 public class BlockchainConnection {
     private String dataPath = "blockchain";
     private FileController fc;
+
+    static private final byte[] seed = "Honk Honk".getBytes();
+    static private final SecureRandom random = new SecureRandom(seed);
 
     public String getBlockchainDataPath() {
         return fc.getDataDirectory() + dataPath + "\\";
@@ -30,11 +33,11 @@ public class BlockchainConnection {
     }
 
     public ECKey generateKeys() {
-        return new ECKey();
+        return new ECKey(random);
     }
 
     @Deprecated
-    public Transaction createTransaction(ECKey userKeys, JSONObject content) {
+    public Transaction createTransaction(ECKey userKeys, ObjectNode content) {
         return null;
     }
 
@@ -46,7 +49,7 @@ public class BlockchainConnection {
             return null;
         } else {
             for (String json : dir.list()) {
-                if (json.equals(authority)) {
+                if (json.startsWith(authority)) {
                     try {
                         return fc.readAsMap(path, json, String.class, PublicKey.class);
                     } catch (Exception e) {
@@ -58,12 +61,16 @@ public class BlockchainConnection {
     }
 
     public void publishABEKeys(String label, ObjectNode obj) {
+        // TODO: criar transação ao invés de salvar arquivo
+
         File dir = new File(getBlockchainDataPath() + "PublicABEKeys");
         dir.mkdirs();
         fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
     }
 
 	public void publishAuthority(String label, ObjectNode obj) {
+        // TODO: criar transação ao invés de salvar arquivo
+
         File dir = new File(getBlockchainDataPath() + "Authority");
         dir.mkdirs();
         obj.get("name");
@@ -71,6 +78,8 @@ public class BlockchainConnection {
 	}
 
 	public void publishUser(String label, ObjectNode obj) {
+        // TODO: criar transação ao invés de salvar arquivo
+
         File dir = new File(getBlockchainDataPath() + "User");
         dir.mkdirs();
         obj.get("name");

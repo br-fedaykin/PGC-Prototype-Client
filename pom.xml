@@ -29,7 +29,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-nop</artifactId>
             <version>1.7.24</version>
-            <scope>test</scope>
+            <!-- <scope>test</scope> -->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
         <dependency>
@@ -45,17 +45,27 @@
             <version>2.28.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.bitcoinj/bitcoinj-core -->
+        <!-- https://mvnrepository.com/artifact/org.ethereum/ethereumj-core -->
         <dependency>
-            <groupId>org.bitcoinj</groupId>
-            <artifactId>bitcoinj-core</artifactId>
-            <version>0.15.2</version>
+            <groupId>org.ethereum</groupId>
+            <artifactId>ethereumj-core</artifactId>
+            <version>1.11.0-RELEASE</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180813</version>
+            <groupId>org.ethereum</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>5.9.2</version>
+            <!-- BUG: Maven was not finding this repository on local storage. Download it to /lib/ -->
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/rocksdbjni-5.9.2.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.ethereum</groupId>
+            <artifactId>solcJ-all</artifactId>
+            <version>0.4.25</version>
+            <!-- BUG: Maven was not finding this repository on local storage. Download it to /lib/ -->
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/solcJ-all-0.4.25.jar</systemPath>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
         <dependency>

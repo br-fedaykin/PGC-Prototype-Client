@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.bitcoinj.core.ECKey;
+import org.ethereum.crypto.ECKey;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
 
@@ -39,11 +39,12 @@ public class User {
         this.setEmail(email);
         this.setECKeys(ecKey);
 
+        String[] ecKeyStr = ecKey.toStringWithPrivate().split("pub:| priv:");
         keysPlainText = new HashMap<String, String>();
-        keysPlainText.put("private", ecKey.getPrivateKeyAsHex());
-        keysPlainText.put("public", ecKey.getPublicKeyAsHex());
+        keysPlainText.put("public", ecKeyStr[1]);
+        keysPlainText.put("private", ecKeyStr[2]);
 
-        String userID = String.format("%s-%s", name, ecKey.getPublicKeyAsHex().substring(0, 8));
+        String userID = String.format("%s-%s", name, ecKeyStr[1].substring(0, 8));
         this.setUserID(userID);
     }
 
