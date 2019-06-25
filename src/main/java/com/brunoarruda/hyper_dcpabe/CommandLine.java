@@ -87,6 +87,14 @@ public class CommandLine {
             }
             client.getAttributes(args[1], attributes);
             break;
+        case "-e":
+        case "--encrypt":
+            String[] authorities = new String[args.length - 3];
+            for (int i = 0; i < authorities.length; i++) {
+                authorities[i] = args[i + 3];
+            }
+            client.encrypt(args[1], args[2], authorities);
+            break;
         }
     }
 
@@ -104,8 +112,9 @@ public class CommandLine {
             // multiArgs.add("-a atributo1".split(" "));
             // multiArgs.add("-p user certifier attributes".split(" "));
             // multiArgs.add("-u Alice alice@email.com".split(" "));
-            multiArgs.add("-l Bob-029b5e51".split(" "));
-            multiArgs.add("-g Bob atributo1".split(" "));
+            multiArgs.add("-l Alice-02cd45b9".split(" "));
+            multiArgs.add("-g Bob-029b5e51 atributo1".split(" "));
+            multiArgs.add("-e lorem_ipsum.pdf atributo1 Bob-029b5e51".split(" "));
         }
 
         if (milestone > 1) {

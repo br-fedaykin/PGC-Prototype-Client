@@ -2,18 +2,25 @@ package com.brunoarruda.hyper_dcpabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
 import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyper_dcpabe.blockchain.CiphertextJSON;
 import com.brunoarruda.hyper_dcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.bitcoinj.core.ECKey;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
@@ -146,10 +153,11 @@ public final class Client {
         String path = getClientDirectory() + "PublicKeys";
         File folder = new File(path);
 
-        Map<String, PublicKey> attributes = new Hashtable<String, PublicKey>();
+        Map<String, PublicKey> attributes = new HashMap<String, PublicKey>();
         if (folder.exists()) {
             for (String json : folder.list()) {
                 attributes = fc.readAsMap(path, json, String.class, PublicKey.class);
+                System.out.println(attributes.get("atributo1").getClass().getSimpleName());
                 String authority = json.split("\\.")[0];
                 publishedAttributes.put(authority, attributes);
             }
@@ -214,5 +222,20 @@ public final class Client {
         String path = getClientDirectory() + userID;
         user = fc.readFromDir(path, "user.json", User.class);
         certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
-	}
+    }
+
+    public void encrypt(String file, String policy, String[] authorities) {
+        PublicKeys pks = new PublicKeys();
+        for (String auth : authorities) {
+            pks.subscribeAuthority(publishedAttributes.get(auth));
+        }
+        AccessStructure as = AccessStructure.buildFromPolicy(policy);
+        Message m = DCPABE.generateRandomMessage(gp);
+        Ciphertext ct = DCPABE.encrypt(m, as, gp, pks);
+        CiphertextJSON ctJson = new CiphertextJSON(ct);
+        String path = fc.getUserDirectory(user);
+        fc.writeToDir(path, "(cipher)" + file + ".json", ctJson);
+        PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), true);
+        fc.writeEncrypted(aes, path, file);
+    }
 }
