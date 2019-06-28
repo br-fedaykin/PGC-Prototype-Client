@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe.blockchain;
+package com.brunoarruda.hyper_dcpabe;
 
 import java.util.ArrayList;
 import java.util.List;

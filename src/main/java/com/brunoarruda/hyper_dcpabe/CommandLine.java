@@ -21,16 +21,25 @@ public class CommandLine {
     }
 
     private static void populateCommands() {
+        // user commands
         COMMAND_ALIAS.put("-u", "--create-user");
-        COMMAND_ALIAS.put("-l", "--load");
         COMMAND_ALIAS.put("-c", "--create-certifier");
+        COMMAND_ALIAS.put("-l", "--load");
+
+        // DCPABE commands
         COMMAND_ALIAS.put("-a", "--create-attributes");
         COMMAND_ALIAS.put("-y", "--yield-attributes");
-        COMMAND_ALIAS.put("-r", "--request-attributes");
-        COMMAND_ALIAS.put("-g", "--get-attributes");
         COMMAND_ALIAS.put("-e", "--encript");
+        COMMAND_ALIAS.put("-d", "--decrypt");
+
+        // blockchain / server commands
+        COMMAND_ALIAS.put("-r", "--request-attributes");
+        COMMAND_ALIAS.put("-ga", "--get-attributes");
+        COMMAND_ALIAS.put("-gr", "--get-recordings");
         COMMAND_ALIAS.put("-s", "--send");
         COMMAND_ALIAS.put("-p", "--publish");
+
+        // testing command
         COMMAND_ALIAS.put("-m", "--milestone");
         COMMAND_ALIAS.put("-h", "--help");
     }
@@ -46,7 +55,7 @@ public class CommandLine {
             runMilestone(Integer.parseInt(args[1]));
             break;
         case "-l":
-        case "load":
+        case "--load":
             client.loadUserData(args[1]);
             break;
         case "-u":
@@ -79,13 +88,21 @@ public class CommandLine {
                 client.publish(args[i]);
             }
             break;
-        case "-g":
-        case "-get-attributes":
+        case "-ga":
+        case "--get-attributes":
             attributes = new String[args.length - 2];
             for (int i = 0; i < attributes.length; i++) {
                 attributes[i] = args[i + 2];
             }
             client.getAttributes(args[1], attributes);
+            break;
+        case "-gr":
+        case "--get-recordings":
+            String[] recordings = new String[args.length - 2];
+            for (int i = 0; i < recordings.length; i++) {
+                recordings[i] = args[i + 2];
+            }
+            client.getRecordings(args[1], recordings);
             break;
         case "-e":
         case "--encrypt":
@@ -94,6 +111,12 @@ public class CommandLine {
                 authorities[i] = args[i + 3];
             }
             client.encrypt(args[1], args[2], authorities);
+            break;
+        case "-s":
+        case "--send":
+            for (int i = 1; i < args.length; i++) {
+                client.send(args[i]);
+            }
             break;
         }
     }
@@ -112,9 +135,12 @@ public class CommandLine {
             // multiArgs.add("-a atributo1".split(" "));
             // multiArgs.add("-p user certifier attributes".split(" "));
             // multiArgs.add("-u Alice alice@email.com".split(" "));
-            multiArgs.add("-l Alice-02cd45b9".split(" "));
-            multiArgs.add("-g Bob-029b5e51 atributo1".split(" "));
-            multiArgs.add("-e lorem_ipsum.pdf atributo1 Bob-029b5e51".split(" "));
+            multiArgs.add("-l Alice-04206da4".split(" "));
+            multiArgs.add("-ga Bob-041702dd atributo1".split(" "));
+            multiArgs.add("-e lorem_ipsum.pdf atributo1 Bob-041702dd".split(" "));
+            multiArgs.add("-s lorem_ipsum.pdf".split(" "));
+            multiArgs.add("-l Bob-041702dd".split(" "));
+            multiArgs.add("-gr Alice-04206da4 lorem_ipsum.pdf".split(" "));
         }
 
         if (milestone > 1) {

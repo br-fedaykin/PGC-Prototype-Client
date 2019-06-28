@@ -2,20 +2,20 @@ package com.brunoarruda.hyper_dcpabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
-import com.brunoarruda.hyper_dcpabe.blockchain.CiphertextJSON;
+import com.brunoarruda.hyper_dcpabe.CiphertextJSON;
 import com.brunoarruda.hyper_dcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
-import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
@@ -26,6 +26,8 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
 
+    private static final int SERVER_PORT = 8080;
+
     private String gpPath;
     private final FileController fc;
 
@@ -34,6 +36,7 @@ public final class Client {
     private Certifier certifier;
 
     private BlockchainConnection blockchain;
+    private ServerConnection server;
     private String dataPath;
 
     private Map<String, Map<String, PublicKey>> publishedAttributes;
@@ -45,12 +48,12 @@ public final class Client {
     public Client(BlockchainConnection blockchain, String dataPath) {
         this.blockchain = blockchain;
         fc = FileController.getInstance().configure(dataPath);
-        blockchain.init();
         init();
     }
 
     private void init() {
         loadAttributes();
+        this.server = new ServerConnection(SERVER_PORT);
         this.blockchain.init();
 
         gpPath = fc.getDataDirectory() + "globalParameters";
@@ -123,15 +126,22 @@ public final class Client {
             obj = fc.loadAsJSON(path, "User.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "personalABEKeys");
             blockchain.publishUser(user.getUserID(), obj);
-        }
-        if (content.equals("certifier")) {
+        } else if (content.equals("certifier")) {
             obj = fc.loadAsJSON(path, "Certifier.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "authorityKeys.authorityID", "authorityKeys.secretKeys");
             blockchain.publishAuthority(certifier.getUserID(), obj);
-        }
-        if (content.equals("attributes")) {
+        } else if (content.equals("attributes")) {
             obj = fc.loadAsJSON(path, "authorityPublicKeys.json");
             blockchain.publishABEKeys(certifier.getUserID(), obj);
+        } else if (content.equals(".")) {
+            // TODO: publicar todos os arquivos prontos disponíveis
+        } else {
+            Recording r = user.getRecordingByFile(content);
+            obj = fc.getMapper().convertValue(r, ObjectNode.class);
+            obj.put("name", r.getRecordingFileName());
+            blockchain.publishData(user.getUserID(), obj);
+            // TODO: modificar recording para obter informação da transação
+            send(r.getFileName());
         }
     }
 
@@ -222,20 +232,57 @@ public final class Client {
         String path = getClientDirectory() + userID;
         user = fc.readFromDir(path, "user.json", User.class);
         certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
+        user.setRecordings(fc.readAsList(path, "recordings.json", Recording.class));
     }
 
     public void encrypt(String file, String policy, String[] authorities) {
-        PublicKeys pks = new PublicKeys();
-        for (String auth : authorities) {
-            pks.subscribeAuthority(publishedAttributes.get(auth));
+        if (user.getRecordingByFile(file) == null) {
+            PublicKeys pks = new PublicKeys();
+            for (String auth : authorities) {
+                pks.subscribeAuthority(publishedAttributes.get(auth));
+            }
+            AccessStructure as = AccessStructure.buildFromPolicy(policy);
+            Message m = DCPABE.generateRandomMessage(gp);
+            CiphertextJSON ct = new CiphertextJSON(DCPABE.encrypt(m, as, gp, pks));
+            Recording r = new Recording(file, ct);
+            String path = fc.getUserDirectory(user);
+            r.encryptFile(m, path);
+            user.addRecording(r);
+            fc.writeToDir(path, "recordings.json", user.getRecordings());
+        } else {
+            System.out.println("Info: "+ file + " - File already encrypted");
         }
-        AccessStructure as = AccessStructure.buildFromPolicy(policy);
-        Message m = DCPABE.generateRandomMessage(gp);
-        Ciphertext ct = DCPABE.encrypt(m, as, gp, pks);
-        CiphertextJSON ctJson = new CiphertextJSON(ct);
-        String path = fc.getUserDirectory(user);
-        fc.writeToDir(path, "(cipher)" + file + ".json", ctJson);
-        PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), true);
-        fc.writeEncrypted(aes, path, file);
     }
+
+	public void send(String content) {
+        Recording r = user.getRecordingByFile(content);
+        if (r == null) {
+            System.out.println("Unencrypted content. Abording");
+        } else if (r.getKey() == null) {
+            ObjectNode message = fc.getMapper().createObjectNode();
+            message.put("name", user.getName());
+            message.put("userID", user.getUserID());
+            String key = server.reserveSpace(message);
+
+            r.setUrl(server.getHost());
+            r.setKey(key);
+            publish(content);
+        } else {
+            String userID = user.getUserID();
+            List<byte[]> data = r.readData(fc.getUserDirectory(user));
+            server.sendFile(userID, content, data);
+        }
+	}
+
+	public void getRecordings(String userID, String[] recordings) {
+        List<Recording> r = new ArrayList<Recording>();
+        Recording oneRecord;
+        for (String fileName : recordings) {
+            oneRecord = blockchain.getRecording(userID, fileName);
+            List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
+            oneRecord.writeData(data, fc.getUserDirectory(user));
+            r.add(oneRecord);
+        }
+        user.addAllRecordings(r);
+	}
 }

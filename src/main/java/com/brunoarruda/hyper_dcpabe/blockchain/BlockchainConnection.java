@@ -4,6 +4,7 @@ import java.io.File;
 import java.security.SecureRandom;
 import java.util.Map;
 
+import com.brunoarruda.hyper_dcpabe.Recording;
 import com.brunoarruda.hyper_dcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -60,6 +61,14 @@ public class BlockchainConnection {
         }
     }
 
+    public void publishData(String userID, ObjectNode obj) {
+        String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
+        File dir = new File(path);
+        String fileName = obj.get("name").asText() + ".json";
+        dir.mkdirs();
+        fc.writeToDir(path, fileName, obj);
+    }
+
     public void publishABEKeys(String label, ObjectNode obj) {
         // TODO: criar transação ao invés de salvar arquivo
 
@@ -84,5 +93,19 @@ public class BlockchainConnection {
         dir.mkdirs();
         obj.get("name");
         fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+	}
+
+	public Recording getRecording(String userID, String fileName) {
+        Recording r = null;
+        String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
+        String fileNameEdited = fileName.split("\\..+?$")[0] + ".json";
+        if (new File(path + fileName).exists()) {
+            r = fc.readFromDir(path, fileName, Recording.class);
+        } else if (new File(path + fileNameEdited).exists()) {
+            r = fc.readFromDir(path, fileNameEdited, Recording.class);
+        } else {
+            System.out.println("File " + fileName + " not found on blockchain");
+        }
+        return r;
 	}
 }

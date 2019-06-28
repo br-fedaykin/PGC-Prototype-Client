@@ -1,7 +1,9 @@
 package com.brunoarruda.hyper_dcpabe;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -23,6 +25,7 @@ public class User {
     private ECKey keys;
     private Map<String, String> keysPlainText;
     private PersonalKeys ABEKeys;
+    private List<Recording> recordings;
 
     @JsonCreator
     public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID, @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys) {
@@ -32,12 +35,14 @@ public class User {
         setECKeysFromString(ECKeys);
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
+        recordings = new ArrayList<Recording>();
     }
 
     public User(String name, String email, ECKey ecKey) {
         this.setName(name);
         this.setEmail(email);
         this.setECKeys(ecKey);
+        recordings = new ArrayList<Recording>();
 
         String[] ecKeyStr = ecKey.toStringWithPrivate().split("pub:| priv:");
         keysPlainText = new HashMap<String, String>();
@@ -101,6 +106,15 @@ public class User {
      * Getters methods excluded from serialization
      */
 
+     @JsonIgnore
+     public List<Recording> getRecordings() {
+         return recordings;
+     }
+
+     public void setRecordings(List<Recording> recordings) {
+         this.recordings = recordings;
+     }
+
     @JsonIgnore
     public ECKey getECKeys() {
         return keys;
@@ -130,5 +144,23 @@ public class User {
             "}";
         return String.format(format,name, email, keysPlainText.get("private"),
             keysPlainText.get("public"));
+    }
+
+	public void addRecording(Recording r) {
+        this.recordings.add(r);
+    }
+
+    public void addAllRecordings(List<Recording> r) {
+        this.recordings.addAll(r);
+    }
+
+    @JsonIgnore
+    public Recording getRecordingByFile(String file) {
+        for (Recording r : recordings) {
+            if(r.getFileName().equals(file)) {
+                return r;
+            }
+        }
+        return null;
     }
 }
