@@ -4,8 +4,10 @@ import java.io.File;
 import java.security.SecureRandom;
 import java.util.Map;
 
+import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.Recording;
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
@@ -64,7 +66,7 @@ public class BlockchainConnection {
     public void publishData(String userID, ObjectNode obj) {
         String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
         File dir = new File(path);
-        String fileName = obj.get("name").asText() + ".json";
+        String fileName = obj.get("recordingFileName").asText() + ".json";
         dir.mkdirs();
         fc.writeToDir(path, fileName, obj);
     }
@@ -102,6 +104,9 @@ public class BlockchainConnection {
         if (new File(path + fileName).exists()) {
             r = fc.readFromDir(path, fileName, Recording.class);
         } else if (new File(path + fileNameEdited).exists()) {
+            ObjectMapper mapper = FileController.getInstance().getMapper();
+            boolean seila = mapper.canDeserialize(mapper.constructType(CiphertextJSON.class));
+            boolean seila2 = mapper.canDeserialize(mapper.constructType(Recording.class));
             r = fc.readFromDir(path, fileNameEdited, Recording.class);
         } else {
             System.out.println("File " + fileName + " not found on blockchain");

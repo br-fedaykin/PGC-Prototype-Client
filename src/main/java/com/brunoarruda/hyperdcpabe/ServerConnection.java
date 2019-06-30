@@ -41,7 +41,6 @@ public class ServerConnection {
     private Map<String, String> serverKeys;
     private Socket serverConnection;
     private int BUFFER_SIZE = 1024;
-
     private PrintWriter serverSender;
     private BufferedReader serverReceiver;
 
@@ -49,6 +48,12 @@ public class ServerConnection {
         this.SERVER_PORT = serverPort;
         this.serverKeys = new HashMap<String, String>();
         fc = FileController.getInstance();
+        this.serverKeys = loadKeys();
+    }
+
+    private Map<String, String> loadKeys() {
+        String path = getServerDataPath();
+        return fc.readAsMap(path, "serverKeys.json", String.class, String.class);
     }
 
     /**
@@ -110,6 +115,8 @@ public class ServerConnection {
                 for (byte[] buff : data) {
                     oos.write(buff);
                 }
+            // after allocating space, key must be preserved
+            fc.writeToDir(getServerDataPath(), "serverKeys.json", serverKeys);
         } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
         }
@@ -132,4 +139,13 @@ public class ServerConnection {
         }
         return data;
     }
+
+	public boolean hasContent(String userID, String content) {
+        boolean isOnServer = false;
+        if (serverKeys.get(userID) != null) {
+            String path = getServerDataPath() + serverKeys.get(userID) + "\\";
+            isOnServer = new File(path + content).exists();
+        }
+		return isOnServer;
+	}
 }

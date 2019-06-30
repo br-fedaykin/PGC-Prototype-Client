@@ -138,7 +138,6 @@ public final class Client {
         } else {
             Recording r = user.getRecordingByFile(content);
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
-            obj.put("name", r.getRecordingFileName());
             blockchain.publishData(user.getUserID(), obj);
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
@@ -263,14 +262,15 @@ public final class Client {
             message.put("name", user.getName());
             message.put("userID", user.getUserID());
             String key = server.reserveSpace(message);
-
             r.setUrl(server.getHost());
             r.setKey(key);
             publish(content);
         } else {
             String userID = user.getUserID();
             List<byte[]> data = r.readData(fc.getUserDirectory(user));
-            server.sendFile(userID, content, data);
+            if (data != null) {
+                server.sendFile(userID, content, data);
+            }
         }
 	}
 
@@ -279,9 +279,13 @@ public final class Client {
         Recording oneRecord;
         for (String fileName : recordings) {
             oneRecord = blockchain.getRecording(userID, fileName);
-            List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
-            oneRecord.writeData(data, fc.getUserDirectory(user));
-            r.add(oneRecord);
+            if (oneRecord != null) {
+                List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
+                oneRecord.writeData(data, fc.getUserDirectory(user));
+                r.add(oneRecord);
+            } else {
+                System.out.println(fileName + " not found in blockchain");
+            }
         }
         user.addAllRecordings(r);
 	}

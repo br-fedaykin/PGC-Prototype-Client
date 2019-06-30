@@ -10,8 +10,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.cedarsoftware.util.io.JsonObject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -32,11 +36,11 @@ public class Recording {
     private String decryptedFileName;
     private Message AESKey;
     private CiphertextJSON ct;
-    private String RecordingFileName;
+    private String recordingFileName;
     private int BUFFER_SIZE = 1024;
 
-    @JsonCreator
-    public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct) {
+    public Recording(String fileName,
+                     CiphertextJSON ct) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.decryptedFileName = "(dec)" + fileName;
@@ -45,12 +49,27 @@ public class Recording {
         this.ct = ct;
     }
 
+    @JsonCreator
+    public Recording(@JsonProperty("fileName") String fileName,
+                     @JsonProperty("ciphertext") CiphertextJSON ct,
+                     @JsonProperty("url") String url,
+                     @JsonProperty("key") String key,
+                     @JsonProperty("RecordingFileName") String recordingName) {
+        this.originalFileName = fileName;
+        this.encryptedFileName = "(enc)" + fileName;
+        this.decryptedFileName = "(dec)" + fileName;
+        this.ct = ct;
+        this.url = url;
+        this.key = key;
+        this.recordingFileName = recordingName;
+    }
+
     public String getRecordingFileName() {
-        return RecordingFileName;
+        return recordingFileName;
     }
 
     public void setRecordingFileName(String recordingFileName) {
-        this.RecordingFileName = recordingFileName;
+        this.recordingFileName = recordingFileName;
     }
 
     @JsonProperty
@@ -117,7 +136,7 @@ public class Recording {
     }
 
     public void writeData(List<byte[]> data, String path) {
-        try (FileOutputStream fos = new FileOutputStream(path + originalFileName);
+        try (FileOutputStream fos = new FileOutputStream(path + encryptedFileName);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             for (byte[] buff : data) {
                 oos.write(buff);
@@ -128,9 +147,10 @@ public class Recording {
     }
 
     public List<byte[]> readData(String path) {
-        List<byte[]> data = new ArrayList<byte[]>();
+        List<byte[]> data = null;
         try (FileInputStream fis = new FileInputStream(path + originalFileName);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
+            data = new ArrayList<byte[]>();
             byte[] buff = new byte[BUFFER_SIZE];
             int readBytes = bis.read(buff);
             if (readBytes != BUFFER_SIZE) {
