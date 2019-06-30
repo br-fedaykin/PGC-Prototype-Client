@@ -1,12 +1,12 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import com.brunoarruda.hyper_dcpabe.Client;
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.Client;
+import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 
 /**
  * CommandLine
@@ -130,6 +130,7 @@ public class CommandLine {
          * codificado e o decodifica)
          */
         if (milestone == 1) {
+            // adicionar certificador para dar acesso ao bob
             // multiArgs.add("-u Bob bob@email.com".split(" "));
             // multiArgs.add("-c".split(" "));
             // multiArgs.add("-a atributo1".split(" "));
@@ -141,6 +142,18 @@ public class CommandLine {
             multiArgs.add("-s lorem_ipsum.pdf".split(" "));
             multiArgs.add("-l Bob-041702dd".split(" "));
             multiArgs.add("-gr Alice-04206da4 lorem_ipsum.pdf".split(" "));
+        }
+
+        if (milestone == 2) {
+            multiArgs.add("-u CRM crm@email.com".split(" "));
+            multiArgs.add("-c".split(" "));
+            multiArgs.add("-a atributo1 atributo2 atributo3".split(" "));
+            multiArgs.add("-p user certifier attributes".split(" "));
+            multiArgs.add("-l Alice-04206da4".split(" "));
+            // Alice já existe no #m1 com atributo1
+            multiArgs.add("-ga CRM atributo2 atributo3".split(" "));
+            multiArgs.add("-e lorem_ipsum2.pdf \"and atributo2 atributo3\" CRM".split(" "));
+            // já existe no #m1 o atributo1
         }
 
         if (milestone > 1) {

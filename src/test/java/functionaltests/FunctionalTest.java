@@ -10,7 +10,7 @@ import utils.*;
 
 import static org.junit.Assert.*;
 
-import com.brunoarruda.hyper_dcpabe.Session;
+import com.brunoarruda.hyperdcpabe.Session;
 
 public class FunctionalTest {
 
@@ -27,7 +27,7 @@ public class FunctionalTest {
     }
 
     @Before
-    public void setUp() {        
+    public void setUp() {
         systemOutput.start();
         systemInput.start();
         blockchain = new StubBlockChain();
@@ -41,11 +41,11 @@ public class FunctionalTest {
     }
 
     @Test
-    public void testPatientCanPublishData() {        
+    public void testPatientCanPublishData() {
         /**
          * Alice wants to publish her EHR on Hyper-DCPABE
          * She starts a new session on Desktop
-         * 
+         *
         */
 
         systemInput.sendMany(
@@ -58,8 +58,8 @@ public class FunctionalTest {
         );
         session.runClient("console");
         allOutput = systemOutput.stop();
-        allOutput = allOutput.toLowerCase();        
-        
+        allOutput = allOutput.toLowerCase();
+
         // She sees a list of available commands
         assertThat(allOutput, CoreMatchers.containsString("menu principal:"));
 
@@ -67,11 +67,11 @@ public class FunctionalTest {
         // The keys are printed on the console so she can save them on a secure database
         assertThat(allOutput, CoreMatchers.containsString("chave privada: "));
         assertThat(allOutput, CoreMatchers.containsString("chave pública: "));
-        
+
         // She returns to main menu and choose to publish its user.
         // The client asks for name and e-mail and publish them on the chain
         assertThat(allOutput, CoreMatchers.containsString("publicado na blockchain"));
-        
+
         /**
          * Alice asks on blockchain for public keys of attributes "CRM" and "CFM" to make
          * the basic encryption "authorized or CRM or CFM".
@@ -99,7 +99,7 @@ public class FunctionalTest {
         // She agrees to client sending both files to a known server
 
         // The client receives from the server an key that should be used to find the file
-        
+
         /**
          * Finally, its published in blockchain a transaction containing:
         */

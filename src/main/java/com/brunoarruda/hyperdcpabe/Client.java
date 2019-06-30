@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,9 +8,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
-import com.brunoarruda.hyper_dcpabe.CiphertextJSON;
-import com.brunoarruda.hyper_dcpabe.io.FileController;
+import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.CiphertextJSON;
+import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;

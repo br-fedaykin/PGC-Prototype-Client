@@ -1,7 +1,7 @@
 package utils;
 
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 
 public class StubBlockChain extends BlockchainConnection {
-    
+
 }

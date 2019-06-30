@@ -1,11 +1,11 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
-import com.brunoarruda.hyper_dcpabe.io.Console;
+import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.io.Console;
 
 @Deprecated
 public class Session {

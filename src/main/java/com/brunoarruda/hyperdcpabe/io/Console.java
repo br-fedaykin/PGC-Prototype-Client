@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe.io;
+package com.brunoarruda.hyperdcpabe.io;
 
 import java.util.Scanner;
 import java.util.SortedMap;

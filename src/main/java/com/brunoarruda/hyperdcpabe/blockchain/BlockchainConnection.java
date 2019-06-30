@@ -1,11 +1,11 @@
-package com.brunoarruda.hyper_dcpabe.blockchain;
+package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
 import java.security.SecureRandom;
 import java.util.Map;
 
-import com.brunoarruda.hyper_dcpabe.Recording;
-import com.brunoarruda.hyper_dcpabe.io.FileController;
+import com.brunoarruda.hyperdcpabe.Recording;
+import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;

@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import java.math.BigInteger;
 import java.util.ArrayList;

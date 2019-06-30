@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;

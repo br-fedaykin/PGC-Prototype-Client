@@ -1,11 +1,4 @@
-package com.brunoarruda.hyper_dcpabe;
-
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
-import static org.mockserver.model.HttpResponse.notFoundResponse;
-import static org.mockserver.model.HttpStatusCode.ACCEPTED_202;
-import static org.mockserver.model.Header.header;
-import org.mockserver.mock.action.ExpectationResponseCallback;
+package com.brunoarruda.hyperdcpabe;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -17,9 +10,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,13 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-
-import com.brunoarruda.hyper_dcpabe.io.FileController;
+import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -51,7 +36,6 @@ public class ServerConnection {
 
     private static final String HOST = "127.0.0.1";
     private static final String dataPath = "server";
-    private ClientAndServer mockServer;
     private final int SERVER_PORT;
     private final FileController fc;
     private Map<String, String> serverKeys;
@@ -64,11 +48,6 @@ public class ServerConnection {
     public ServerConnection(int serverPort) {
         this.SERVER_PORT = serverPort;
         this.serverKeys = new HashMap<String, String>();
-        Runnable run = () -> {
-            mockServer = startClientAndServer(serverPort);
-        };
-        // new Thread(run).start();
-        // connectToServer(serverPort);
         fc = FileController.getInstance();
     }
 
@@ -92,13 +71,7 @@ public class ServerConnection {
         }
     }
 
-    public void configureMocking(HttpRequest request, ExpectationResponseCallback callback) {
-        mockServer
-                .when(request)
-                .respond(callback);
-    }
-
-    private String createKeyOnServer(String userID) {
+   private String createKeyOnServer(String userID) {
         String code = null;
         try {
             byte[] random = new byte[32];
@@ -122,22 +95,6 @@ public class ServerConnection {
             }
         }
         return serverKeys.get(userID);
-
-        // BUG: mocking didn't worked as expected
-        // HttpRequest req = HttpRequest.request()
-        //     .withMethod("POST")
-        //     .withPath("/create")
-        //     .withBody(message.toString());
-        //
-        // configureMocking(req, (request) -> {
-        //     if (request.getMethod().getValue().equals("POST")) {
-        //         return response()
-        //                 .withStatusCode(302)
-        //                 .withBody(String.format("{code: %s}", code));
-        //     } else {
-        //         return notFoundResponse();
-        //     }
-        // });
     }
 
     public String getServerDataPath() {

@@ -1,4 +1,4 @@
-package com.brunoarruda.hyper_dcpabe;
+package com.brunoarruda.hyperdcpabe;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,7 +14,7 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import com.brunoarruda.hyper_dcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.junit.After;
