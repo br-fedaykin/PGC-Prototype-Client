@@ -1,5 +1,12 @@
 package com.brunoarruda.hyperdcpabe;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -7,6 +14,7 @@ import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Client;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
+import com.brunoarruda.hyperdcpabe.io.FileController;
 
 /**
  * CommandLine
@@ -14,6 +22,7 @@ import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 public class CommandLine {
 
     private static final Map<String, String> COMMAND_ALIAS = new Hashtable<>();
+    private static final int BUFFER_SIZE = 1024;
     private static Client client;
 
     static {
@@ -55,6 +64,10 @@ public class CommandLine {
         switch (args[0]) {
         case "-m":
         case "--milestone":
+            // needed to provide the file to be encrypted
+            String path = "data\\client\\Alice-04b41\\";
+            new File(path).mkdirs();
+            getFileFromResources(path, "lorem_ipsum.md");
             runMilestone(Integer.parseInt(args[1]));
             break;
         case "-l":
@@ -168,36 +181,37 @@ public class CommandLine {
          */
         if (milestone == 1) {
             // certificador cria perfil e atributo, e os publica
-            // multiArgs.add("--create-user CRM crm@email.com".split(" "));
-            // multiArgs.add("--create-certifier".split(" "));
-            // multiArgs.add("--create-attributes atributo1".split(" "));
-            // multiArgs.add("--publish user certifier attributes".split(" "));
+            multiArgs.add("--create-user CRM crm@email.com".split(" "));
+            multiArgs.add("--create-certifier".split(" "));
+            multiArgs.add("--create-attributes atributo1".split(" "));
+            multiArgs.add("--publish user certifier attributes".split(" "));
 
-            // // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-            // multiArgs.add("--create-user Bob bob@email.com".split(" "));
-            // multiArgs.add("--publish user".split(" "));
-            // multiArgs.add("--load Bob-04206".split(" "));
-            // multiArgs.add("--request-attribute CRM-04170 atributo1".split(" "));
+            // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
+            multiArgs.add("--create-user Bob bob@email.com".split(" "));
+            multiArgs.add("--publish user".split(" "));
+            multiArgs.add("--load Bob-04206".split(" "));
+            multiArgs.add("--request-attribute CRM-04170 atributo1".split(" "));
 
-            // // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-            // multiArgs.add("--create-user Alice alice@email.com".split(" "));
-            // multiArgs.add("--publish user".split(" "));
-            // multiArgs.add("--load Alice-04b41".split(" "));
-            // multiArgs.add("--get-attributes CRM-04170 atributo1".split(" "));
-            // TODO: add a versionable file (a .md) on resources folder and copy it when running demo
-            // multiArgs.add("--encrypt lorem_ipsum.pdf atributo1 CRM-04170".split(" "));
-            // multiArgs.add("--send lorem_ipsum.pdf".split(" "));
+            // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
+            multiArgs.add("--create-user Alice alice@email.com".split(" "));
+            multiArgs.add("--publish user".split(" "));
+            multiArgs.add("--load Alice-04b41".split(" "));
+            multiArgs.add("--get-attributes CRM-04170 atributo1".split(" "));
+            multiArgs.add("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
+            multiArgs.add("--send lorem_ipsum.md".split(" "));
+
             // certificador recebe requisição de atributo e o concede ao Bob
             multiArgs.add("--load CRM-04170".split(" "));
-            // multiArgs.add("--check-requests pending".split(" "));
+            multiArgs.add("--check-requests pending".split(" "));
             multiArgs.add("--yield-attributes Bob-04206 atributo1".split(" "));
             multiArgs.add("--send attributes Bob-04206".split(" "));
+
             // usuário 1 - Bob, de posse do atributo, o descriptografa
             multiArgs.add("--load Bob-04206".split(" "));
             multiArgs.add("--check-requests ok".split(" "));
             multiArgs.add("--check-requests download".split(" "));
-            // multiArgs.add("--get-recordings Alice-04206da4 lorem_ipsum.pdf".split(" "));
-            // multiArgs.add("--decrypt lorem_ipsum.pdf".split(" "));
+            multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
+            multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
         }
 
         if (milestone == 2) {
@@ -220,6 +234,28 @@ public class CommandLine {
         // call all args
         for (String[] args : multiArgs) {
             main(args);
+        }
+    }
+
+    private static void getFileFromResources(String path, String fileName) {
+        ClassLoader classLoader = CommandLine.class.getClassLoader();
+
+        URL resource = classLoader.getResource(fileName);
+        if (resource == null) {
+            throw new IllegalArgumentException("file is not found!");
+        } else {
+            File f = new File(resource.getFile());
+            try (FileInputStream fis = new FileInputStream(f);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                FileOutputStream fos = new FileOutputStream(path + fileName)) {
+                byte[] buff = new byte[BUFFER_SIZE];
+                int readBytes;
+                while ((readBytes = bis.read(buff)) != -1) {
+                    fos.write(buff, 0, readBytes);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

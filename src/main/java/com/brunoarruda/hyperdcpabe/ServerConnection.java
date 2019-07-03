@@ -113,10 +113,9 @@ public class ServerConnection {
         String path = getServerDataPath() + serverKeys.get(userID) + "\\";
         File f = new File(path);
         f.mkdirs();
-        try (FileOutputStream fos = new FileOutputStream(path + fileName);
-            ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream(path + fileName)) {
                 for (byte[] buff : data) {
-                    oos.write(buff);
+                    fos.write(buff);
                 }
             // after allocating space, key must be preserved
             fc.writeToDir(getServerDataPath(), "serverKeys.json", serverKeys);
@@ -131,11 +130,13 @@ public class ServerConnection {
         try (FileInputStream fis = new FileInputStream(path + fileName);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             byte[] buff = new byte[BUFFER_SIZE];
-            int readBytes = bis.read(buff);
-            if (readBytes != BUFFER_SIZE) {
-                data.add(Arrays.copyOf(buff, readBytes));
-            } else {
-                data.add(buff);
+            int readBytes;
+            while ((readBytes = bis.read(buff)) != -1) {
+                if (readBytes != BUFFER_SIZE) {
+                    data.add(Arrays.copyOf(buff, readBytes));
+                } else {
+                    data.add(buff);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

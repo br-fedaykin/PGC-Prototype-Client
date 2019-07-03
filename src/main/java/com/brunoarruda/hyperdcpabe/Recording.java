@@ -103,38 +103,41 @@ public class Recording {
         this.url = url;
     }
 
+    public void decrypt(Message m, String path) {
+        this.AESKey = m;
+        PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);
+        processDataWithBlockCipher(aes, path, encryptedFileName, originalFileName);
+    }
+
     public void encryptFile(Message m, String path) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
-        processDataWithBlockCipher(aes, path);
+        processDataWithBlockCipher(aes, path, originalFileName, encryptedFileName);
     }
 
-    private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path) {
-        try (FileOutputStream fos = new FileOutputStream(path + encryptedFileName);
-                ObjectOutputStream oos = new ObjectOutputStream(fos);
-
-                FileInputStream fis = new FileInputStream(path + originalFileName);
-                BufferedInputStream bis = new BufferedInputStream(fis)) {
+    private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName, String outputFileName) {
+        try (FileOutputStream fos = new FileOutputStream(path + outputFileName);
+            FileInputStream fis = new FileInputStream(path + inputFileName);
+            BufferedInputStream bis = new BufferedInputStream(fis)) {
 
             byte[] inBuff = new byte[aes.getBlockSize()];
             byte[] outBuff = new byte[aes.getOutputSize(inBuff.length)];
             int nbytes;
             while (-1 != (nbytes = bis.read(inBuff, 0, inBuff.length))) {
                 int length1 = aes.processBytes(inBuff, 0, nbytes, outBuff, 0);
-                oos.write(outBuff, 0, length1);
+                fos.write(outBuff, 0, length1);
             }
             nbytes = aes.doFinal(outBuff, 0);
-            oos.write(outBuff, 0, nbytes);
+            fos.write(outBuff, 0, nbytes);
         } catch (IOException | DataLengthException | InvalidCipherTextException | IllegalStateException e) {
             e.printStackTrace();
         }
     }
 
     public void writeData(List<byte[]> data, String path) {
-        try (FileOutputStream fos = new FileOutputStream(path + encryptedFileName);
-                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream(path + encryptedFileName)) {
             for (byte[] buff : data) {
-                oos.write(buff);
+                fos.write(buff);
             }
         } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
@@ -143,15 +146,17 @@ public class Recording {
 
     public List<byte[]> readData(String path) {
         List<byte[]> data = null;
-        try (FileInputStream fis = new FileInputStream(path + originalFileName);
+        try (FileInputStream fis = new FileInputStream(path + encryptedFileName);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             data = new ArrayList<byte[]>();
             byte[] buff = new byte[BUFFER_SIZE];
-            int readBytes = bis.read(buff);
-            if (readBytes != BUFFER_SIZE) {
-                data.add(Arrays.copyOf(buff, readBytes));
-            } else {
-                data.add(buff);
+            int readBytes;
+            while((readBytes = bis.read(buff)) != -1) {
+                if (readBytes != BUFFER_SIZE) {
+                    data.add(Arrays.copyOf(buff, readBytes));
+                } else {
+                    data.add(buff);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

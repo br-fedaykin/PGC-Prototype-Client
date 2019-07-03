@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,24 +16,24 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 /**
  * PersonalKeysJSON
  */
-public class PersonalKeysJSON {
-    private String userID;
+public class PersonalKeysJSON extends PersonalKeys {
     private Map<String, PersonalKey> personalKeys;
 
     public PersonalKeysJSON(String userID) {
-        this.userID = userID;
+        super(userID);
         personalKeys = new HashMap<String, PersonalKey>();
     }
 
     @JsonCreator
     public PersonalKeysJSON(@JsonProperty("userID") String userID,
     @JsonProperty("personalKeys") Map<String, PersonalKey> personalKeys) {
-        this.userID = userID;
+        super(userID);
         this.personalKeys = personalKeys;
     }
 
+    @Override
     public String getUserID() {
-        return userID;
+        return super.getUserID();
     }
 
     @JsonProperty
@@ -40,6 +41,7 @@ public class PersonalKeysJSON {
         return personalKeys;
     }
 
+    @Override
     public void addKey(PersonalKey pkey) {
         personalKeys.put(pkey.getAttribute(), pkey);
     }
@@ -49,11 +51,13 @@ public class PersonalKeysJSON {
         return personalKeys.size();
     }
 
+    @Override
     @JsonIgnore
     public Collection<String> getAttributes() {
         return personalKeys.keySet();
     }
 
+    @Override
     @JsonIgnore
     public PersonalKey getKey(String attribute) {
         return personalKeys.get(attribute);

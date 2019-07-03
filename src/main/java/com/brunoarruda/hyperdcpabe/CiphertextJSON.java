@@ -120,7 +120,7 @@ public class CiphertextJSON extends Ciphertext {
 
     public void setAllC3(List<byte[]> c3) {
         for (byte[] c3x : c3) {
-            super.setC1(c3x);
+            super.setC3(c3x);
         }
     }
 

@@ -1,8 +1,11 @@
 package com.brunoarruda.hyperdcpabe;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -260,8 +263,11 @@ public final class Client {
         }
     }
 
+    // dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
     public void decrypt(String file) {
-
+        Recording r = user.getRecordingByFile(file);
+        Message m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
+        r.decrypt(m, fc.getUserDirectory(user));
     }
 
     public void send(String content) {
