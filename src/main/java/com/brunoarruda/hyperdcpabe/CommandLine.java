@@ -39,7 +39,7 @@ public class CommandLine {
         COMMAND_ALIAS.put("-gr", "--get-recordings");
         COMMAND_ALIAS.put("-p", "--publish");
 
-        // blockchain / server commands
+        // integrated blockchain / server commands
         COMMAND_ALIAS.put("-s", "--send");
 
         // testing command
@@ -95,7 +95,11 @@ public class CommandLine {
             break;
         case "-cr":
         case "--check-requests":
-            client.checkAttributeRequests(args[1]);
+            if (args[1].equals("download")) {
+                client.getPersonalKeys();
+            } else {
+                client.checkAttributeRequests(args[1]);
+            }
             break;
         case "-p":
         case "--publish":
@@ -191,7 +195,7 @@ public class CommandLine {
             // usuário 1 - Bob, de posse do atributo, o descriptografa
             multiArgs.add("--load Bob-04206".split(" "));
             multiArgs.add("--check-requests ok".split(" "));
-            // TODO: adicionar em check-requests ou em outro comando a obtenção do personalKey
+            multiArgs.add("--check-requests download".split(" "));
             // multiArgs.add("--get-recordings Alice-04206da4 lorem_ipsum.pdf".split(" "));
             // multiArgs.add("--decrypt lorem_ipsum.pdf".split(" "));
         }

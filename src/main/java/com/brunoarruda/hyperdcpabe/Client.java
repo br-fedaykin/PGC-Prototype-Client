@@ -136,8 +136,6 @@ public final class Client {
         } else if (content.equals("attributes")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "authorityPublicKeys.json");
             blockchain.publishABEKeys(certifier.getID(), obj);
-        } else if (content.startsWith("attribute-request-update")) {
-
         } else if (content.equals(".")) {
             // TODO: publicar todos os arquivos prontos disponíveis
         } else {
@@ -237,6 +235,10 @@ public final class Client {
         user = fc.readFromDir(path, "user.json", User.class);
         certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
         user.setRecordings(fc.readAsList(path, "recordings.json", Recording.class));
+        PersonalKeysJSON ABEKeys = fc.readFromDir(path, "personalKeys.json", PersonalKeysJSON.class);
+        if (ABEKeys != null) {
+            user.setABEKeys(ABEKeys);
+        }
     }
 
     public void encrypt(String file, String policy, String[] authorities) {
@@ -326,6 +328,7 @@ public final class Client {
             }
             System.out.println(msg);
         }
+        // TODO: update local requests
     }
 
     public void requestAttribute(String authority, String[] attributes) {
@@ -402,4 +405,22 @@ public final class Client {
         ArrayNode pks = (ArrayNode) fc.loadAsJSON(path, userID + "-pks.json");
         server.sendKeys(userID, pks);
     }
+
+	public void getPersonalKeys() {
+        List<PersonalKey> pks = server.getPersonalKeys(user.getID());
+        if (pks != null) {
+            int size = user.getABEKeys().size();
+            pks.stream()
+                .filter(pk -> user.getABEKeys().getKey(pk.getAttribute()) == null)
+                .forEach(pk -> user.getABEKeys().addKey(pk));
+            int newSize = user.getABEKeys().size();
+            if (size != newSize) {
+                fc.writeToDir(fc.getUserDirectory(user), "personalKeys.json", user.getABEKeys());
+            } else {
+                System.out.println("All keys found in server already had local copies.");
+            }
+        } else {
+            System.out.println("No personal ABE Keys available for download.");
+        }
+	}
 }

@@ -29,8 +29,7 @@ public class User {
 
     @JsonCreator
     public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID,
-                @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys,
-                @JsonProperty("ABEKeys") PersonalKeysJSON ABEKeys) {
+                @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys) {
         setName(name);
         setUserID(userID);
         setEmail(email);
@@ -38,7 +37,7 @@ public class User {
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
         recordings = new ArrayList<Recording>();
-        this.ABEKeys = ABEKeys;
+        ABEKeys = new PersonalKeysJSON(userID);
     }
 
     public User(String name, String email, ECKey ecKey) {
@@ -60,7 +59,7 @@ public class User {
     /**
      * Getters and Setters that are written as json properties
      */
-    @JsonProperty
+    @JsonProperty("userID")
     public String getID() {
         return userID;
     }
@@ -97,8 +96,8 @@ public class User {
         this.name = name;
     }
 
-    @JsonProperty("personalABEKeys")
-    public PersonalKeys getABEKeys() {
+    @JsonIgnore
+    public PersonalKeysJSON getABEKeys() {
         return ABEKeys;
     }
 

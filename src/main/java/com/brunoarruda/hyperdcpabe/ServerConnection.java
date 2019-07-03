@@ -26,6 +26,8 @@ import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
+
 /**
  * ServerConnection
  */
@@ -155,5 +157,19 @@ public class ServerConnection {
         File f = new File(path);
         f.mkdirs();
         fc.writeToDir(path, userID + "-pks.json", personalKeys);
+	}
+
+	public List<PersonalKey> getPersonalKeys(String userID) {
+        List<PersonalKey> pks;
+        String path = getServerDataPath() + "Temporary Key Storage\\";
+        String file = userID + "-pks.json";
+        pks = fc.readAsList(path, file, PersonalKey.class);
+        File f = new File(path, file);
+        try {
+            f.delete();
+        } catch (Exception e) {
+            System.out.println("ServerConnection: file " + file + " not found." );
+        }
+        return pks;
 	}
 }
