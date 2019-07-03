@@ -24,11 +24,13 @@ public class User {
     private String userID;
     private ECKey keys;
     private Map<String, String> keysPlainText;
-    private PersonalKeys ABEKeys;
+    private PersonalKeysJSON ABEKeys;
     private List<Recording> recordings;
 
     @JsonCreator
-    public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID, @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys) {
+    public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID,
+                @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys,
+                @JsonProperty("ABEKeys") PersonalKeysJSON ABEKeys) {
         setName(name);
         setUserID(userID);
         setEmail(email);
@@ -36,6 +38,7 @@ public class User {
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
         recordings = new ArrayList<Recording>();
+        this.ABEKeys = ABEKeys;
     }
 
     public User(String name, String email, ECKey ecKey) {
@@ -49,15 +52,16 @@ public class User {
         keysPlainText.put("public", ecKeyStr[1]);
         keysPlainText.put("private", ecKeyStr[2]);
 
-        String userID = String.format("%s-%s", name, ecKeyStr[1].substring(0, 8));
+        String userID = String.format("%s-%s", name, ecKeyStr[1].substring(0, 5));
         this.setUserID(userID);
+        this.ABEKeys = new PersonalKeysJSON(userID);
     }
 
     /**
      * Getters and Setters that are written as json properties
      */
     @JsonProperty
-    public String getUserID() {
+    public String getID() {
         return userID;
     }
 
@@ -98,7 +102,7 @@ public class User {
         return ABEKeys;
     }
 
-    public void setABEKeys(PersonalKeys ABEKeys) {
+    public void setABEKeys(PersonalKeysJSON ABEKeys) {
         this.ABEKeys = ABEKeys;
     }
 

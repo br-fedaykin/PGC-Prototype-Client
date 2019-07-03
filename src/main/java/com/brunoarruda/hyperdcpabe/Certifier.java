@@ -1,5 +1,6 @@
 package com.brunoarruda.hyperdcpabe;
 
+import java.math.BigInteger;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -20,7 +21,7 @@ public class Certifier extends User {
     public Certifier(@JsonProperty("name") String name, @JsonProperty("userID") String userID,
         @JsonProperty("email") String email, @JsonProperty("ECKeys") Map<String, String> ECKeys,
         @JsonProperty("authorityKeys") AuthorityKeys authorityABEKeys) {
-        super(name, userID, email, ECKeys);
+        super(name, email, ECKey.fromPrivate(new BigInteger(ECKeys.get("private"), 16)));
         setAuthorityABEKeys(authorityABEKeys);
     }
 
