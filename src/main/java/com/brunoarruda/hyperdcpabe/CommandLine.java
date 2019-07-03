@@ -32,12 +32,15 @@ public class CommandLine {
         COMMAND_ALIAS.put("-e", "--encript");
         COMMAND_ALIAS.put("-d", "--decrypt");
 
-        // blockchain / server commands
+        // blockchain commands
         COMMAND_ALIAS.put("-r", "--request-attributes");
+        COMMAND_ALIAS.put("-cr", "--check-requests");
         COMMAND_ALIAS.put("-ga", "--get-attributes");
         COMMAND_ALIAS.put("-gr", "--get-recordings");
-        COMMAND_ALIAS.put("-s", "--send");
         COMMAND_ALIAS.put("-p", "--publish");
+
+        // blockchain / server commands
+        COMMAND_ALIAS.put("-s", "--send");
 
         // testing command
         COMMAND_ALIAS.put("-m", "--milestone");
@@ -82,11 +85,31 @@ public class CommandLine {
             }
             client.createABEKeys(attributes);
             break;
+        case "-r":
+        case "--request-attribute":
+            attributes = new String[args.length - 2];
+            for (int i = 0; i < attributes.length; i++) {
+                attributes[i] = args[i + 2];
+            }
+            client.requestAttribute(args[1], attributes);
+            break;
+        case "-cr":
+        case "--check-requests":
+            client.checkAttributeRequests(args[1]);
+            break;
         case "-p":
         case "--publish":
             for (int i = 1; i < args.length; i++) {
                 client.publish(args[i]);
             }
+            break;
+        case "-y":
+        case "--yield-attributes":
+            attributes = new String[args.length - 2];
+            for (int i = 0; i < attributes.length; i++) {
+                attributes[i] = args[i + 2];
+            }
+            client.yieldAttribute(args[1], attributes);
             break;
         case "-ga":
         case "--get-attributes":
@@ -114,9 +137,19 @@ public class CommandLine {
             break;
         case "-s":
         case "--send":
-            for (int i = 1; i < args.length; i++) {
-                client.send(args[i]);
+            if (args[1].equals("attributes")) {
+                for (int i = 2; i < args.length; i++) {
+                    client.sendAttributes(args[i]);
+                }
+            } else {
+                for (int i = 1; i < args.length; i++) {
+                    client.send(args[i]);
+                }
             }
+            break;
+        case "-d":
+        case "--decrypt":
+            client.decrypt(args[1]);
             break;
         }
     }
@@ -130,18 +163,37 @@ public class CommandLine {
          * codificado e o decodifica)
          */
         if (milestone == 1) {
-            // adicionar certificador para dar acesso ao bob
-            // multiArgs.add("-u Bob bob@email.com".split(" "));
-            // multiArgs.add("-c".split(" "));
-            // multiArgs.add("-a atributo1".split(" "));
-            // multiArgs.add("-p user certifier attributes".split(" "));
-            // multiArgs.add("-u Alice alice@email.com".split(" "));
-            multiArgs.add("-l Alice-04206da4".split(" "));
-            multiArgs.add("-ga Bob-041702dd atributo1".split(" "));
-            multiArgs.add("-e lorem_ipsum.pdf atributo1 Bob-041702dd".split(" "));
-            multiArgs.add("-s lorem_ipsum.pdf".split(" "));
-            multiArgs.add("-l Bob-041702dd".split(" "));
-            multiArgs.add("-gr Alice-04206da4 lorem_ipsum.pdf".split(" "));
+            // certificador cria perfil e atributo, e os publica
+            // multiArgs.add("--create-user CRM crm@email.com".split(" "));
+            // multiArgs.add("--create-certifier".split(" "));
+            // multiArgs.add("--create-attributes atributo1".split(" "));
+            // multiArgs.add("--publish user certifier attributes".split(" "));
+
+            // // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
+            // multiArgs.add("--create-user Bob bob@email.com".split(" "));
+            // multiArgs.add("--publish user".split(" "));
+            // multiArgs.add("--load Bob-04206".split(" "));
+            // multiArgs.add("--request-attribute CRM-04170 atributo1".split(" "));
+
+            // // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
+            // multiArgs.add("--create-user Alice alice@email.com".split(" "));
+            // multiArgs.add("--publish user".split(" "));
+            // multiArgs.add("--load Alice-04b41".split(" "));
+            // multiArgs.add("--get-attributes CRM-04170 atributo1".split(" "));
+            // TODO: add a versionable file (a .md) on resources folder and copy it when running demo
+            // multiArgs.add("--encrypt lorem_ipsum.pdf atributo1 CRM-04170".split(" "));
+            // multiArgs.add("--send lorem_ipsum.pdf".split(" "));
+            // certificador recebe requisição de atributo e o concede ao Bob
+            multiArgs.add("--load CRM-04170".split(" "));
+            // multiArgs.add("--check-requests pending".split(" "));
+            multiArgs.add("--yield-attributes Bob-04206 atributo1".split(" "));
+            multiArgs.add("--send attributes Bob-04206".split(" "));
+            // usuário 1 - Bob, de posse do atributo, o descriptografa
+            multiArgs.add("--load Bob-04206".split(" "));
+            multiArgs.add("--check-requests ok".split(" "));
+            // TODO: adicionar em check-requests ou em outro comando a obtenção do personalKey
+            // multiArgs.add("--get-recordings Alice-04206da4 lorem_ipsum.pdf".split(" "));
+            // multiArgs.add("--decrypt lorem_ipsum.pdf".split(" "));
         }
 
         if (milestone == 2) {

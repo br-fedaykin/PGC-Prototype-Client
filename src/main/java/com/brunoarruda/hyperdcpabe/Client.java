@@ -11,6 +11,8 @@ import java.util.Map;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
@@ -21,7 +23,9 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
@@ -101,7 +105,6 @@ public final class Client {
         fc.writeToDir(path, "Certifier.json", certifier);
         try {
             Utility.writeSecretKeys(path + "authoritySecretKey", ak.getSecretKeys());
-            Utility.writePublicKeys(path + "authorityPublicKey", ak.getPublicKeys());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -123,22 +126,24 @@ public final class Client {
         String path = fc.getUserDirectory(user);
         ObjectNode obj;
         if (content.equals("user")) {
-            obj = fc.loadAsJSON(path, "User.json");
+            obj = (ObjectNode) fc.loadAsJSON(path, "User.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "personalABEKeys");
-            blockchain.publishUser(user.getUserID(), obj);
+            blockchain.publishUser(user.getID(), obj);
         } else if (content.equals("certifier")) {
-            obj = fc.loadAsJSON(path, "Certifier.json");
+            obj = (ObjectNode) fc.loadAsJSON(path, "Certifier.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "authorityKeys.authorityID", "authorityKeys.secretKeys");
-            blockchain.publishAuthority(certifier.getUserID(), obj);
+            blockchain.publishAuthority(certifier.getID(), obj);
         } else if (content.equals("attributes")) {
-            obj = fc.loadAsJSON(path, "authorityPublicKeys.json");
-            blockchain.publishABEKeys(certifier.getUserID(), obj);
+            obj = (ObjectNode) fc.loadAsJSON(path, "authorityPublicKeys.json");
+            blockchain.publishABEKeys(certifier.getID(), obj);
+        } else if (content.startsWith("attribute-request-update")) {
+
         } else if (content.equals(".")) {
             // TODO: publicar todos os arquivos prontos disponíveis
         } else {
             Recording r = user.getRecordingByFile(content);
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
-            blockchain.publishData(user.getUserID(), obj);
+            blockchain.publishData(user.getID(), obj);
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
         }
@@ -249,32 +254,36 @@ public final class Client {
             user.addRecording(r);
             fc.writeToDir(path, "recordings.json", user.getRecordings());
         } else {
-            System.out.println("Info: "+ file + " - File already encrypted");
+            System.out.println("Info: " + file + " - File already encrypted");
         }
     }
 
-	public void send(String content) {
+    public void decrypt(String file) {
+
+    }
+
+    public void send(String content) {
         Recording r = user.getRecordingByFile(content);
         if (r == null) {
             System.out.println("Unencrypted content. Abording");
         } else if (r.getKey() == null) {
             ObjectNode message = fc.getMapper().createObjectNode();
             message.put("name", user.getName());
-            message.put("userID", user.getUserID());
+            message.put("userID", user.getID());
             String key = server.reserveSpace(message);
             r.setUrl(server.getHost());
             r.setKey(key);
             publish(content);
         } else {
-            String userID = user.getUserID();
+            String userID = user.getID();
             List<byte[]> data = r.readData(fc.getUserDirectory(user));
             if (data != null) {
                 server.sendFile(userID, content, data);
             }
         }
-	}
+    }
 
-	public void getRecordings(String userID, String[] recordings) {
+    public void getRecordings(String userID, String[] recordings) {
         List<Recording> r = new ArrayList<Recording>();
         Recording oneRecord;
         for (String fileName : recordings) {
@@ -288,5 +297,109 @@ public final class Client {
             }
         }
         user.addAllRecordings(r);
+    }
+
+    public void checkAttributeRequests(String status) {
+        ArrayNode requests = fc.getMapper().createArrayNode();
+        if (certifier != null) {
+            requests = this.blockchain.getAttributeRequestsForCertifier(certifier.getID(), status);
+        } else if (user != null) {
+            requests = this.blockchain.getAttributeRequestsForRequester(user.getID(), status);
+            if (requests.size() == 0) {
+                System.out.println("No attributes requests with status: " + status);
+                return;
+            }
+        } else {
+            System.out.println("No user/certifier loaded in client");
+            return;
+        }
+        System.out.println("Attributes Requests with status: " + status);
+        for (JsonNode r : requests) {
+            String attr = r.get("attributes").toString();
+            String msg = "Request %s %s asking atributes: %s";
+            if (certifier != null) {
+                String userID = r.get("userID").asText();
+                msg = String.format(msg, "from", userID, attr);
+            } else {
+                String auth = r.get("authority").asText();
+                msg = String.format(msg, "to", auth, attr);
+            }
+            System.out.println(msg);
+        }
+    }
+
+    public void requestAttribute(String authority, String[] attributes) {
+        List<String> unneededRequests = new ArrayList<String>();
+        ObjectNode msg = fc.getMapper().createObjectNode();
+        msg.put("userID", user.getID());
+        msg.put("authority", authority);
+        msg.put("status", "pending");
+        ArrayNode array = fc.getMapper().createArrayNode();
+        for (String attr : attributes) {
+            if (user.getABEKeys().getKey(attr) != null) {
+                unneededRequests.add(attr);
+            } else {
+                array.add(attr);
+            }
+        }
+        if (unneededRequests.size() > 0) {
+            System.out.println("Following attributes already given to this user: ");
+            System.out.println(String.join(", ", unneededRequests));
+        }
+        msg.set("attributes", array);
+        if (array.size() > 0) {
+            String path = fc.getUserDirectory(user);
+            ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, "attributeRequests.json");
+            if (requests != null) {
+                boolean hadAlreadyDone = false;
+                for (JsonNode r : requests) {
+                    if (r.get("authority").equals(msg.get("authority"))
+                            && r.get("attributes").equals(msg.get("attributes"))) {
+                        System.out.println("Client: Request already made.");
+                        hadAlreadyDone = true;
+                        break;
+                    }
+                }
+                if (!hadAlreadyDone) {
+                    requests.add(msg);
+                    fc.writeToDir(path, "attributeRequests.json", requests);
+                }
+            } else {
+                requests = fc.getMapper().createArrayNode().add(msg);
+                fc.writeToDir(path, "attributeRequests.json", requests);
+            }
+            this.blockchain.publishAttributeRequest(msg);
+        }
+    }
+
+    public void yieldAttribute(String userID, String[] attributes) {
+        String path = fc.getUserDirectory(user);
+        ArrayList<PersonalKey> pks = new ArrayList<PersonalKey>();
+        Map<String, SecretKey> skeys = null;
+        try {
+            skeys = Utility.readSecretKeys(path + "authoritySecretKey");
+            for (String attr : attributes) {
+                SecretKey sk = skeys.get(attr);
+                if (null == sk) {
+                    System.err.println("Attribute not handled");
+                    blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, "failed");
+                    return;
+                }
+                pks.add(DCPABE.keyGen(userID, attr, sk, gp));
+            }
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+        }
+        fc.writeToDir(path, userID + "-pks.json", pks);
+        blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, "ok");
 	}
+
+	public void sendAttributes(String userID) {
+        // TODO: elliptic encrypting of Personal Keys using secp256k-1 curve (Bitcoin key curve)
+        // see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but may be util)
+        String path = fc.getUserDirectory(user);
+
+        ArrayNode pks = (ArrayNode) fc.loadAsJSON(path, userID + "-pks.json");
+        server.sendKeys(userID, pks);
+    }
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -147,5 +148,12 @@ public class ServerConnection {
             isOnServer = new File(path + content).exists();
         }
 		return isOnServer;
+	}
+
+	public void sendKeys(String userID, ArrayNode personalKeys) {
+        String path = getServerDataPath() + "Temporary Key Storage\\";
+        File f = new File(path);
+        f.mkdirs();
+        fc.writeToDir(path, userID + "-pks.json", personalKeys);
 	}
 }

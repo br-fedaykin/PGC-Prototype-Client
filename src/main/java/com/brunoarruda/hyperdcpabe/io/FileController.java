@@ -64,7 +64,7 @@ public final class FileController {
         if (!subDirectory.equals("")) {
             postfix = subDirectory + "\\";
         }
-        return getDataDirectory() + "client\\" + user.getUserID() + "\\" + postfix;
+        return getDataDirectory() + "client\\" + user.getID() + "\\" + postfix;
     }
 
     public <T> void writeToDir(String path, String fileName, T obj) {
@@ -90,7 +90,7 @@ public final class FileController {
                 list.add(mapper.readValue(value, classReference));
             }
         } catch (Exception e) {
-            System.out.println("Couldnt parse json:" + file);
+            System.out.println("FileController - Couldnt parse json: " + file);
         }
         return list;
     }
@@ -108,7 +108,7 @@ public final class FileController {
                 map.put((K) entry.getKey(), mapper.readValue(value, valueClass));
             }
         } catch (Exception e) {
-            System.out.println("Couldnt parse json:" + file);
+            System.out.println("FileController - Couldn't parse json: " + file);
         }
         return map;
     }
@@ -119,15 +119,15 @@ public final class FileController {
         try {
             obj = mapper.readValue(f, typeReference);
         } catch (IOException e) {
-            System.out.println("Could not find " + fileName + " inside " + f.getParent());
+            System.out.println("FileController - Could not find " + fileName + " inside " + f.getParent());
         }
         return obj;
     }
 
-    public ObjectNode loadAsJSON(String path, String file) {
-        ObjectNode obj = null;
+    public JsonNode loadAsJSON(String path, String file) {
+        JsonNode obj = null;
         try {
-            obj = (ObjectNode) mapper.readTree(new File(path, file));
+            obj = mapper.readTree(new File(path, file));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         } catch (IOException e) {

@@ -2,12 +2,14 @@ package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 
-import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.Recording;
 import com.brunoarruda.hyperdcpabe.io.FileController;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
@@ -104,13 +106,99 @@ public class BlockchainConnection {
         if (new File(path + fileName).exists()) {
             r = fc.readFromDir(path, fileName, Recording.class);
         } else if (new File(path + fileNameEdited).exists()) {
-            ObjectMapper mapper = FileController.getInstance().getMapper();
-            boolean seila = mapper.canDeserialize(mapper.constructType(CiphertextJSON.class));
-            boolean seila2 = mapper.canDeserialize(mapper.constructType(Recording.class));
             r = fc.readFromDir(path, fileNameEdited, Recording.class);
         } else {
             System.out.println("File " + fileName + " not found on blockchain");
         }
         return r;
+	}
+
+	public void publishAttributeRequest(ObjectNode msg) {
+        String userID = msg.get("userID").asText();
+        if (!userExists(userID)) {
+            System.out.println("User does not exist in blockchain");
+        } else {
+            String authority = msg.get("authority").asText();
+            String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
+            ArrayNode allRequests = (ArrayNode) fc.loadAsJSON(path, userID + ".json");
+            if (allRequests != null) {
+                boolean hadAlreadyDone = false;
+                for (JsonNode r : allRequests) {
+                    if (r.equals(msg)) {
+                        System.out.println("Blockchain Interface: Request already made.");
+                        hadAlreadyDone = true;
+                        break;
+                    }
+                }
+                if (!hadAlreadyDone) {
+                    allRequests.add(msg);
+                }
+            } else {
+                allRequests = fc.getMapper().createArrayNode().add(msg);
+                fc.writeToDir(path, userID + ".json", allRequests);
+            }
+        }
+	}
+
+    public boolean userExists(String userID) {
+        String path = getBlockchainDataPath() + "User\\";
+        return new File(path + userID + ".json").exists();
+    }
+
+    public ArrayNode getAttributeRequestsForRequester(String userID, String status) {
+        String path = getBlockchainDataPath() + "AttributeRequest\\";
+        String[] authorities = new File(path).list();
+        ArrayNode allRequests = fc.getMapper().createArrayNode();
+        for (String auth : authorities) {
+            String authPath = path + auth + "\\";
+            ArrayNode userRequests = (ArrayNode) fc.loadAsJSON(authPath, userID + ".json");
+            {
+                int index = 0;
+                for (Iterator<JsonNode> iter = userRequests.elements(); iter.hasNext();) {
+                    JsonNode r = iter.next();
+                    if (!r.get("status").asText().equals(status)) {
+                        iter.remove();
+                    } else {
+                        index++;
+                    }
+                }
+            }
+            allRequests.addAll(userRequests);
+        }
+        return allRequests;
+    }
+
+	public ArrayNode getAttributeRequestsForCertifier(String authority, String status) {
+        String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
+        ArrayNode allRequests = fc.getMapper().createArrayNode();
+        File f = new File(path);
+        for (String user : f.list()) {
+            ArrayNode userRequests = (ArrayNode) fc.loadAsJSON(path, user);
+            Iterator<JsonNode> iter = userRequests.elements();
+            int index = 0;
+            while(iter.hasNext()) {
+                JsonNode element = iter.next();
+                if (!element.get("status").asText().equals(status)) {
+                    userRequests.remove(index);
+                } else {
+                    index++;
+                }
+            }
+            allRequests.addAll(userRequests);
+        }
+        return allRequests;
+	}
+
+	public void publishAttributeRequestUpdate(String certifierID, String userID, String[] attributes, String newStatus) {
+        String path = getBlockchainDataPath() + "AttributeRequest\\" + certifierID + "\\";
+        ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, userID + ".json");
+        for (JsonNode node : requests) {
+            String nodeAttributes = node.get("attributes").toString().replace("\"", "");
+            if (nodeAttributes.equals(Arrays.toString(attributes))) {
+                ((ObjectNode) node).put("status", newStatus);
+                break;
+            }
+        }
+        fc.writeToDir(path, userID + ".json", requests);
 	}
 }
