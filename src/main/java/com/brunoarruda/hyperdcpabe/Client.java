@@ -281,6 +281,7 @@ public final class Client {
             String key = server.reserveSpace(message);
             r.setUrl(server.getHost());
             r.setKey(key);
+            r.setTimestamp(System.currentTimeMillis() / 1000);
             publish(content);
         } else {
             String userID = user.getID();

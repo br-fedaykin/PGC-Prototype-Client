@@ -33,15 +33,17 @@ public class Recording {
     private CiphertextJSON ct;
     private String recordingFileName;
     private int BUFFER_SIZE = 1024;
+    private long timestamp;
+    private String signature;
 
-    public Recording(String fileName,
-                     CiphertextJSON ct) {
+    public Recording(String fileName, CiphertextJSON ct) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.decryptedFileName = "(dec)" + fileName;
         // gets only file name without extension
         this.setRecordingFileName(fileName.split("\\.\\w+?$")[0]);
         this.ct = ct;
+        this.setSignature("Signature to proof ownership of id (EC public key)");
     }
 
     @JsonCreator
@@ -49,7 +51,8 @@ public class Recording {
                      @JsonProperty("ciphertext") CiphertextJSON ct,
                      @JsonProperty("url") String url,
                      @JsonProperty("key") String key,
-                     @JsonProperty("RecordingFileName") String recordingName) {
+                     @JsonProperty("RecordingFileName") String recordingName,
+                     @JsonProperty("timestamp") long timestamp) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.decryptedFileName = "(dec)" + fileName;
@@ -57,6 +60,15 @@ public class Recording {
         this.url = url;
         this.key = key;
         this.recordingFileName = recordingName;
+        this.timestamp = timestamp;
+    }
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public void setSignature(String signature) {
+        this.signature = signature;
     }
 
     public String getRecordingFileName() {
@@ -67,12 +79,18 @@ public class Recording {
         this.recordingFileName = recordingFileName;
     }
 
-    @JsonProperty
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
     public String getUrl() {
         return url;
     }
 
-    @JsonProperty
     public CiphertextJSON getCiphertext() {
         return ct;
     }
@@ -81,7 +99,6 @@ public class Recording {
         this.ct = ct;
     }
 
-    @JsonProperty
     public String getFileName() {
         return originalFileName;
     }
@@ -90,7 +107,6 @@ public class Recording {
         this.originalFileName = fileName;
     }
 
-    @JsonProperty
     public String getKey() {
         return key;
     }
