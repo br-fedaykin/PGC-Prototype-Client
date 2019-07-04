@@ -57,6 +57,9 @@ public class CommandLine {
     }
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            return;
+        }
         if (client == null) {
             client = new Client(new BlockchainConnection());
         }
@@ -65,10 +68,12 @@ public class CommandLine {
         case "-m":
         case "--milestone":
             // needed to provide the file to be encrypted
-            String path = "data\\client\\Alice-04b41\\";
-            new File(path).mkdirs();
-            getFileFromResources(path, "lorem_ipsum.md");
-            runMilestone(Integer.parseInt(args[1]));
+            String[] numberSplit = args[1].split("\\.");
+            int[] choices = new int[numberSplit.length];
+            for (int i = 0; i < choices.length; i++) {
+                choices[i] = Integer.parseInt(numberSplit[i]);
+            }
+            runMilestone(choices);
             break;
         case "-l":
         case "--load":
@@ -171,7 +176,7 @@ public class CommandLine {
         }
     }
 
-    public static void runMilestone(int milestone) {
+    public static void runMilestone(int[] choice) {
         List<String[]> multiArgs = new ArrayList<String[]>();
         /**
          * Milestone 1 cenário: novo prontuário Cliente 1 java usa o código do ABE (cria
@@ -179,11 +184,16 @@ public class CommandLine {
          * 2 java usa o código do ABE (supondo que possui o atributo1, obtém prontuário1
          * codificado e o decodifica)
          */
-        if (milestone == 1) {
+        if (choice[0] == 1) {
+            // pre-setup to deliver file to be encrypted to user folder
+            String path = "data\\client\\Alice-04b41\\";
+            new File(path).mkdirs();
+            getFileFromResources(path, "lorem_ipsum.md");
+
             // certificador cria perfil e atributo, e os publica
             multiArgs.add("--create-user CRM crm@email.com".split(" "));
             multiArgs.add("--create-certifier".split(" "));
-            multiArgs.add("--create-attributes atributo1".split(" "));
+            multiArgs.add("--create-attributes atributo1 atributo2 atributo3".split(" "));
             multiArgs.add("--publish user certifier attributes".split(" "));
 
             // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
@@ -214,19 +224,51 @@ public class CommandLine {
             multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
         }
 
-        if (milestone == 2) {
-            multiArgs.add("-u CRM crm@email.com".split(" "));
-            multiArgs.add("-c".split(" "));
-            multiArgs.add("-a atributo1 atributo2 atributo3".split(" "));
-            multiArgs.add("-p user certifier attributes".split(" "));
-            multiArgs.add("-l Alice-04206da4".split(" "));
-            // Alice já existe no #m1 com atributo1
-            multiArgs.add("-ga CRM atributo2 atributo3".split(" "));
-            multiArgs.add("-e lorem_ipsum2.pdf \"and atributo2 atributo3\" CRM".split(" "));
-            // já existe no #m1 o atributo1
+        if (choice[0] == 2) {
+            // pre-setup to deliver file to be encrypted to user folder
+            String path = "data\\client\\Alice-04b41\\";
+            new File(path).mkdirs();
+            getFileFromResources(path, "lorem_ipsum2.md");
+
+            /**
+             * cenário: novo prontuário
+             * Cliente 1 java (usuário já criado) obtém novos atributos: atributo2 e
+             * atributo3. O atributo1 já foi obtido no milestone1. Cliente 1 java envia
+             * prontuario2 (i.e., pdf2 encriptado) com atributo2 AND atributo3 Cliente 2
+             * java (só com atributo1) tenta mas não consegue obter o prontuário2 (nem
+             * decodificá-lo) pois não tem atributos.
+             */
+            if (choice[1] == 1) {
+                runMilestone(new int[]{1});
+                multiArgs.add("--load Alice-04b41".split(" "));
+                multiArgs.add("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
+                String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-04170"};
+                multiArgs.add(specialArgs);
+                multiArgs.add("--send lorem_ipsum2.md".split(" "));
+                multiArgs.add("--load Bob-04206".split(" "));
+                multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum2.md".split(" "));
+                multiArgs.add("--decrypt lorem_ipsum2.md".split(" "));
+            }
+            /**
+             * cenário: atualiza somente prontuário
+             * Cliente 1 java (usuário já criado) envia prontuário1, mesmo atributo1, novo
+             * pdf1 Classe Prontuario tem atributo dataEnvio, portanto atualizar atributo.
+             * Cliente 2 java obtém prontuário1 codificado e o decodifica (pois possui
+             * atributo1 do milestone1).
+             */
+            if (choice[1] == 2) {
+                getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
+                runMilestone(new int[] { 1 });
+                multiArgs.add("--load Alice-04b41".split(" "));
+                multiArgs.add("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
+                multiArgs.add("--send lorem_ipsum.md".split(" "));
+                multiArgs.add("--load Bob-04206".split(" "));
+                multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
+                multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
+            }
         }
 
-        if (milestone > 1) {
+        if (choice[0] > 2) {
             System.out.println("Milestones ainda não implementadas");
             System.exit(-1);
         }
@@ -238,16 +280,20 @@ public class CommandLine {
     }
 
     private static void getFileFromResources(String path, String fileName) {
+        getFileFromResources(path, fileName, fileName);
+    }
+
+    private static void getFileFromResources(String path, String inputfileName, String outputFileName) {
         ClassLoader classLoader = CommandLine.class.getClassLoader();
 
-        URL resource = classLoader.getResource(fileName);
+        URL resource = classLoader.getResource(inputfileName);
         if (resource == null) {
             throw new IllegalArgumentException("file is not found!");
         } else {
             File f = new File(resource.getFile());
             try (FileInputStream fis = new FileInputStream(f);
                 BufferedInputStream bis = new BufferedInputStream(fis);
-                FileOutputStream fos = new FileOutputStream(path + fileName)) {
+                FileOutputStream fos = new FileOutputStream(path + outputFileName)) {
                 byte[] buff = new byte[BUFFER_SIZE];
                 int readBytes;
                 while ((readBytes = bis.read(buff)) != -1) {

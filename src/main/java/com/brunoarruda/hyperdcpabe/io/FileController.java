@@ -74,7 +74,7 @@ public final class FileController {
         try {
             mapper.writeValue(new File(path), obj);
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
     }
 
@@ -90,7 +90,7 @@ public final class FileController {
                 list.add(mapper.readValue(value, classReference));
             }
         } catch (Exception e) {
-            System.out.println("FileController - Couldnt parse json: " + file);
+            // System.out.println("FileController - Couldnt parse json: " + file);
         }
         return list;
     }
@@ -108,7 +108,7 @@ public final class FileController {
                 map.put((K) entry.getKey(), mapper.readValue(value, valueClass));
             }
         } catch (Exception e) {
-            System.out.println("FileController - Couldn't parse json: " + file);
+            // System.out.println("FileController - Couldn't parse json: " + file);
         }
         return map;
     }
@@ -119,7 +119,7 @@ public final class FileController {
         try {
             obj = mapper.readValue(f, typeReference);
         } catch (IOException e) {
-            System.out.println("FileController - Could not find " + fileName + " inside " + f.getParent());
+            // System.out.println("FileController - Could not find " + fileName + " inside " + f.getParent());
         }
         return obj;
     }
@@ -128,10 +128,8 @@ public final class FileController {
         JsonNode obj = null;
         try {
             obj = mapper.readTree(new File(path, file));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            // System.out.println("FileController - Could not load " + file + " inside " + path + "as a JSON object.");
         }
         return obj;
     }

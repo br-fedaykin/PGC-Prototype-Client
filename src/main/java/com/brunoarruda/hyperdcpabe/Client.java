@@ -128,6 +128,7 @@ public final class Client {
     public void publish(String content) {
         String path = fc.getUserDirectory(user);
         ObjectNode obj;
+        System.out.println("Client - publishing content: " + content);
         if (content.equals("user")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "User.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "personalABEKeys");
@@ -242,6 +243,7 @@ public final class Client {
         if (ABEKeys != null) {
             user.setABEKeys(ABEKeys);
         }
+        System.out.println("Client - user data loaded: " + userID);
     }
 
     public void encrypt(String file, String policy, String[] authorities) {
@@ -259,14 +261,22 @@ public final class Client {
             user.addRecording(r);
             fc.writeToDir(path, "recordings.json", user.getRecordings());
         } else {
-            System.out.println("Info: " + file + " - File already encrypted");
+            // Compare hashes to see if file has changed
+            System.out.println("Client - Info: " + file + " - File already encrypted");
         }
     }
 
     // dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
     public void decrypt(String file) {
         Recording r = user.getRecordingByFile(file);
-        Message m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
+        Message m = null;
+        try {
+            m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
+        } catch (IllegalArgumentException e) {
+            String msg = "Client - Could not decrypt the file %s. Attributes not Satisfying Policy Access.";
+            System.out.println(String.format(msg, file));
+            return;
+        }
         r.decrypt(m, fc.getUserDirectory(user));
     }
 
@@ -282,11 +292,13 @@ public final class Client {
             r.setUrl(server.getHost());
             r.setKey(key);
             r.setTimestamp(System.currentTimeMillis() / 1000);
+            System.out.println("Client - publishing file: " + content);
             publish(content);
         } else {
             String userID = user.getID();
             List<byte[]> data = r.readData(fc.getUserDirectory(user));
             if (data != null) {
+                System.out.println("Client - uploading file to server: " + content);
                 server.sendFile(userID, content, data);
             }
         }
@@ -301,11 +313,13 @@ public final class Client {
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
                 oneRecord.writeData(data, fc.getUserDirectory(user));
                 r.add(oneRecord);
+                System.out.println("Client - encrypted file received: " + fileName);
             } else {
                 System.out.println(fileName + " not found in blockchain");
             }
         }
         user.addAllRecordings(r);
+        fc.writeToDir(fc.getUserDirectory(user), "recordings.json", user.getRecordings());
     }
 
     public void checkAttributeRequests(String status) {
@@ -322,10 +336,10 @@ public final class Client {
             System.out.println("No user/certifier loaded in client");
             return;
         }
-        System.out.println("Attributes Requests with status: " + status);
+        System.out.println("Client - Attributes Requests with status: " + status);
         for (JsonNode r : requests) {
             String attr = r.get("attributes").toString();
-            String msg = "Request %s %s asking atributes: %s";
+            String msg = "\tRequest %s %s asking atributes: %s";
             if (certifier != null) {
                 String userID = r.get("userID").asText();
                 msg = String.format(msg, "from", userID, attr);

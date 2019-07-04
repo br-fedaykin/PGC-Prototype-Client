@@ -71,6 +71,7 @@ public class BlockchainConnection {
         String fileName = obj.get("recordingFileName").asText() + ".json";
         dir.mkdirs();
         fc.writeToDir(path, fileName, obj);
+        System.out.println("Blockchain Interface - data published: " + fileName);
     }
 
     public void publishABEKeys(String label, ObjectNode obj) {
@@ -79,6 +80,7 @@ public class BlockchainConnection {
         File dir = new File(getBlockchainDataPath() + "PublicABEKeys");
         dir.mkdirs();
         fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+        System.out.println("Blockchain Interface - Public Keys of authority " + label + " published");
     }
 
 	public void publishAuthority(String label, ObjectNode obj) {
@@ -88,6 +90,7 @@ public class BlockchainConnection {
         dir.mkdirs();
         obj.get("name");
         fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+        System.out.println("Blockchain Interface - Authority published: " + label);
 	}
 
 	public void publishUser(String label, ObjectNode obj) {
@@ -97,6 +100,7 @@ public class BlockchainConnection {
         dir.mkdirs();
         obj.get("name");
         fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+        System.out.println("Blockchain Interface - User published: " + label);
 	}
 
 	public Recording getRecording(String userID, String fileName) {
@@ -105,10 +109,12 @@ public class BlockchainConnection {
         String fileNameEdited = fileName.split("\\..+?$")[0] + ".json";
         if (new File(path + fileName).exists()) {
             r = fc.readFromDir(path, fileName, Recording.class);
+            System.out.println("Blockchain Interface - Data found: " + fileName);
         } else if (new File(path + fileNameEdited).exists()) {
             r = fc.readFromDir(path, fileNameEdited, Recording.class);
+            System.out.println("Blockchain Interface - Data found: " + fileName);
         } else {
-            System.out.println("File " + fileName + " not found on blockchain");
+            System.out.println("Blockchain Interface - File " + fileName + " not found on blockchain");
         }
         return r;
 	}
@@ -116,7 +122,7 @@ public class BlockchainConnection {
 	public void publishAttributeRequest(ObjectNode msg) {
         String userID = msg.get("userID").asText();
         if (!userExists(userID)) {
-            System.out.println("User does not exist in blockchain");
+            System.out.println("Blockchain Interface - User does not exist in blockchain");
         } else {
             String authority = msg.get("authority").asText();
             String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
@@ -124,19 +130,24 @@ public class BlockchainConnection {
             if (allRequests != null) {
                 boolean hadAlreadyDone = false;
                 for (JsonNode r : allRequests) {
-                    if (r.equals(msg)) {
-                        System.out.println("Blockchain Interface: Request already made.");
+                    if (r.get("authority").equals(msg.get("authority")) &&
+                        r.get("attributes").equals(msg.get("attributes"))) {
+                        System.out.println("Blockchain Interface - Request already made.");
                         hadAlreadyDone = true;
                         break;
                     }
                 }
                 if (!hadAlreadyDone) {
                     allRequests.add(msg);
+                    fc.writeToDir(path, userID + ".json", allRequests);
+                    System.out.println("Blockchain Interface - Attribute Request published: " + userID);
                 }
             } else {
                 allRequests = fc.getMapper().createArrayNode().add(msg);
                 fc.writeToDir(path, userID + ".json", allRequests);
+                System.out.println("Blockchain Interface - Attribute Request published: " + userID);
             }
+
         }
 	}
 
@@ -200,5 +211,6 @@ public class BlockchainConnection {
             }
         }
         fc.writeToDir(path, userID + ".json", requests);
+        System.out.println("Blockchain Interface - Attribute request processed by " + certifierID + ". Result: " + newStatus);
 	}
 }

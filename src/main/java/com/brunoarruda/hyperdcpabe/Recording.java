@@ -5,8 +5,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -35,6 +39,7 @@ public class Recording {
     private int BUFFER_SIZE = 1024;
     private long timestamp;
     private String signature;
+    private String hash;
 
     public Recording(String fileName, CiphertextJSON ct) {
         this.originalFileName = fileName;
@@ -46,13 +51,22 @@ public class Recording {
         this.setSignature("Signature to proof ownership of id (EC public key)");
     }
 
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
     @JsonCreator
     public Recording(@JsonProperty("fileName") String fileName,
                      @JsonProperty("ciphertext") CiphertextJSON ct,
                      @JsonProperty("url") String url,
                      @JsonProperty("key") String key,
                      @JsonProperty("RecordingFileName") String recordingName,
-                     @JsonProperty("timestamp") long timestamp) {
+                     @JsonProperty("timestamp") long timestamp,
+                     @JsonProperty("hash") String hash) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.decryptedFileName = "(dec)" + fileName;
@@ -123,12 +137,14 @@ public class Recording {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);
         processDataWithBlockCipher(aes, path, encryptedFileName, originalFileName);
+        System.out.println("Client - File decrypted: " + originalFileName);
     }
 
     public void encryptFile(Message m, String path) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
         processDataWithBlockCipher(aes, path, originalFileName, encryptedFileName);
+        System.out.println("Client - File encrypted: " + originalFileName);
     }
 
     private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName, String outputFileName) {
@@ -156,6 +172,31 @@ public class Recording {
                 fos.write(buff);
             }
         } catch (IOException | IllegalStateException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void digestData(String path) {
+        try {
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            List<byte[]> dataArray = readData(path);
+            int dataSize = 0;
+            for (byte[] d : dataArray) {
+                dataSize = dataSize + d.length;
+            }
+            byte[] data = new byte[dataSize];
+
+            int bytesRead = 0;
+            for (byte[] d : dataArray) {
+                for (int i = 0; i < d.length; i++) {
+                    data[bytesRead + i] = d[i];
+                }
+                bytesRead = bytesRead + d.length;
+            }
+
+            byte[] hash = sha256.digest(data);
+            this.hash = Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
     }

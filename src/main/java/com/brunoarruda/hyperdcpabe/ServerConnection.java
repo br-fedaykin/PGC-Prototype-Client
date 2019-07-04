@@ -92,6 +92,7 @@ public class ServerConnection {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+        System.out.println("Server Connection - Reserved path inside server to " + userID);
         return code;
     }
 
@@ -119,6 +120,7 @@ public class ServerConnection {
                 }
             // after allocating space, key must be preserved
             fc.writeToDir(getServerDataPath(), "serverKeys.json", serverKeys);
+            System.out.println("Server Connection - " + userID + " sent file " + fileName);
         } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
         }
@@ -141,6 +143,7 @@ public class ServerConnection {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Server Connection - delivered following file: " + fileName);
         return data;
     }
 
@@ -158,6 +161,7 @@ public class ServerConnection {
         File f = new File(path);
         f.mkdirs();
         fc.writeToDir(path, userID + "-pks.json", personalKeys);
+        System.out.println("Server Connection - Storing temporary the personal keys of " + userID + ".");
 	}
 
 	public List<PersonalKey> getPersonalKeys(String userID) {
@@ -171,6 +175,7 @@ public class ServerConnection {
         } catch (Exception e) {
             System.out.println("ServerConnection: file " + file + " not found." );
         }
+        System.out.println("Server Connection - user " + userID + " redeemed his personal keys.");
         return pks;
 	}
 }
