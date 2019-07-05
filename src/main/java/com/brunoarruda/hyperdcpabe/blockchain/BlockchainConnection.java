@@ -164,13 +164,10 @@ public class BlockchainConnection {
             String authPath = path + auth + "\\";
             ArrayNode userRequests = (ArrayNode) fc.loadAsJSON(authPath, userID + ".json");
             {
-                int index = 0;
                 for (Iterator<JsonNode> iter = userRequests.elements(); iter.hasNext();) {
                     JsonNode r = iter.next();
                     if (!r.get("status").asText().equals(status)) {
                         iter.remove();
-                    } else {
-                        index++;
                     }
                 }
             }
@@ -186,13 +183,10 @@ public class BlockchainConnection {
         for (String user : f.list()) {
             ArrayNode userRequests = (ArrayNode) fc.loadAsJSON(path, user);
             Iterator<JsonNode> iter = userRequests.elements();
-            int index = 0;
             while(iter.hasNext()) {
                 JsonNode element = iter.next();
                 if (!element.get("status").asText().equals(status)) {
-                    userRequests.remove(index);
-                } else {
-                    index++;
+                    iter.remove();
                 }
             }
             allRequests.addAll(userRequests);

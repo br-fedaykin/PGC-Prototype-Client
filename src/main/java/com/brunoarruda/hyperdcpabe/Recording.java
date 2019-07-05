@@ -1,19 +1,19 @@
 package com.brunoarruda.hyperdcpabe;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.bouncycastle.crypto.DataLengthException;
@@ -28,11 +28,15 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
  */
 public class Recording {
 
+    public enum FileMode {
+        OriginalFile,
+        EncryptedFile,
+    }
+
     private String url;
     private String key;
     private String originalFileName;
     private String encryptedFileName;
-    private String decryptedFileName;
     private Message AESKey;
     private CiphertextJSON ct;
     private String recordingFileName;
@@ -40,15 +44,43 @@ public class Recording {
     private long timestamp;
     private String signature;
     private String hash;
+    private String path;
+    private boolean originalFileChanged = false;
 
-    public Recording(String fileName, CiphertextJSON ct) {
+    public Recording(String path, String fileName, CiphertextJSON ct) {
+        this.path = path;
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
-        this.decryptedFileName = "(dec)" + fileName;
         // gets only file name without extension
         this.setRecordingFileName(fileName.split("\\.\\w+?$")[0]);
         this.ct = ct;
         this.setSignature("Signature to proof ownership of id (EC public key)");
+        digestData();
+    }
+
+    @JsonIgnore
+    public boolean isOriginalFileChanged() {
+        return originalFileChanged;
+    }
+
+    public void setOriginalFileChanged(boolean originalFileChanged) {
+        this.originalFileChanged = originalFileChanged;
+    }
+
+    @JsonCreator
+    public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct,
+            @JsonProperty("url") String url, @JsonProperty("key") String key,
+            @JsonProperty("RecordingFileName") String recordingName, @JsonProperty("timestamp") long timestamp,
+            @JsonProperty("hash") String hash, @JsonProperty("path") String path) {
+        this.originalFileName = fileName;
+        this.encryptedFileName = "(enc)" + fileName;
+        this.ct = ct;
+        this.url = url;
+        this.key = key;
+        this.recordingFileName = recordingName;
+        this.timestamp = timestamp;
+        this.path = path;
+        this.hash = hash;
     }
 
     public String getHash() {
@@ -57,24 +89,6 @@ public class Recording {
 
     public void setHash(String hash) {
         this.hash = hash;
-    }
-
-    @JsonCreator
-    public Recording(@JsonProperty("fileName") String fileName,
-                     @JsonProperty("ciphertext") CiphertextJSON ct,
-                     @JsonProperty("url") String url,
-                     @JsonProperty("key") String key,
-                     @JsonProperty("RecordingFileName") String recordingName,
-                     @JsonProperty("timestamp") long timestamp,
-                     @JsonProperty("hash") String hash) {
-        this.originalFileName = fileName;
-        this.encryptedFileName = "(enc)" + fileName;
-        this.decryptedFileName = "(dec)" + fileName;
-        this.ct = ct;
-        this.url = url;
-        this.key = key;
-        this.recordingFileName = recordingName;
-        this.timestamp = timestamp;
     }
 
     public String getSignature() {
@@ -101,10 +115,6 @@ public class Recording {
         this.timestamp = timestamp;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
     public CiphertextJSON getCiphertext() {
         return ct;
     }
@@ -129,33 +139,50 @@ public class Recording {
         this.key = key;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
     public void setUrl(String url) {
         this.url = url;
     }
 
-    public void decrypt(Message m, String path) {
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public void decrypt(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);
+        File f = new File(path + originalFileName);
+        f.delete();
         processDataWithBlockCipher(aes, path, encryptedFileName, originalFileName);
         System.out.println("Client - File decrypted: " + originalFileName);
     }
 
-    public void encryptFile(Message m, String path) {
+    public void encryptFile(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
+        File f = new File(path + encryptedFileName);
+        f.delete();
         processDataWithBlockCipher(aes, path, originalFileName, encryptedFileName);
         System.out.println("Client - File encrypted: " + originalFileName);
     }
 
-    private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName, String outputFileName) {
+    private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName,
+            String outputFileName) {
         try (FileOutputStream fos = new FileOutputStream(path + outputFileName);
-            FileInputStream fis = new FileInputStream(path + inputFileName);
-            BufferedInputStream bis = new BufferedInputStream(fis)) {
+                FileInputStream fis = new FileInputStream(path + inputFileName);
+                BufferedInputStream bis = new BufferedInputStream(fis)) {
 
             byte[] inBuff = new byte[aes.getBlockSize()];
             byte[] outBuff = new byte[aes.getOutputSize(inBuff.length)];
             int nbytes;
-            while (-1 != (nbytes = bis.read(inBuff, 0, inBuff.length))) {
+            while ((nbytes = bis.read(inBuff, 0, inBuff.length)) != -1) {
                 int length1 = aes.processBytes(inBuff, 0, nbytes, outBuff, 0);
                 fos.write(outBuff, 0, length1);
             }
@@ -166,8 +193,21 @@ public class Recording {
         }
     }
 
-    public void writeData(List<byte[]> data, String path) {
-        try (FileOutputStream fos = new FileOutputStream(path + encryptedFileName)) {
+    public void writeData(List<byte[]> data, FileMode mode) {
+        String file = null;
+        if (mode == FileMode.OriginalFile) {
+            file = originalFileName;
+        }
+        if (mode == FileMode.EncryptedFile) {
+            file = encryptedFileName;
+        }
+        writeData(data, file);
+    }
+
+    private void writeData(List<byte[]> data, String file) {
+        File f = new File(path, file);
+        f.delete();
+        try (FileOutputStream fos = new FileOutputStream(path + file)) {
             for (byte[] buff : data) {
                 fos.write(buff);
             }
@@ -176,10 +216,18 @@ public class Recording {
         }
     }
 
-    public void digestData(String path) {
+    public boolean hasFileChanged() {
+        String lastHash = this.hash;
+        digestData();
+        boolean isDifferent = !lastHash.equals(this.hash);
+        this.setOriginalFileChanged(isDifferent);
+        return isDifferent;
+    }
+
+    private void digestData() {
         try {
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-            List<byte[]> dataArray = readData(path);
+            List<byte[]> dataArray = readData(FileMode.OriginalFile);
             int dataSize = 0;
             for (byte[] d : dataArray) {
                 dataSize = dataSize + d.length;
@@ -193,7 +241,6 @@ public class Recording {
                 }
                 bytesRead = bytesRead + d.length;
             }
-
             byte[] hash = sha256.digest(data);
             this.hash = Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
@@ -201,9 +248,20 @@ public class Recording {
         }
     }
 
-    public List<byte[]> readData(String path) {
+    public List<byte[]> readData(FileMode mode) {
+        String file = null;
+        if (mode == FileMode.OriginalFile) {
+            file = originalFileName;
+        }
+        if (mode == FileMode.EncryptedFile) {
+            file = encryptedFileName;
+        }
+        return readData(file);
+    }
+
+    private List<byte[]> readData(String file) {
         List<byte[]> data = null;
-        try (FileInputStream fis = new FileInputStream(path + encryptedFileName);
+        try (FileInputStream fis = new FileInputStream(path + file);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             data = new ArrayList<byte[]>();
             byte[] buff = new byte[BUFFER_SIZE];
@@ -213,6 +271,7 @@ public class Recording {
                     data.add(Arrays.copyOf(buff, readBytes));
                 } else {
                     data.add(buff);
+                    buff = new byte[BUFFER_SIZE];
                 }
             }
         } catch (IOException e) {

@@ -1,9 +1,7 @@
 package com.brunoarruda.hyperdcpabe;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,6 +11,7 @@ import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.CiphertextJSON;
+import com.brunoarruda.hyperdcpabe.Recording.FileMode;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -145,6 +144,7 @@ public final class Client {
         } else {
             Recording r = user.getRecordingByFile(content);
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
+            obj.remove("path");
             blockchain.publishData(user.getID(), obj);
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
@@ -247,7 +247,8 @@ public final class Client {
     }
 
     public void encrypt(String file, String policy, String[] authorities) {
-        if (user.getRecordingByFile(file) == null) {
+        Recording r = user.getRecordingByFile(file);
+        if (r == null || r.hasFileChanged()) {
             PublicKeys pks = new PublicKeys();
             for (String auth : authorities) {
                 pks.subscribeAuthority(publishedAttributes.get(auth));
@@ -255,13 +256,13 @@ public final class Client {
             AccessStructure as = AccessStructure.buildFromPolicy(policy);
             Message m = DCPABE.generateRandomMessage(gp);
             CiphertextJSON ct = new CiphertextJSON(DCPABE.encrypt(m, as, gp, pks));
-            Recording r = new Recording(file, ct);
             String path = fc.getUserDirectory(user);
-            r.encryptFile(m, path);
+            r = new Recording(path, file, ct);
+            r.encryptFile(m);
+            user.removeRecordByFileName(file);
             user.addRecording(r);
             fc.writeToDir(path, "recordings.json", user.getRecordings());
         } else {
-            // Compare hashes to see if file has changed
             System.out.println("Client - Info: " + file + " - File already encrypted");
         }
     }
@@ -277,14 +278,14 @@ public final class Client {
             System.out.println(String.format(msg, file));
             return;
         }
-        r.decrypt(m, fc.getUserDirectory(user));
+        r.decrypt(m);
     }
 
     public void send(String content) {
         Recording r = user.getRecordingByFile(content);
         if (r == null) {
-            System.out.println("Unencrypted content. Abording");
-        } else if (r.getKey() == null) {
+            System.out.println("Unencrypted content. Aborting");
+        } else if (r.getKey() == null || r.hasFileChanged()) {
             ObjectNode message = fc.getMapper().createObjectNode();
             message.put("name", user.getName());
             message.put("userID", user.getID());
@@ -296,7 +297,7 @@ public final class Client {
             publish(content);
         } else {
             String userID = user.getID();
-            List<byte[]> data = r.readData(fc.getUserDirectory(user));
+            List<byte[]> data = r.readData(FileMode.EncryptedFile);
             if (data != null) {
                 System.out.println("Client - uploading file to server: " + content);
                 server.sendFile(userID, content, data);
@@ -310,9 +311,11 @@ public final class Client {
         for (String fileName : recordings) {
             oneRecord = blockchain.getRecording(userID, fileName);
             if (oneRecord != null) {
+                oneRecord.setPath(fc.getUserDirectory(user));
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
-                oneRecord.writeData(data, fc.getUserDirectory(user));
+                oneRecord.writeData(data, FileMode.EncryptedFile);
                 r.add(oneRecord);
+                user.removeRecordByFileName(fileName);
                 System.out.println("Client - encrypted file received: " + fileName);
             } else {
                 System.out.println(fileName + " not found in blockchain");

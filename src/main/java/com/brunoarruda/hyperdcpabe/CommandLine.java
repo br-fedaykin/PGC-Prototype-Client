@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -14,7 +13,6 @@ import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Client;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
-import com.brunoarruda.hyperdcpabe.io.FileController;
 
 /**
  * CommandLine
@@ -57,6 +55,7 @@ public class CommandLine {
     }
 
     public static void main(String[] args) {
+        // TODO: allow multi input on main, if no args provided
         if (args.length == 0) {
             return;
         }
@@ -177,6 +176,7 @@ public class CommandLine {
     }
 
     public static void runMilestone(int[] choice) {
+        // TODO: move milestone command sets to a shell script
         List<String[]> multiArgs = new ArrayList<String[]>();
         /**
          * Milestone 1 cenário: novo prontuário Cliente 1 java usa o código do ABE (cria
@@ -257,13 +257,17 @@ public class CommandLine {
              * atributo1 do milestone1).
              */
             if (choice[1] == 2) {
-                getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
                 runMilestone(new int[] { 1 });
+                getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
                 multiArgs.add("--load Alice-04b41".split(" "));
                 multiArgs.add("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
                 multiArgs.add("--send lorem_ipsum.md".split(" "));
                 multiArgs.add("--load Bob-04206".split(" "));
                 multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
+                multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
+            }
+            if (choice[1] == 3) {
+                multiArgs.add("--load Bob-04206".split(" "));
                 multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
             }
         }

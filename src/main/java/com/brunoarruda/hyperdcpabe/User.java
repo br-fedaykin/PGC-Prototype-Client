@@ -166,4 +166,13 @@ public class User {
         }
         return null;
     }
+
+	public void removeRecordByFileName(String fileName) {
+        for (int i = 0; i < recordings.size(); i++) {
+            if (recordings.get(i).getFileName().equals(fileName)) {
+                recordings.remove(i);
+                break;
+            }
+        }
+	}
 }

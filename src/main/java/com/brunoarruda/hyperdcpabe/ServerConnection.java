@@ -138,6 +138,7 @@ public class ServerConnection {
                     data.add(Arrays.copyOf(buff, readBytes));
                 } else {
                     data.add(buff);
+                    buff = new byte[BUFFER_SIZE];
                 }
             }
         } catch (IOException e) {
