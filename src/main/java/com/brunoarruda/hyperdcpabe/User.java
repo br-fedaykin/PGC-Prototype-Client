@@ -12,8 +12,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.ethereum.crypto.ECKey;
 
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-
 /**
  * User
  */
