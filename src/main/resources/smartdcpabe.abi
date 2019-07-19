@@ -1,0 +1,168 @@
+[
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "patients",
+		"outputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "nameHash",
+				"type": "string"
+			},
+			{
+				"name": "emailHash",
+				"type": "string"
+			},
+			{
+				"name": "numRecordings",
+				"type": "uint32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "addPatient",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "id",
+				"type": "uint32"
+			},
+			{
+				"name": "timestamp",
+				"type": "uint40"
+			},
+			{
+				"name": "c0",
+				"type": "bytes"
+			},
+			{
+				"name": "c1",
+				"type": "string"
+			},
+			{
+				"name": "c2",
+				"type": "string"
+			},
+			{
+				"name": "c3",
+				"type": "string"
+			},
+			{
+				"name": "filename",
+				"type": "string"
+			},
+			{
+				"name": "url",
+				"type": "string"
+			},
+			{
+				"name": "key",
+				"type": "string"
+			},
+			{
+				"name": "hashing",
+				"type": "bytes32"
+			}
+		],
+		"name": "addRecording",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "i",
+				"type": "uint32"
+			}
+		],
+		"name": "getRecording",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "uint32"
+			},
+			{
+				"name": "timestamp",
+				"type": "uint40"
+			},
+			{
+				"name": "c0",
+				"type": "bytes"
+			},
+			{
+				"name": "c1",
+				"type": "string"
+			},
+			{
+				"name": "c2",
+				"type": "string"
+			},
+			{
+				"name": "c3",
+				"type": "string"
+			},
+			{
+				"name": "filename",
+				"type": "string"
+			},
+			{
+				"name": "url",
+				"type": "string"
+			},
+			{
+				"name": "key",
+				"type": "string"
+			},
+			{
+				"name": "hashing",
+				"type": "bytes32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
