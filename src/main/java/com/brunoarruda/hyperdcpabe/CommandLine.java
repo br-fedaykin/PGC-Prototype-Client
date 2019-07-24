@@ -36,7 +36,7 @@ public class CommandLine {
         // DCPABE commands
         COMMAND_ALIAS.put("-a", "--create-attributes");
         COMMAND_ALIAS.put("-y", "--yield-attributes");
-        COMMAND_ALIAS.put("-e", "--encript");
+        COMMAND_ALIAS.put("-e", "--encrypt");
         COMMAND_ALIAS.put("-d", "--decrypt");
 
         // blockchain commands
@@ -76,7 +76,7 @@ public class CommandLine {
             break;
         case "-l":
         case "--load":
-            client.loadUserData(args[1]);
+            client.changeUser(args[1]);
             break;
         case "-u":
         case "--create-user":
@@ -172,6 +172,11 @@ public class CommandLine {
         case "--decrypt":
             client.decrypt(args[1]);
             break;
+        }
+        try {
+            client.finalize();
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
     }
 

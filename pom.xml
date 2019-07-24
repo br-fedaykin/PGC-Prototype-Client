@@ -45,6 +45,13 @@
             <version>2.28.2</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.web3j/core -->
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.3.1</version>
+        </dependency>
+        <!-- TODO: Remove ethereum dependencies. Maybe deploy address used in demo inside resourses -->
         <!-- https://mvnrepository.com/artifact/org.ethereum/ethereumj-core -->
         <dependency>
             <groupId>org.ethereum</groupId>
@@ -78,12 +85,6 @@
             <groupId>sg.edu.ntu.sce.sands.crypto</groupId>
             <artifactId>dcpabe</artifactId>
             <version>1.1-SNAPSHOT</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.hyperledger.fabric-chaincode-java/fabric-chaincode-shim -->
-        <dependency>
-            <groupId>org.hyperledger.fabric-chaincode-java</groupId>
-            <artifactId>fabric-chaincode-shim</artifactId>
-            <version>1.4.1</version>
         </dependency>
     </dependencies>
 

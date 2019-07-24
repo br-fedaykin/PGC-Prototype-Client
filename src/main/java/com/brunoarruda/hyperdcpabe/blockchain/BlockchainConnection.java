@@ -1,6 +1,7 @@
 package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -13,15 +14,31 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.web3j.crypto.CipherException;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.WalletUtils;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 
 public class BlockchainConnection {
+
+    // TODO: send message to logger instead of System.out
+    private static final Logger log = LoggerFactory.getLogger(BlockchainConnection.class);
+
     private String dataPath = "blockchain";
     private FileController fc;
 
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
+
+    private String contractAddress;
+    Web3j web3j;
 
     public String getBlockchainDataPath() {
         return fc.getDataDirectory() + dataPath + "\\";
@@ -32,9 +49,43 @@ public class BlockchainConnection {
     }
 
     public void init() {
+        // mocked
         fc = FileController.getInstance();
         File dataFolder = new File(fc.getDataDirectory() + dataPath);
         dataFolder.mkdirs();
+
+        // TODO: refactor URL as a POM field or command line/file config
+        // POM field seems better, as it would allow different value for deploy/test cycles
+        web3j = Web3j.build(new HttpService("localhost:7545"));
+    }
+
+    public void deployContract(String password, String walletPath) {
+        try {
+            Credentials credentials = WalletUtils.loadCredentials(
+                password, walletPath);
+            ContractGasProvider contractGasProvider = new DefaultGasProvider();
+            SmartDCPABE contract = SmartDCPABE.deploy(web3j, credentials, contractGasProvider).send();
+            String contractAddress = contract.getContractAddress();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // TODO: add similar methods to get events about all editable objects on blockchain
+    public boolean hasCiphertextChanged() {
+        // Events enable us to log specific events happening during the execution of our
+        // smart
+        // contract to the blockchain. Index events cannot be logged in their entirety.
+        // For Strings and arrays, the hash of values is provided, not the original
+        // value.
+        // For further information, refer to
+        // https://docs.web3j.io/filters.html#filters-and-events
+        // for (Greeter.ModifiedEventResponse event : contract.getModifiedEvents(transactionReceipt)) {
+        //     log.info("Modify event fired, previous value: " + event.oldGreeting + ", new value: " + event.newGreeting);
+        //     log.info("Indexed event previous value: " + Numeric.toHexString(event.oldGreetingIdx) + ", new value: "
+        //             + Numeric.toHexString(event.newGreetingIdx));
+        // }
+        return false;
     }
 
     public ECKey generateKeys() {

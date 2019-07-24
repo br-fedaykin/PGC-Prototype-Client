@@ -58,6 +58,8 @@ public final class Client {
 
     private void init() {
         loadAttributes();
+        ObjectNode currentUser = (ObjectNode) fc.loadAsJSON(getDataPath(), "currentUser.json");
+        loadUserData(currentUser.get("userID").asText());
         this.server = new ServerConnection(SERVER_PORT);
         this.blockchain.init();
 
@@ -69,6 +71,21 @@ public final class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void changeUser(String userID) {
+        ObjectNode currentUser = fc.getMapper().createObjectNode();
+        currentUser.put("userID", user.getID());
+        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", currentUser);
+        loadUserData(currentUser.get("userID").asText());
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        ObjectNode currentUser = fc.getMapper().createObjectNode();
+        currentUser.put("userID", user.getID());
+        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", currentUser);
+        super.finalize();
     }
 
     public void createUser(String name, String email) {
