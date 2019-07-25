@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.ethereum.crypto.ECKey;
+import org.web3j.crypto.Credentials;
 
 /**
  * User
@@ -24,6 +25,7 @@ public class User {
     private Map<String, String> keysPlainText;
     private PersonalKeysJSON ABEKeys;
     private List<Recording> recordings;
+    private String address;
 
     @JsonCreator
     public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID,
@@ -34,6 +36,8 @@ public class User {
         setECKeysFromString(ECKeys);
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
+        Credentials credentials = Credentials.create(ECKeys.get("private"));
+        setAddress(credentials.getAddress());
         recordings = new ArrayList<Recording>();
         ABEKeys = new PersonalKeysJSON(userID);
     }
@@ -49,7 +53,9 @@ public class User {
         keysPlainText.put("public", ecKeyStr[1]);
         keysPlainText.put("private", ecKeyStr[2]);
 
-        String userID = String.format("%s-%s", name, ecKeyStr[1].substring(0, 5));
+        Credentials credentials = Credentials.create(ecKeyStr[2]);
+        setAddress(credentials.getAddress());
+        String userID = String.format("%s-%s", name, this.address);
         this.setUserID(userID);
         this.ABEKeys = new PersonalKeysJSON(userID);
     }
@@ -86,6 +92,15 @@ public class User {
     }
 
     @JsonProperty
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    @JsonProperty
     public String getName() {
         return name;
     }
@@ -112,9 +127,10 @@ public class User {
          return recordings;
      }
 
-     public void setRecordings(List<Recording> recordings) {
-         this.recordings = recordings;
-     }
+    public void setRecordings(List<Recording> recordings) {
+        this.recordings = recordings;
+    }
+
 
     @JsonIgnore
     public ECKey getECKeys() {
