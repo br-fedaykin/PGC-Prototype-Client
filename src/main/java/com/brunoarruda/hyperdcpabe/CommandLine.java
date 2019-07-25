@@ -36,7 +36,7 @@ public class CommandLine {
         // DCPABE commands
         COMMAND_ALIAS.put("-a", "--create-attributes");
         COMMAND_ALIAS.put("-y", "--yield-attributes");
-        COMMAND_ALIAS.put("-e", "--encript");
+        COMMAND_ALIAS.put("-e", "--encrypt");
         COMMAND_ALIAS.put("-d", "--decrypt");
 
         // blockchain commands
@@ -76,7 +76,7 @@ public class CommandLine {
             break;
         case "-l":
         case "--load":
-            client.loadUserData(args[1]);
+            client.changeUser(args[1]);
             break;
         case "-u":
         case "--create-user":
@@ -173,11 +173,14 @@ public class CommandLine {
             client.decrypt(args[1]);
             break;
         }
+        try {
+            client.finalize();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     public static void runMilestone(int[] choice) {
-        // TODO: move milestone command sets to a shell script
-        List<String[]> multiArgs = new ArrayList<String[]>();
         /**
          * Milestone 1 cenário: novo prontuário Cliente 1 java usa o código do ABE (cria
          * usuário, obtém atributo1, envia prontuário1 - i.e., pdf1 encriptado) Cliente
@@ -186,47 +189,47 @@ public class CommandLine {
          */
         if (choice[0] == 1) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data\\client\\Alice-04b41\\";
+            String path = "data\\client\\Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608\\";
             new File(path).mkdirs();
             getFileFromResources(path, "lorem_ipsum.md");
 
             // certificador cria perfil e atributo, e os publica
-            multiArgs.add("--create-user CRM crm@email.com".split(" "));
-            multiArgs.add("--create-certifier".split(" "));
-            multiArgs.add("--create-attributes atributo1 atributo2 atributo3".split(" "));
-            multiArgs.add("--publish user certifier attributes".split(" "));
+            main("--create-user CRM crm@email.com".split(" "));
+            main("--create-certifier".split(" "));
+            main("--create-attributes atributo1 atributo2 atributo3".split(" "));
+            main("--publish user certifier attributes".split(" "));
 
             // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-            multiArgs.add("--create-user Bob bob@email.com".split(" "));
-            multiArgs.add("--publish user".split(" "));
-            multiArgs.add("--load Bob-04206".split(" "));
-            multiArgs.add("--request-attribute CRM-04170 atributo1".split(" "));
+            main("--create-user Bob bob@email.com".split(" "));
+            main("--publish user".split(" "));
+            main("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
+            main("--request-attribute CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
 
             // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-            multiArgs.add("--create-user Alice alice@email.com".split(" "));
-            multiArgs.add("--publish user".split(" "));
-            multiArgs.add("--load Alice-04b41".split(" "));
-            multiArgs.add("--get-attributes CRM-04170 atributo1".split(" "));
-            multiArgs.add("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
-            multiArgs.add("--send lorem_ipsum.md".split(" "));
+            main("--create-user Alice alice@email.com".split(" "));
+            main("--publish user".split(" "));
+            main("--load Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608".split(" "));
+            main("--get-attributes CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
+            main("--encrypt lorem_ipsum.md atributo1 CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
+            main("--send lorem_ipsum.md".split(" "));
 
             // certificador recebe requisição de atributo e o concede ao Bob
-            multiArgs.add("--load CRM-04170".split(" "));
-            multiArgs.add("--check-requests pending".split(" "));
-            multiArgs.add("--yield-attributes Bob-04206 atributo1".split(" "));
-            multiArgs.add("--send attributes Bob-04206".split(" "));
+            main("--load CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
+            main("--check-requests pending".split(" "));
+            main("--yield-attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e atributo1".split(" "));
+            main("--send attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
-            multiArgs.add("--load Bob-04206".split(" "));
-            multiArgs.add("--check-requests ok".split(" "));
-            multiArgs.add("--check-requests download".split(" "));
-            multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
-            multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
+            main("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
+            main("--check-requests ok".split(" "));
+            main("--check-requests download".split(" "));
+            main("--get-recordings Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608 lorem_ipsum.md".split(" "));
+            main("--decrypt lorem_ipsum.md".split(" "));
         }
 
         if (choice[0] == 2) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data\\client\\Alice-04b41\\";
+            String path = "data\\client\\Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608\\";
             new File(path).mkdirs();
             getFileFromResources(path, "lorem_ipsum2.md");
 
@@ -240,14 +243,14 @@ public class CommandLine {
              */
             if (choice[1] == 1) {
                 runMilestone(new int[]{1});
-                multiArgs.add("--load Alice-04b41".split(" "));
-                multiArgs.add("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
+                main("--load Alice-04b41".split(" "));
+                main("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
                 String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-04170"};
-                multiArgs.add(specialArgs);
-                multiArgs.add("--send lorem_ipsum2.md".split(" "));
-                multiArgs.add("--load Bob-04206".split(" "));
-                multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum2.md".split(" "));
-                multiArgs.add("--decrypt lorem_ipsum2.md".split(" "));
+                main(specialArgs);
+                main("--send lorem_ipsum2.md".split(" "));
+                main("--load Bob-04206".split(" "));
+                main("--get-recordings Alice-04b41 lorem_ipsum2.md".split(" "));
+                main("--decrypt lorem_ipsum2.md".split(" "));
             }
             /**
              * cenário: atualiza somente prontuário
@@ -259,27 +262,22 @@ public class CommandLine {
             if (choice[1] == 2) {
                 runMilestone(new int[] { 1 });
                 getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
-                multiArgs.add("--load Alice-04b41".split(" "));
-                multiArgs.add("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
-                multiArgs.add("--send lorem_ipsum.md".split(" "));
-                multiArgs.add("--load Bob-04206".split(" "));
-                multiArgs.add("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
-                multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
+                main("--load Alice-04b41".split(" "));
+                main("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
+                main("--send lorem_ipsum.md".split(" "));
+                main("--load Bob-04206".split(" "));
+                main("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
+                main("--decrypt lorem_ipsum.md".split(" "));
             }
             if (choice[1] == 3) {
-                multiArgs.add("--load Bob-04206".split(" "));
-                multiArgs.add("--decrypt lorem_ipsum.md".split(" "));
+                main("--load Bob-04206".split(" "));
+                main("--decrypt lorem_ipsum.md".split(" "));
             }
         }
 
         if (choice[0] > 2) {
             System.out.println("Milestones ainda não implementadas");
             System.exit(-1);
-        }
-
-        // call all args
-        for (String[] args : multiArgs) {
-            main(args);
         }
     }
 
