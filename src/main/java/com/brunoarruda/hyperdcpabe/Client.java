@@ -46,31 +46,56 @@ public final class Client {
 
     private Map<String, Map<String, PublicKey>> publishedAttributes;
 
-    public Client(BlockchainConnection blockchain) {
-        this(blockchain, "data");
-    }
-
-    public Client(BlockchainConnection blockchain, String dataPath) {
-        this.blockchain = blockchain;
+    public Client() {
         fc = FileController.getInstance().configure(dataPath);
-        init();
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(dataPath, "clientData.json");
+        if (clientData != null) {
+            loadUserData(clientData.get("userID").asText());
+            String networkURL = clientData.get("networkURL").asText();
+            if (networkURL.equals("null")) {
+                throw new RuntimeException("Execute o comando --init informando o endereço de rede" +
+                " para conexão com a blockchain");
+            }
+            String contractAddress = clientData.get("contractAddress").asText();
+            contractAddress = (contractAddress.equals("null")) ? null : contractAddress;
+            this.blockchain = new BlockchainConnection(networkURL, contractAddress);
+        } else {
+            throw new RuntimeException(
+                    "Execute o comando --init informando o endereço de rede para conexão com a blockchain");
+        }
     }
 
-    private void init() {
-        loadAttributes();
-        ObjectNode currentUser = (ObjectNode) fc.loadAsJSON(getDataPath(), "currentUser.json");
-        loadUserData(currentUser.get("userID").asText());
-        this.server = new ServerConnection(SERVER_PORT);
-        this.blockchain.init();
+    public Client(String url) {
+        this(url, null);
+    }
 
+    public Client(String url, String contractAddress) {
+        fc = FileController.getInstance().configure(dataPath);
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getDataPath(), "clientData.json");
+        if (clientData != null) {
+            loadUserData(clientData.get("userID").asText());
+        }
+        this.blockchain = new BlockchainConnection(url, contractAddress);
+        loadAttributes();
         gpPath = fc.getDataDirectory() + "globalParameters";
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
-        try {
-            Utility.writeGlobalParameters(gpPath, gp);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.server = new ServerConnection(SERVER_PORT);
+    }
+
+    public void changeUser(String userID) {
+        ObjectNode clientData = fc.getMapper().createObjectNode();
+        clientData.put("userID", userID);
+        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
+        loadUserData(userID);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        ObjectNode clientData = fc.getMapper().createObjectNode();
+        clientData.put("userID", user.getID());
+        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", clientData);
+        super.finalize();
     }
 
     public void changeUser(String userID) {

@@ -36,7 +36,7 @@ public class User {
         setECKeysFromString(ECKeys);
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
-        Credentials credentials = Credentials.create(ECKeys.get("private"), ECKeys.get("public"));
+        Credentials credentials = Credentials.create(ECKeys.get("private"));
         setAddress(credentials.getAddress());
         recordings = new ArrayList<Recording>();
         ABEKeys = new PersonalKeysJSON(userID);
@@ -55,7 +55,7 @@ public class User {
 
         Credentials credentials = Credentials.create(ecKeyStr[2]);
         setAddress(credentials.getAddress());
-        String userID = name + this.address;
+        String userID = String.format("%s-%s", name, this.address);
         this.setUserID(userID);
         this.ABEKeys = new PersonalKeysJSON(userID);
     }

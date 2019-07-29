@@ -1,29 +1,88 @@
 [
 	{
-		"constant": true,
+		"constant": false,
 		"inputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "patients",
-		"outputs": [
 			{
 				"name": "addr",
 				"type": "address"
 			},
 			{
-				"name": "nameHash",
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk4",
+				"type": "bytes26"
+			},
+			{
+				"name": "g1yiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk4",
+				"type": "bytes26"
+			}
+		],
+		"name": "addPublicKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
 				"type": "string"
 			},
 			{
-				"name": "emailHash",
-				"type": "string"
+				"name": "eg1g1ai",
+				"type": "bytes"
 			},
 			{
-				"name": "numRecordings",
-				"type": "uint32"
+				"name": "g1yi",
+				"type": "bytes"
+			}
+		],
+		"name": "addPublicKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numUsers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"payable": false,
@@ -46,7 +105,472 @@
 				"type": "string"
 			}
 		],
-		"name": "addPatient",
+		"name": "addCertifier",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "domain",
+				"type": "bytes32"
+			},
+			{
+				"name": "path",
+				"type": "bytes32"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"name": "addServer",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numServers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "index",
+				"type": "uint64"
+			}
+		],
+		"name": "getPublicKey",
+		"outputs": [
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk4",
+				"type": "bytes26"
+			},
+			{
+				"name": "g1yiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk4",
+				"type": "bytes26"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "userAddresses",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "email",
+				"type": "bytes32"
+			}
+		],
+		"name": "addCertifier",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "servers",
+		"outputs": [
+			{
+				"name": "domain",
+				"type": "bytes32"
+			},
+			{
+				"name": "path",
+				"type": "bytes32"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			}
+		],
+		"name": "searchPublicKeyID",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "int64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "getUser",
+		"outputs": [
+			{
+				"name": "addr_",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "email",
+				"type": "bytes32"
+			},
+			{
+				"name": "numRecordings",
+				"type": "uint32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"name": "searchPublicKeyID",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "int64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "email",
+				"type": "bytes32"
+			}
+		],
+		"name": "addUser",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "certifierAddresses",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "source",
+				"type": "bytes32"
+			}
+		],
+		"name": "bytes32ToString",
+		"outputs": [
+			{
+				"name": "result",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "index",
+				"type": "uint32"
+			}
+		],
+		"name": "getRecording",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "uint64"
+			},
+			{
+				"name": "timestamp",
+				"type": "uint128"
+			},
+			{
+				"name": "c0",
+				"type": "string"
+			},
+			{
+				"name": "c1",
+				"type": "string"
+			},
+			{
+				"name": "c2",
+				"type": "string"
+			},
+			{
+				"name": "c3",
+				"type": "string"
+			},
+			{
+				"name": "filename",
+				"type": "string"
+			},
+			{
+				"name": "serverID",
+				"type": "uint64"
+			},
+			{
+				"name": "key",
+				"type": "bytes32"
+			},
+			{
+				"name": "hashing",
+				"type": "bytes32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numCertifiers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			}
+		],
+		"name": "getPublicKeyByName",
+		"outputs": [
+			{
+				"name": "name_",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk4",
+				"type": "bytes26"
+			},
+			{
+				"name": "g1yiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk4",
+				"type": "bytes26"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "source",
+				"type": "string"
+			}
+		],
+		"name": "stringToBytes32",
+		"outputs": [
+			{
+				"name": "result",
+				"type": "bytes32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "addUser",
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
@@ -60,16 +584,12 @@
 				"type": "address"
 			},
 			{
-				"name": "id",
-				"type": "uint32"
-			},
-			{
 				"name": "timestamp",
 				"type": "uint40"
 			},
 			{
 				"name": "c0",
-				"type": "bytes"
+				"type": "string"
 			},
 			{
 				"name": "c1",
@@ -88,12 +608,12 @@
 				"type": "string"
 			},
 			{
-				"name": "url",
-				"type": "string"
+				"name": "serverID",
+				"type": "uint64"
 			},
 			{
 				"name": "key",
-				"type": "string"
+				"type": "bytes32"
 			},
 			{
 				"name": "hashing",
@@ -104,65 +624,6 @@
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "addr",
-				"type": "address"
-			},
-			{
-				"name": "i",
-				"type": "uint32"
-			}
-		],
-		"name": "getRecording",
-		"outputs": [
-			{
-				"name": "id",
-				"type": "uint32"
-			},
-			{
-				"name": "timestamp",
-				"type": "uint40"
-			},
-			{
-				"name": "c0",
-				"type": "bytes"
-			},
-			{
-				"name": "c1",
-				"type": "string"
-			},
-			{
-				"name": "c2",
-				"type": "string"
-			},
-			{
-				"name": "c3",
-				"type": "string"
-			},
-			{
-				"name": "filename",
-				"type": "string"
-			},
-			{
-				"name": "url",
-				"type": "string"
-			},
-			{
-				"name": "key",
-				"type": "string"
-			},
-			{
-				"name": "hashing",
-				"type": "bytes32"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
 		"type": "function"
 	}
 ]

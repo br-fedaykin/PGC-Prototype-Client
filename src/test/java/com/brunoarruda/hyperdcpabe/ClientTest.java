@@ -16,7 +16,6 @@ import static org.junit.Assert.*;
 import java.io.File;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 
-import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.junit.After;
 import org.junit.Before;
 
@@ -28,7 +27,6 @@ public class ClientTest {
     private String testDataPath;
 
     @Mock
-    private ChaincodeStub chaincodeStub;
     private ClientAndServer mockServer;
 
     @Before
