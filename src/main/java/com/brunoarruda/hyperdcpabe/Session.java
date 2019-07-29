@@ -14,7 +14,7 @@ public class Session {
     public final SortedMap<String, String> mainMenu;
 
     public Session(BlockchainConnection blockchain) {
-        this.client = new Client(blockchain);
+        this.client = new Client();
 
         mainMenu = new TreeMap<String, String>();
         mainMenu.put("1", "gerar chaves");
@@ -65,7 +65,7 @@ public class Session {
     }
 
     public static void main(String[] args) {
-        Session s = new Session(new BlockchainConnection());
+        Session s = new Session(new BlockchainConnection(null, null));
         s.runClient("console");
     }
 }

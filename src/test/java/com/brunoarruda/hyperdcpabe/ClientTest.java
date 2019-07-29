@@ -31,7 +31,7 @@ public class ClientTest {
 
     @Before
     public void setUp() {
-        client = new Client(new BlockchainConnection());
+        client = new Client();
         testDataPath = client.getDataPath() + "\\test";
         client.setDataPath(testDataPath);
     }

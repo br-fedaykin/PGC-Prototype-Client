@@ -30,7 +30,7 @@ public class FunctionalTest {
     public void setUp() {
         systemOutput.start();
         systemInput.start();
-        blockchain = new StubBlockChain();
+        blockchain = new StubBlockChain(null, null);
         session = new Session(blockchain);
         allOutput = "";
     }
