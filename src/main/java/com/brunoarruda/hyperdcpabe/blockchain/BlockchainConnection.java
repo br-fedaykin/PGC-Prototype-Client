@@ -35,9 +35,9 @@ public class BlockchainConnection {
 
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
-
-    private String contractAddress;
-    Web3j web3j;
+    private final String networkURL;
+    private final String contractAddress;
+    private final Web3j web3j;
 
     public String getBlockchainDataPath() {
         return fc.getDataDirectory() + dataPath + "\\";
@@ -47,11 +47,12 @@ public class BlockchainConnection {
         this.dataPath = dataPath;
     }
 
-    public BlockchainConnection(String url, String contractAddress) {
+    public BlockchainConnection(String networkURL, String contractAddress) {
         // TODO: refactor URL as a POM field or command line/file config
         // POM field seems better, as it would allow different value for deploy/test cycles
-        web3j = Web3j.build(new HttpService(url));
+        this.networkURL = networkURL;
         this.contractAddress = contractAddress;
+        web3j = Web3j.build(new HttpService(networkURL));
     }
 
     public void deployContract(Credentials credentials) {
@@ -250,5 +251,13 @@ public class BlockchainConnection {
         }
         fc.writeToDir(path, userID + ".json", requests);
         System.out.println("Blockchain Interface - Attribute request processed by " + certifierID + ". Result: " + newStatus);
+	}
+
+	public String getNetworkURL() {
+		return networkURL;
+	}
+
+	public String getContractAddress() {
+		return contractAddress;
 	}
 }

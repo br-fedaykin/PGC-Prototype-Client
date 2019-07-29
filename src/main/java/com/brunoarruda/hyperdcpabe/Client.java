@@ -33,7 +33,6 @@ public final class Client {
 
     private static final int SERVER_PORT = 8080;
 
-    private String gpPath;
     private final FileController fc;
 
     private GlobalParameters gp;
@@ -69,17 +68,20 @@ public final class Client {
         this(url, null);
     }
 
-    public Client(String url, String contractAddress) {
+    public Client(String networkURL, String contractAddress) {
         fc = FileController.getInstance().configure(dataPath);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getDataPath(), "clientData.json");
         if (clientData != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(url, contractAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractAddress);
         loadAttributes();
-        gpPath = fc.getDataDirectory() + "globalParameters";
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
+        clientData = (ObjectNode) fc.getMapper().createObjectNode();
+        clientData.put("networkURL", networkURL);
+        clientData.put("contractAddress", contractAddress);
+        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
         this.server = new ServerConnection(SERVER_PORT);
     }
 
@@ -94,22 +96,9 @@ public final class Client {
     protected void finalize() throws Throwable {
         ObjectNode clientData = fc.getMapper().createObjectNode();
         clientData.put("userID", user.getID());
-        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", clientData);
-        super.finalize();
-    }
-
-    public void changeUser(String userID) {
-        ObjectNode currentUser = fc.getMapper().createObjectNode();
-        currentUser.put("userID", user.getID());
-        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", currentUser);
-        loadUserData(currentUser.get("userID").asText());
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        ObjectNode currentUser = fc.getMapper().createObjectNode();
-        currentUser.put("userID", user.getID());
-        fc.writeToDir(fc.getDataDirectory(), "currentUser.json", currentUser);
+        clientData.put("networkURL", blockchain.getNetworkURL());
+        clientData.put("contractAddress", blockchain.getContractAddress());
+        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
         super.finalize();
     }
 
