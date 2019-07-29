@@ -6,13 +6,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Client;
-import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 
 /**
  * CommandLine
@@ -28,6 +25,10 @@ public class CommandLine {
     }
 
     private static void populateCommands() {
+
+        // system commands
+        COMMAND_ALIAS.put("-i", "--init");
+
         // user commands
         COMMAND_ALIAS.put("-u", "--create-user");
         COMMAND_ALIAS.put("-c", "--create-certifier");
@@ -59,11 +60,21 @@ public class CommandLine {
         if (args.length == 0) {
             return;
         }
+        // repensar essa lógica aqui, se é mesmo necessária
         if (client == null) {
-            client = new Client(new BlockchainConnection());
+            client = new Client();
         }
         String[] attributes;
         switch (args[0]) {
+        case "-i":
+        case "--init":
+            String networkURL = args[1];
+            String contractAddress = null;
+            if (args.length > 2) {
+                contractAddress = args[2];
+            }
+            client = new Client(networkURL, contractAddress);
+            break;
         case "-m":
         case "--milestone":
             // needed to provide the file to be encrypted

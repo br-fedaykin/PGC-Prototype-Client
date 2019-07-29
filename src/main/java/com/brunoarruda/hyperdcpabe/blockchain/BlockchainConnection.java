@@ -46,22 +46,16 @@ public class BlockchainConnection {
         this.dataPath = dataPath;
     }
 
-    public void init() {
-        // mocked
-        fc = FileController.getInstance();
-        File dataFolder = new File(fc.getDataDirectory() + dataPath);
-        dataFolder.mkdirs();
-
+    public BlockchainConnection(String url, String contractAddress) {
         // TODO: refactor URL as a POM field or command line/file config
         // POM field seems better, as it would allow different value for deploy/test cycles
-        web3j = Web3j.build(new HttpService("localhost:7545"));
+        web3j = Web3j.build(new HttpService(url));
+        this.contractAddress = contractAddress;
     }
 
-    public void deployContract(String password, String walletPath) {
+    public void deployContract(Credentials credentials) {
         try {
-            Credentials credentials = WalletUtils.loadCredentials(
-                password, walletPath);
-            ContractGasProvider contractGasProvider = new DefaultGasProvider();
+            ContractGasProvider clllontractGasProvider = new DefaultGasProvider();
             SmartDCPABE contract = SmartDCPABE.deploy(web3j, credentials, contractGasProvider).send();
             String contractAddress = contract.getContractAddress();
         } catch (Exception e) {
