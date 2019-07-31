@@ -33,7 +33,6 @@ public class ClientTest {
     public void setUp() {
         client = new Client();
         testDataPath = client.getDataPath() + "\\test";
-        client.setDataPath(testDataPath);
     }
 
     @Before
