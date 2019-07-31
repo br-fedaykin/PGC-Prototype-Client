@@ -26,6 +26,7 @@ public class User {
     private PersonalKeysJSON ABEKeys;
     private List<Recording> recordings;
     private String address;
+    private Credentials credentials;
 
     @JsonCreator
     public User(@JsonProperty("name") String name, @JsonProperty("userID") String userID,
@@ -36,7 +37,7 @@ public class User {
         setECKeysFromString(ECKeys);
         BigInteger privateKey = new BigInteger(ECKeys.get("private"), 16);
         setECKeys(ECKey.fromPrivate(privateKey));
-        Credentials credentials = Credentials.create(ECKeys.get("private"));
+        credentials = Credentials.create(ECKeys.get("private"));
         setAddress(credentials.getAddress());
         recordings = new ArrayList<Recording>();
         ABEKeys = new PersonalKeysJSON(userID);
@@ -188,5 +189,9 @@ public class User {
                 break;
             }
         }
+	}
+
+	public Credentials getCredentials() {
+		return credentials;
 	}
 }

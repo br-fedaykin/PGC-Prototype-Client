@@ -2,6 +2,7 @@ package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -36,7 +37,7 @@ public class BlockchainConnection {
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
     private final String networkURL;
-    private final String contractAddress;
+    private String contractAddress;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -56,12 +57,16 @@ public class BlockchainConnection {
     }
 
     public void deployContract(Credentials credentials) {
-        try {
-            ContractGasProvider clllontractGasProvider = new DefaultGasProvider();
-            SmartDCPABE contract = SmartDCPABE.deploy(web3j, credentials, contractGasProvider).send();
-            String contractAddress = contract.getContractAddress();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (contractAddress == null) {
+            try {
+                ContractGasProvider contractGasProvider = new DefaultGasProvider();
+                SmartDCPABE contract = SmartDCPABE.deploy(web3j, credentials, contractGasProvider).send();
+                contractAddress = contract.getContractAddress();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Contract already deployed at address " + contractAddress);
         }
     }
 
@@ -82,8 +87,15 @@ public class BlockchainConnection {
         return false;
     }
 
-    public ECKey generateKeys() {
-        return new ECKey(random);
+    public ECKey generateECKeys(String privateKey) {
+        ECKey keys = null;
+        if (privateKey != null) {
+            keys = ECKey.fromPrivate(new BigInteger(privateKey, 16));
+            byte[] pubKey = keys.getPubKey();
+        } else {
+            keys = new ECKey(random);
+        }
+        return keys;
     }
 
     @Deprecated

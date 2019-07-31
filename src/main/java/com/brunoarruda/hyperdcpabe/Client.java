@@ -41,13 +41,13 @@ public final class Client {
 
     private BlockchainConnection blockchain;
     private ServerConnection server;
-    private String dataPath;
+    private final String dataPath = "data";
 
     private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public Client() {
         fc = FileController.getInstance().configure(dataPath);
-        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(dataPath, "clientData.json");
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
             loadUserData(clientData.get("userID").asText());
             String networkURL = clientData.get("networkURL").asText();
@@ -58,6 +58,7 @@ public final class Client {
             String contractAddress = clientData.get("contractAddress").asText();
             contractAddress = (contractAddress.equals("null")) ? null : contractAddress;
             this.blockchain = new BlockchainConnection(networkURL, contractAddress);
+            fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
                     "Execute o comando --init informando o endereço de rede para conexão com a blockchain");
@@ -70,7 +71,7 @@ public final class Client {
 
     public Client(String networkURL, String contractAddress) {
         fc = FileController.getInstance().configure(dataPath);
-        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getDataPath(), "clientData.json");
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
             loadUserData(clientData.get("userID").asText());
         }
@@ -81,14 +82,14 @@ public final class Client {
         clientData = (ObjectNode) fc.getMapper().createObjectNode();
         clientData.put("networkURL", networkURL);
         clientData.put("contractAddress", contractAddress);
-        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
+        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         this.server = new ServerConnection(SERVER_PORT);
     }
 
     public void changeUser(String userID) {
         ObjectNode clientData = fc.getMapper().createObjectNode();
         clientData.put("userID", userID);
-        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
+        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         loadUserData(userID);
     }
 
@@ -98,13 +99,13 @@ public final class Client {
         clientData.put("userID", user.getID());
         clientData.put("networkURL", blockchain.getNetworkURL());
         clientData.put("contractAddress", blockchain.getContractAddress());
-        fc.writeToDir(fc.getDataDirectory(), "clientData.json", clientData);
+        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         super.finalize();
     }
 
-    public void createUser(String name, String email) {
-        ECKey newKeys = this.blockchain.generateKeys();
-        user = new User(name, email, newKeys);
+    public void createUser(String name, String email, String privateKey) {
+        ECKey keys = this.blockchain.generateECKeys(privateKey);
+        user = new User(name, email, keys);
         fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
     }
 
@@ -142,8 +143,10 @@ public final class Client {
         }
     }
 
-    public void createCertifier(String name, String email) {
-        certifier = new Certifier(name, email, new ECKey());
+    public void createCertifier(String name, String email, String privateKey) {
+        ECKey keys = this.blockchain.generateECKeys(privateKey);
+        certifier = new Certifier(name, email, keys);
+        fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
     }
 
     public void createCertifier() {
@@ -152,6 +155,7 @@ public final class Client {
         } else {
             System.out.println("Crie um usuário ou informe nome e e-mail");
         }
+        fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
     }
 
     public void publish(String content) {
@@ -228,10 +232,6 @@ public final class Client {
     /**
      * Getters and Setters
      */
-    public void setDataPath(String dataPath) {
-        this.dataPath = dataPath;
-    }
-
     public String getDataPath() {
         return dataPath;
     }
@@ -476,5 +476,9 @@ public final class Client {
         } else {
             System.out.println("No personal ABE Keys available for download.");
         }
+	}
+
+	public void deploy() {
+        this.blockchain.deployContract(user.getCredentials());
 	}
 }

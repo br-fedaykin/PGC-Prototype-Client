@@ -46,6 +46,7 @@ public class CommandLine {
         COMMAND_ALIAS.put("-ga", "--get-attributes");
         COMMAND_ALIAS.put("-gr", "--get-recordings");
         COMMAND_ALIAS.put("-p", "--publish");
+        COMMAND_ALIAS.put("-o", "--deploy");
 
         // integrated blockchain / server commands
         COMMAND_ALIAS.put("-s", "--send");
@@ -58,10 +59,28 @@ public class CommandLine {
     public static void main(String[] args) {
         // TODO: allow multi input on main, if no args provided
         if (args.length == 0) {
+            System.out.println("Nenhum comando executado");
             return;
         }
-        // repensar essa lógica aqui, se é mesmo necessária
-        if (client == null) {
+        switch (args[0]) {
+            case "-m":
+            case "--milestone":
+                // needed to provide the file to be encrypted
+                String[] numberSplit = args[1].split("\\.");
+                int[] choices = new int[numberSplit.length];
+                for (int i = 0; i < choices.length; i++) {
+                    choices[i] = Integer.parseInt(numberSplit[i]);
+                }
+                runMilestone(choices);
+                break;
+            default:
+                runCommand(args);
+                break;
+        }
+    }
+
+    public static void runCommand(String[] args) {
+        if (client == null && !args[0].equals("-i") && !args[0].equals("--init")) {
             client = new Client();
         }
         String[] attributes;
@@ -70,37 +89,36 @@ public class CommandLine {
         case "--init":
             String networkURL = args[1];
             String contractAddress = null;
-            if (args.length > 2) {
+            if (args.length == 3) {
                 contractAddress = args[2];
             }
             client = new Client(networkURL, contractAddress);
-            break;
-        case "-m":
-        case "--milestone":
-            // needed to provide the file to be encrypted
-            String[] numberSplit = args[1].split("\\.");
-            int[] choices = new int[numberSplit.length];
-            for (int i = 0; i < choices.length; i++) {
-                choices[i] = Integer.parseInt(numberSplit[i]);
-            }
-            runMilestone(choices);
             break;
         case "-l":
         case "--load":
             client.changeUser(args[1]);
             break;
+        case "-o":
+        case "--deploy":
+            client.deploy();
+            break;
         case "-u":
         case "--create-user":
             String name = args[1];
             String email = args[2];
-            client.createUser(name, email);
+            String privateKey = null;
+            if (args.length == 4) {
+                privateKey = args[3];
+            }
+            client.createUser(name, email, privateKey);
             break;
         case "-c":
         case "--create-certifier":
-            if (args.length == 3) {
+            if (args.length == 4) {
                 name = args[1];
                 email = args[2];
-                client.createCertifier(name, email);
+                privateKey = args[3];
+                client.createCertifier(name, email, privateKey);
             } else {
                 client.createCertifier();
             }
@@ -198,6 +216,12 @@ public class CommandLine {
          * 2 java usa o código do ABE (supondo que possui o atributo1, obtém prontuário1
          * codificado e o decodifica)
          */
+
+         // init e deploy aqui
+        runCommand("--init localhost:7545".split(" "));
+        String pk0 = "";
+        runCommand("--create-user contract_owner contract_owner@email.com".split(" "));
+        runCommand("--deploy".split(" "));
         if (choice[0] == 1) {
             // pre-setup to deliver file to be encrypted to user folder
             String path = "data\\client\\Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608\\";
@@ -205,37 +229,37 @@ public class CommandLine {
             getFileFromResources(path, "lorem_ipsum.md");
 
             // certificador cria perfil e atributo, e os publica
-            main("--create-user CRM crm@email.com".split(" "));
-            main("--create-certifier".split(" "));
-            main("--create-attributes atributo1 atributo2 atributo3".split(" "));
-            main("--publish user certifier attributes".split(" "));
+            runCommand("--create-user CRM crm@email.com".split(" "));
+            runCommand("--create-certifier".split(" "));
+            runCommand("--create-attributes atributo1 atributo2 atributo3".split(" "));
+            runCommand("--publish user certifier attributes".split(" "));
 
             // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-            main("--create-user Bob bob@email.com".split(" "));
-            main("--publish user".split(" "));
-            main("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
-            main("--request-attribute CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
+            runCommand("--create-user Bob bob@email.com".split(" "));
+            runCommand("--publish user".split(" "));
+            runCommand("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
+            runCommand("--request-attribute CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
 
             // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-            main("--create-user Alice alice@email.com".split(" "));
-            main("--publish user".split(" "));
-            main("--load Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608".split(" "));
-            main("--get-attributes CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
-            main("--encrypt lorem_ipsum.md atributo1 CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
-            main("--send lorem_ipsum.md".split(" "));
+            runCommand("--create-user Alice alice@email.com".split(" "));
+            runCommand("--publish user".split(" "));
+            runCommand("--load Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608".split(" "));
+            runCommand("--get-attributes CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1 atributo1".split(" "));
+            runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
+            runCommand("--send lorem_ipsum.md".split(" "));
 
             // certificador recebe requisição de atributo e o concede ao Bob
-            main("--load CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
-            main("--check-requests pending".split(" "));
-            main("--yield-attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e atributo1".split(" "));
-            main("--send attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
+            runCommand("--load CRM-0xc7228e9add83d58fd62dafe5b098b10c2ed6a2f1".split(" "));
+            runCommand("--check-requests pending".split(" "));
+            runCommand("--yield-attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e atributo1".split(" "));
+            runCommand("--send attributes Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
-            main("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
-            main("--check-requests ok".split(" "));
-            main("--check-requests download".split(" "));
-            main("--get-recordings Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608 lorem_ipsum.md".split(" "));
-            main("--decrypt lorem_ipsum.md".split(" "));
+            runCommand("--load Bob-0x878a0c44ea886c91d8eff07a4fc6ecaeed98f95e".split(" "));
+            runCommand("--check-requests ok".split(" "));
+            runCommand("--check-requests download".split(" "));
+            runCommand("--get-recordings Alice-0x523ceb7bceac5d72ceb94d6750de49b7c988a608 lorem_ipsum.md".split(" "));
+            runCommand("--decrypt lorem_ipsum.md".split(" "));
         }
 
         if (choice[0] == 2) {
@@ -254,14 +278,14 @@ public class CommandLine {
              */
             if (choice[1] == 1) {
                 runMilestone(new int[]{1});
-                main("--load Alice-04b41".split(" "));
-                main("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
+                runCommand("--load Alice-04b41".split(" "));
+                runCommand("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
                 String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-04170"};
-                main(specialArgs);
-                main("--send lorem_ipsum2.md".split(" "));
-                main("--load Bob-04206".split(" "));
-                main("--get-recordings Alice-04b41 lorem_ipsum2.md".split(" "));
-                main("--decrypt lorem_ipsum2.md".split(" "));
+                runCommand(specialArgs);
+                runCommand("--send lorem_ipsum2.md".split(" "));
+                runCommand("--load Bob-04206".split(" "));
+                runCommand("--get-recordings Alice-04b41 lorem_ipsum2.md".split(" "));
+                runCommand("--decrypt lorem_ipsum2.md".split(" "));
             }
             /**
              * cenário: atualiza somente prontuário
@@ -273,16 +297,16 @@ public class CommandLine {
             if (choice[1] == 2) {
                 runMilestone(new int[] { 1 });
                 getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
-                main("--load Alice-04b41".split(" "));
-                main("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
-                main("--send lorem_ipsum.md".split(" "));
-                main("--load Bob-04206".split(" "));
-                main("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
-                main("--decrypt lorem_ipsum.md".split(" "));
+                runCommand("--load Alice-04b41".split(" "));
+                runCommand("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
+                runCommand("--send lorem_ipsum.md".split(" "));
+                runCommand("--load Bob-04206".split(" "));
+                runCommand("--get-recordings Alice-04b41 lorem_ipsum.md".split(" "));
+                runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
             if (choice[1] == 3) {
-                main("--load Bob-04206".split(" "));
-                main("--decrypt lorem_ipsum.md".split(" "));
+                runCommand("--load Bob-04206".split(" "));
+                runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
         }
 
