@@ -72,7 +72,7 @@ public final class Client {
     public Client(String networkURL, String contractAddress) {
         fc = FileController.getInstance().configure(dataPath);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
-        if (clientData != null) {
+        if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
         this.blockchain = new BlockchainConnection(networkURL, contractAddress);
@@ -91,16 +91,6 @@ public final class Client {
         clientData.put("userID", userID);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         loadUserData(userID);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        ObjectNode clientData = fc.getMapper().createObjectNode();
-        clientData.put("userID", user.getID());
-        clientData.put("networkURL", blockchain.getNetworkURL());
-        clientData.put("contractAddress", blockchain.getContractAddress());
-        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
-        super.finalize();
     }
 
     public void createUser(String name, String email, String privateKey) {

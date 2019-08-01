@@ -1,7 +1,6 @@
 package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -18,8 +17,8 @@ import org.ethereum.crypto.ECKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.crypto.Credentials;
-import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -38,6 +37,7 @@ public class BlockchainConnection {
     static private final SecureRandom random = new SecureRandom(seed);
     private final String networkURL;
     private String contractAddress;
+    private SmartDCPABE contract;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -48,20 +48,27 @@ public class BlockchainConnection {
         this.dataPath = dataPath;
     }
 
+    // TODO: refactor URL as a POM field or command line/file config
+    // POM field seems better, as it would allow different value for deploy/test cycles
     public BlockchainConnection(String networkURL, String contractAddress) {
-        // TODO: refactor URL as a POM field or command line/file config
-        // POM field seems better, as it would allow different value for deploy/test cycles
         this.networkURL = networkURL;
         this.contractAddress = contractAddress;
         web3j = Web3j.build(new HttpService(networkURL));
+        fc = FileController.getInstance();
     }
 
     public void deployContract(Credentials credentials) {
-        if (contractAddress == null) {
+        if (contract == null) {
             try {
                 ContractGasProvider contractGasProvider = new DefaultGasProvider();
-                SmartDCPABE contract = SmartDCPABE.deploy(web3j, credentials, contractGasProvider).send();
-                contractAddress = contract.getContractAddress();
+                if (contractAddress == null) {
+                    RemoteCall<SmartDCPABE> contractTX = SmartDCPABE.deploy(web3j, credentials, contractGasProvider);
+                    // BUG: the send() method leads to a RuntimeException about an invalid opcode.
+                    contract = contractTX.send();
+                    contractAddress = contract.getContractAddress();
+                } else {
+                    contract = SmartDCPABE.load(contractAddress, web3j, credentials, contractGasProvider);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -91,7 +98,6 @@ public class BlockchainConnection {
         ECKey keys = null;
         if (privateKey != null) {
             keys = ECKey.fromPrivate(new BigInteger(privateKey, 16));
-            byte[] pubKey = keys.getPubKey();
         } else {
             keys = new ECKey(random);
         }

@@ -54,7 +54,7 @@ public class User {
         keysPlainText.put("public", ecKeyStr[1]);
         keysPlainText.put("private", ecKeyStr[2]);
 
-        Credentials credentials = Credentials.create(ecKeyStr[2]);
+        credentials = Credentials.create(ecKeyStr[2]);
         setAddress(credentials.getAddress());
         String userID = String.format("%s-%s", name, this.address);
         this.setUserID(userID);
@@ -189,8 +189,9 @@ public class User {
                 break;
             }
         }
-	}
+    }
 
+    @JsonIgnore
 	public Credentials getCredentials() {
 		return credentials;
 	}
