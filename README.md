@@ -49,3 +49,9 @@ Criar o contract do milestone2 em uma base de teste escolhida no milestone3
 ### Milestone5 14/08
 
 Integrar o código dos milestones1 e milestone2 com os contract criados nos milestone3 e milestone4
+
+## Teste
+
+Mnemônico para fazer o Ganache criar os endereços utilizados na versão demo:
+
+pumpkin immense certain snack please patch universe leisure reopen truth eight gown
