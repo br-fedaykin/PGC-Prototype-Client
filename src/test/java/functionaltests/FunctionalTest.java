@@ -30,7 +30,7 @@ public class FunctionalTest {
     public void setUp() {
         systemOutput.start();
         systemInput.start();
-        blockchain = new StubBlockChain(null, null);
+        blockchain = new StubBlockChain(null, null, null);
         session = new Session(blockchain);
         allOutput = "";
     }
@@ -121,11 +121,11 @@ public class FunctionalTest {
 
         // cliente 2 java lê prontuários[rand] e pede pro servidor o arquivo, enviando código como post
 
-        // serv devolve o arquivo teste
+        // servidor devolve o arquivo teste
 
-        // cliente 2 java vai decifrar teste e envia o hash via post ao serv
+        // cliente 2 java vai decifrar teste e envia o hash via post ao servidor
 
-        // serv verifica o hash enviado, e devolve o arquivo pdf encriptado
+        // servidor verifica o hash enviado, e devolve o arquivo pdf encriptado
 
         // cliente 2 java decifra o arquivo pdf
 

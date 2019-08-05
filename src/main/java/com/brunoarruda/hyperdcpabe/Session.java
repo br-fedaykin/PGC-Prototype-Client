@@ -65,7 +65,7 @@ public class Session {
     }
 
     public static void main(String[] args) {
-        Session s = new Session(new BlockchainConnection(null, null));
+        Session s = new Session(new BlockchainConnection(null, null, null));
         s.runClient("console");
     }
 }

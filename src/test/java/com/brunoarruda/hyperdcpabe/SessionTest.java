@@ -30,7 +30,7 @@ public class SessionTest {
 
     @Before
     public void setUp() {
-        blockchain = new StubBlockChain(null, null);
+        blockchain = new StubBlockChain(null, null, null);
         session = new Session(blockchain);
         systemInput.start();
         systemOutput.start();
