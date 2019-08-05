@@ -50,6 +50,50 @@ Criar o contract do milestone2 em uma base de teste escolhida no milestone3
 
 Integrar o código dos milestones1 e milestone2 com os contract criados nos milestone3 e milestone4
 
+## Notas para instalar
+
+1. Download maven, put it on your path.
+
+2. Add spring and bintray to maven settings: <https://bintray.com/repo/buildSettings?repoPath=%2Fethereum%2Fmaven>
+
+```xml
+<settings>
+    <profiles>
+        <profile>
+            <repositories>
+                <repository>
+                    <id>spring-repo</id>
+                    <name>Spring Repository</name>
+                    <url>https://repo.spring.io/release</url>
+                </repository>
+                <repository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-ethereum-maven</id>
+                    <name>bintray</name>
+                    <url>https://dl.bintray.com/ethereum/maven</url>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>bintray-ethereum-maven</id>
+                    <name>bintray-plugins</name>
+                    <url>https://dl.bintray.com/ethereum/maven</url>
+                </pluginRepository>
+            </pluginRepositories>
+            <id>bintray</id>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>bintray</activeProfile>
+    </activeProfiles>
+</settings>
+```
+
 ## Teste
 
 Mnemônico para fazer o Ganache criar os endereços utilizados na versão demo:
