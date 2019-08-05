@@ -1,0 +1,300 @@
+[
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunk4",
+				"type": "bytes26"
+			},
+			{
+				"name": "g1yiChunk1",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk2",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk3",
+				"type": "bytes32"
+			},
+			{
+				"name": "g1yiChunk4",
+				"type": "bytes26"
+			}
+		],
+		"name": "addPublicKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "eg1g1ai",
+				"type": "bytes"
+			},
+			{
+				"name": "g1yi",
+				"type": "bytes"
+			}
+		],
+		"name": "addPublicKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "getCertifier",
+		"outputs": [
+			{
+				"name": "addr_",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			},
+			{
+				"name": "numPublicKeys",
+				"type": "uint64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "addCertifier",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "index",
+				"type": "uint64"
+			}
+		],
+		"name": "getPublicKey",
+		"outputs": [
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1ai",
+				"type": "bytes"
+			},
+			{
+				"name": "g1yi",
+				"type": "bytes"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "email",
+				"type": "bytes32"
+			}
+		],
+		"name": "addCertifier",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			}
+		],
+		"name": "searchPublicKeyID",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "int64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"name": "searchPublicKeyID",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "int64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "certifierAddresses",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numCertifiers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			}
+		],
+		"name": "getPublicKeyByName",
+		"outputs": [
+			{
+				"name": "name_",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1ai",
+				"type": "bytes"
+			},
+			{
+				"name": "g1yi",
+				"type": "bytes"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	}
+]

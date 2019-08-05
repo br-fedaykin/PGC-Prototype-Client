@@ -1,0 +1,288 @@
+[
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numUsers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "domain",
+				"type": "bytes32"
+			},
+			{
+				"name": "path",
+				"type": "bytes32"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"name": "addServer",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "numServers",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "userAddresses",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "servers",
+		"outputs": [
+			{
+				"name": "domain",
+				"type": "bytes32"
+			},
+			{
+				"name": "path",
+				"type": "bytes32"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "getUser",
+		"outputs": [
+			{
+				"name": "addr_",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			},
+			{
+				"name": "numRecordings",
+				"type": "uint32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "email",
+				"type": "bytes32"
+			}
+		],
+		"name": "addUser",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "index",
+				"type": "uint32"
+			}
+		],
+		"name": "getRecording",
+		"outputs": [
+			{
+				"name": "id",
+				"type": "uint64"
+			},
+			{
+				"name": "timestamp",
+				"type": "uint128"
+			},
+			{
+				"name": "c0",
+				"type": "string"
+			},
+			{
+				"name": "c1",
+				"type": "string"
+			},
+			{
+				"name": "c2",
+				"type": "string"
+			},
+			{
+				"name": "c3",
+				"type": "string"
+			},
+			{
+				"name": "filename",
+				"type": "string"
+			},
+			{
+				"name": "serverID",
+				"type": "uint64"
+			},
+			{
+				"name": "key",
+				"type": "bytes32"
+			},
+			{
+				"name": "hashing",
+				"type": "bytes32"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "addUser",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "timestamp",
+				"type": "uint40"
+			},
+			{
+				"name": "c0",
+				"type": "string"
+			},
+			{
+				"name": "c1",
+				"type": "string"
+			},
+			{
+				"name": "c2",
+				"type": "string"
+			},
+			{
+				"name": "c3",
+				"type": "string"
+			},
+			{
+				"name": "filename",
+				"type": "string"
+			},
+			{
+				"name": "serverID",
+				"type": "uint64"
+			},
+			{
+				"name": "key",
+				"type": "bytes32"
+			},
+			{
+				"name": "hashing",
+				"type": "bytes32"
+			}
+		],
+		"name": "addRecording",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	}
+]
