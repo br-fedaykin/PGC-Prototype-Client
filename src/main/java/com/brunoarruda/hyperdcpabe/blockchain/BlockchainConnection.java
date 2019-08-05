@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.crypto.ECKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongycastle.util.encoders.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
@@ -36,8 +37,10 @@ public class BlockchainConnection {
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
     private final String networkURL;
-    private String contractAddress;
-    private SmartDCPABE contract;
+    private String contractFilesAddress;
+    private String contractAuthorityAddress;
+    private SmartDCPABEFiles contractFiles;
+    private SmartDCPABEAuthority contractAuthority;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -50,30 +53,40 @@ public class BlockchainConnection {
 
     // TODO: refactor URL as a POM field or command line/file config
     // POM field seems better, as it would allow different value for deploy/test cycles
-    public BlockchainConnection(String networkURL, String contractAddress) {
+    public BlockchainConnection(String networkURL, String contractAddress, String contractAuthorityAddress) {
         this.networkURL = networkURL;
-        this.contractAddress = contractAddress;
+        this.contractFilesAddress = contractAddress;
+        this.contractAuthorityAddress = contractAuthorityAddress;
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
     }
 
-    public void deployContract(Credentials credentials) {
-        if (contract == null) {
+    public void deployContracts(Credentials credentials) {
+        ContractGasProvider cgp = new DefaultGasProvider();;
+        if (contractFilesAddress == null) {
+            RemoteCall<SmartDCPABEFiles> contractTX = SmartDCPABEFiles.deploy(web3j, credentials, cgp);
+            // BUG: the send() method leads to a RuntimeException about an invalid opcode.
             try {
-                ContractGasProvider contractGasProvider = new DefaultGasProvider();
-                if (contractAddress == null) {
-                    RemoteCall<SmartDCPABE> contractTX = SmartDCPABE.deploy(web3j, credentials, contractGasProvider);
-                    // BUG: the send() method leads to a RuntimeException about an invalid opcode.
-                    contract = contractTX.send();
-                    contractAddress = contract.getContractAddress();
-                } else {
-                    contract = SmartDCPABE.load(contractAddress, web3j, credentials, contractGasProvider);
-                }
+                contractFiles = contractTX.send();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            contractFilesAddress = contractFiles.getContractAddress();
         } else {
-            System.out.println("Contract already deployed at address " + contractAddress);
+            contractFiles = SmartDCPABEFiles.load(contractFilesAddress, web3j, credentials, cgp);
+        }
+        cgp = new DefaultGasProvider();
+        if (contractAuthorityAddress == null) {
+            RemoteCall<SmartDCPABEAuthority> contractTX = SmartDCPABEAuthority.deploy(web3j, credentials, cgp);
+            // BUG: the send() method leads to a RuntimeException about an invalid opcode.
+            try {
+                contractAuthority = contractTX.send();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            contractAuthorityAddress = contractFiles.getContractAddress();
+        } else {
+            contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);
         }
     }
 
@@ -147,22 +160,42 @@ public class BlockchainConnection {
     }
 
 	public void publishAuthority(String label, ObjectNode obj) {
-        // TODO: criar transação ao invés de salvar arquivo
-
-        File dir = new File(getBlockchainDataPath() + "Authority");
-        dir.mkdirs();
-        obj.get("name");
-        fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+        try {
+            String address = obj.get("address").asText();
+            String name = obj.get("name").asText();
+            String email = obj.get("email").asText();
+            contractAuthority.addCertifier(address, name, email).send();
+            Iterator<String> it = obj.get("authorityKeys").get("publicKeys").fieldNames();
+            while (it.hasNext()) {
+                String attrName = it.next();
+                JsonNode attrNode = obj.get("authorityKeys").get("publicKeys").get(attrName);
+                byte[] eg1g1ai = Base64.decode(attrNode.get("eg1g1ai").asText());
+                byte[] g1yi = Base64.decode(attrNode.get("g1yi").asText());
+                if (eg1g1ai.length < 97 || eg1g1ai.length > 128) {
+                    throw new RuntimeException("Key error: eg1g1ai does not fit four sized words");
+                }
+                if (g1yi.length < 97 || g1yi.length > 128) {
+                    throw new RuntimeException("Key error: g1yi does not fit four sized words");
+                }
+                contractAuthority.addPublicKey(address, attrName, eg1g1ai, g1yi);
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         System.out.println("Blockchain Interface - Authority published: " + label);
 	}
 
 	public void publishUser(String label, ObjectNode obj) {
-        // TODO: criar transação ao invés de salvar arquivo
-
-        File dir = new File(getBlockchainDataPath() + "User");
-        dir.mkdirs();
-        obj.get("name");
-        fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
+        try {
+            String address = obj.get("address").asText();
+            String name = obj.get("name").asText();
+            String email = obj.get("email").asText();
+            contractFiles.addUser(address, name, email).send();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         System.out.println("Blockchain Interface - User published: " + label);
 	}
 
@@ -276,6 +309,6 @@ public class BlockchainConnection {
 	}
 
 	public String getContractAddress() {
-		return contractAddress;
+		return contractFilesAddress;
 	}
 }

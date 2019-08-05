@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Scanner;
 
 import com.brunoarruda.hyperdcpabe.Client;
 
@@ -19,6 +20,9 @@ public class CommandLine {
     private static final Map<String, String> COMMAND_ALIAS = new Hashtable<>();
     private static final int BUFFER_SIZE = 1024;
     private static Client client;
+    private static Scanner sc;
+    private static String contractFilesAddress;
+    private static String contractAuthorityAddress;
 
     static {
         populateCommands();
@@ -65,6 +69,17 @@ public class CommandLine {
         switch (args[0]) {
             case "-m":
             case "--milestone":
+                sc = new Scanner(System.in);
+                System.out.println("Informe o endereço do contrato para usuários: ");
+                contractFilesAddress = sc.nextLine();
+                System.out.println("Informe o endereço do contrato para autoridades: ");
+                contractAuthorityAddress= sc.nextLine();
+                String commandArgs = "--init HTTP://127.0.0.1:7545 " + contractFilesAddress + " " + contractAuthorityAddress;
+                runCommand(commandArgs.split(" "));
+                commandArgs = "--create-user contract_owner contract_owner@email.com ";
+                commandArgs = commandArgs + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
+                runCommand(commandArgs.split(" "));
+                runCommand("--deploy".split(" "));
                 // needed to provide the file to be encrypted
                 String[] numberSplit = args[1].split("\\.");
                 int[] choices = new int[numberSplit.length];
@@ -72,6 +87,7 @@ public class CommandLine {
                     choices[i] = Integer.parseInt(numberSplit[i]);
                 }
                 runMilestone(choices);
+                sc.close();
                 break;
             default:
                 runCommand(args);
@@ -88,11 +104,13 @@ public class CommandLine {
         case "-i":
         case "--init":
             String networkURL = args[1];
-            String contractAddress = null;
-            if (args.length == 3) {
-                contractAddress = args[2];
+            String contractFilesAddress = null;
+            String contractAuthorityAddress = null;
+            if (args.length == 4) {
+                contractFilesAddress = args[2];
+                contractAuthorityAddress = args[3];
             }
-            client = new Client(networkURL, contractAddress);
+            client = new Client(networkURL, contractFilesAddress, contractAuthorityAddress);
             break;
         case "-l":
         case "--load":
@@ -211,12 +229,7 @@ public class CommandLine {
          * 2 java usa o código do ABE (supondo que possui o atributo1, obtém prontuário1
          * codificado e o decodifica)
          */
-
-        runCommand("--init HTTP://127.0.0.1:7545 0x42591fb4a06e81dbc0be7fad047e39717128f5ff".split(" "));
-        String args = "--create-user contract_owner contract_owner@email.com ";
-        args = args + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
-        runCommand(args.split(" "));
-        runCommand("--deploy".split(" "));
+        String args;
         if (choice[0] == 1) {
             // pre-setup to deliver file to be encrypted to user folder
             String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";

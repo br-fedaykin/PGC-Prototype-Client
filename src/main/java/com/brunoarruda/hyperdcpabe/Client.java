@@ -55,9 +55,11 @@ public final class Client {
                 throw new RuntimeException("Execute o comando --init informando o endereço de rede" +
                 " para conexão com a blockchain");
             }
-            String contractAddress = clientData.get("contractAddress").asText();
-            contractAddress = (contractAddress.equals("null")) ? null : contractAddress;
-            this.blockchain = new BlockchainConnection(networkURL, contractAddress);
+            String contractFilesAddress = clientData.get("contractFilesAddress").asText();
+            String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
+            contractFilesAddress = (contractFilesAddress.equals("null")) ? null : contractFilesAddress;
+            contractAuthorityAddress = (contractAuthorityAddress.equals("null")) ? null : contractAuthorityAddress;
+            this.blockchain = new BlockchainConnection(networkURL, contractFilesAddress, contractAuthorityAddress);
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
@@ -66,22 +68,23 @@ public final class Client {
     }
 
     public Client(String url) {
-        this(url, null);
+        this(url, null, null);
     }
 
-    public Client(String networkURL, String contractAddress) {
+    public Client(String networkURL, String contractFilesAddress, String contractAuthorityAddress) {
         fc = FileController.getInstance().configure(dataPath);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractFilesAddress, contractAuthorityAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
         clientData = (ObjectNode) fc.getMapper().createObjectNode();
         clientData.put("networkURL", networkURL);
-        clientData.put("contractAddress", contractAddress);
+        clientData.put("contractFilesAddress", contractFilesAddress);
+        clientData.put("contractAuthorityAddress", contractAuthorityAddress);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         this.server = new ServerConnection(SERVER_PORT);
     }
@@ -469,6 +472,6 @@ public final class Client {
 	}
 
 	public void deploy() {
-        this.blockchain.deployContract(user.getCredentials());
+        this.blockchain.deployContracts(user.getCredentials());
 	}
 }

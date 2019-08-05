@@ -47,13 +47,13 @@ public class User {
         this.setName(name);
         this.setEmail(email);
         this.setECKeys(ecKey);
+
         recordings = new ArrayList<Recording>();
 
         String[] ecKeyStr = ecKey.toStringWithPrivate().split("pub:| priv:");
         keysPlainText = new HashMap<String, String>();
         keysPlainText.put("public", ecKeyStr[1]);
         keysPlainText.put("private", ecKeyStr[2]);
-
         credentials = Credentials.create(ecKeyStr[2]);
         setAddress(credentials.getAddress());
         String userID = String.format("%s-%s", name, this.address);
