@@ -1,7 +1,7 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
 
-contract SmartDCPABE {
+contract SmartDCPABEFiles {
 
     struct User {
         address addr;
