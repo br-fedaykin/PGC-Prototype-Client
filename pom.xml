@@ -10,7 +10,6 @@
         <url>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</url>
         <developerConnection>scm:git:git@github.com:brunoarruda/PGC-Prototype-Client.git</developerConnection>
     </scm>
-
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -29,7 +28,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-nop</artifactId>
             <version>1.7.24</version>
-            <scope>test</scope>
+            <!-- <scope>test</scope> -->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
         <dependency>
@@ -58,23 +57,7 @@
             <artifactId>ethereumj-core</artifactId>
             <version>1.12.0-RELEASE</version>
         </dependency>
-        <dependency>
-            <groupId>org.ethereum</groupId>
-            <artifactId>rocksdbjni</artifactId>
-            <version>5.9.2</version>
-            <!-- BUG: Maven was not finding this repository on local storage. Download it to /lib/ -->
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/rocksdbjni-5.9.2.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>org.ethereum</groupId>
-            <artifactId>solcJ-all</artifactId>
-            <version>0.4.25</version>
-            <!-- BUG: Maven was not finding this repository on local storage. Download it to /lib/ -->
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/solcJ-all-0.4.25.jar</systemPath>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
