@@ -43,7 +43,7 @@ contract SmartDCPABEFiles {
     uint64 public numServers;
     uint256 public numUsers;
 
-    FileServer[] public servers;
+    FileServer[] servers;
     mapping (address => User) users;
     SmartDCPABEUtility util;
 
@@ -51,19 +51,20 @@ contract SmartDCPABEFiles {
         util = new SmartDCPABEUtility();
     }
 
-    function addUser(address addr, string memory name, string memory email) public {
-        addUser(addr, util.stringToBytes32(name), util.stringToBytes32(email));
-    }
+    // TODO: create cheaper functions using bytes32 instead of string in input
 
-    function addUser(address addr, bytes32 name, bytes32 email) public {
+    function addUser(address addr, string memory name, string memory email) public {
         userAddresses.push(addr);
         numUsers++;
-        users[addr] = User(addr, name, email, 0);
+        users[addr] = User(addr, util.stringToBytes32(name), util.stringToBytes32(email), 0);
     }
 
-    function addServer(bytes32 domain, bytes32 path, uint16 port) public {
-        servers[numServers] = FileServer(domain, path, port);
+    // TODO: dismember server logic from this contract
+
+    function addServer(string memory domain, string memory path, uint16 port) public returns (int64 serverIndex) {
+        servers[numServers] = FileServer(util.stringToBytes32(domain), util.stringToBytes32(path), port);
         numServers++;
+        return int64(numServers -1);
     }
 
     function addRecording(
@@ -82,11 +83,32 @@ contract SmartDCPABEFiles {
         bytes32 hashing
     )
         public
+        returns
+    (
+        uint32
+    )
     {
         User storage p = users[addr];
         p.files[p.numRecordings] = Recording(p.numRecordings, timestamp, Ciphertext(c0, c1, c2, c3),
             FileInfo(filename, serverID, key, hashing));
         p.numRecordings++;
+        return p.numRecordings - 1;
+    }
+
+    function getServerID(string memory domain) public view returns (int64) {
+        bytes32 domainBytes32 = util.stringToBytes32(domain);
+        for (uint64 i = 0; i < numServers; i++) {
+            if (domainBytes32 == servers[i].domain) {
+                return int64(i);
+            }
+        }
+        return -1;
+    }
+
+    function getServer(uint64 index) public view returns (string memory domain, string memory path, uint16 port) {
+        assert(index < numServers);
+        FileServer storage s = servers[index];
+        return (util.bytes32ToString(s.domain), util.bytes32ToString(s.path), s.port);
     }
 
     function getUser

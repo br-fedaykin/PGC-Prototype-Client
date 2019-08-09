@@ -14,25 +14,22 @@
 		"type": "function"
 	},
 	{
-		"constant": false,
+		"constant": true,
 		"inputs": [
 			{
 				"name": "domain",
-				"type": "bytes32"
-			},
-			{
-				"name": "path",
-				"type": "bytes32"
-			},
-			{
-				"name": "port",
-				"type": "uint16"
+				"type": "string"
 			}
 		],
-		"name": "addServer",
-		"outputs": [],
+		"name": "getServerID",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int64"
+			}
+		],
 		"payable": false,
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -50,6 +47,33 @@
 		"type": "function"
 	},
 	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "domain",
+				"type": "string"
+			},
+			{
+				"name": "path",
+				"type": "string"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"name": "addServer",
+		"outputs": [
+			{
+				"name": "serverIndex",
+				"type": "int64"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"constant": true,
 		"inputs": [
 			{
@@ -62,33 +86,6 @@
 			{
 				"name": "",
 				"type": "address"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "servers",
-		"outputs": [
-			{
-				"name": "domain",
-				"type": "bytes32"
-			},
-			{
-				"name": "path",
-				"type": "bytes32"
-			},
-			{
-				"name": "port",
-				"type": "uint16"
 			}
 		],
 		"payable": false,
@@ -124,28 +121,6 @@
 		],
 		"payable": false,
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "addr",
-				"type": "address"
-			},
-			{
-				"name": "name",
-				"type": "bytes32"
-			},
-			{
-				"name": "email",
-				"type": "bytes32"
-			}
-		],
-		"name": "addUser",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -274,9 +249,41 @@
 			}
 		],
 		"name": "addRecording",
-		"outputs": [],
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint32"
+			}
+		],
 		"payable": false,
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "index",
+				"type": "uint64"
+			}
+		],
+		"name": "getServer",
+		"outputs": [
+			{
+				"name": "domain",
+				"type": "string"
+			},
+			{
+				"name": "path",
+				"type": "string"
+			},
+			{
+				"name": "port",
+				"type": "uint16"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
