@@ -38,6 +38,7 @@ public class ServerConnection {
 
     private static final String HOST = "127.0.0.1";
     private static final String dataPath = "server";
+    private static final String port = "8081";
     private final int SERVER_PORT;
     private final FileController fc;
     private Map<String, String> serverKeys;
@@ -51,6 +52,13 @@ public class ServerConnection {
         this.serverKeys = new HashMap<String, String>();
         fc = FileController.getInstance();
         this.serverKeys = loadKeys();
+    }
+
+    /**
+     * @return the port
+     */
+    public String getPort() {
+        return port;
     }
 
     private Map<String, String> loadKeys() {
@@ -79,15 +87,15 @@ public class ServerConnection {
     }
 
    private String createKeyOnServer(String userID) {
-        String code = null;
+       String code = null;
         try {
             byte[] random = new byte[32];
             SecureRandom.getInstanceStrong().nextBytes(random);
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             byte[] hash = sha256.digest(random);
             code = Base64.getEncoder().encodeToString(hash);
-            code = code.substring(0, code.length() / 2).replace("/", "+");
             serverKeys.put(userID, code);
+            return code;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
@@ -99,7 +107,7 @@ public class ServerConnection {
         String userID = message.get("userID").asText();
         if (message.get("tx") == null) {
             if (serverKeys.get(userID) == null) {
-                createKeyOnServer(userID);
+                return createKeyOnServer(userID);
             }
         }
         return serverKeys.get(userID);
@@ -177,5 +185,14 @@ public class ServerConnection {
         }
         System.out.println("Server Connection - user " + userID + " redeemed his personal keys.");
         return pks;
+	}
+
+	public String getPath(String fileType) {
+        // TODO: Create enum ou mapa
+        if (fileType.equals("file")) {
+            return "file";
+        } else {
+            return "";
+        }
 	}
 }
