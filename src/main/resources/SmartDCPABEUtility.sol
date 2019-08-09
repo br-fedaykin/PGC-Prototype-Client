@@ -9,7 +9,7 @@ contract SmartDCPABEUtility {
             return 0x0;
         }
         assembly {
-            result := mload(add(source, 32))
+            result := mload(add(source, 0x20))
         }
     }
 
@@ -29,5 +29,15 @@ contract SmartDCPABEUtility {
             bytesStringTrimmed[j] = bytesString[j];
         }
         value = string(bytesStringTrimmed);
+    }
+
+    function trimBytes31(bytes31 source, uint8 size) public pure returns (bytes memory output) {
+        output = new bytes(size);
+        bytes32 source32 = bytes32(source);
+        for (uint j = 0; j < size; j++) {
+            byte char = byte(bytes32(uint(source32) * 2 ** (8 * j)));
+            output[j] = char;
+        }
+        return output;
     }
 }
