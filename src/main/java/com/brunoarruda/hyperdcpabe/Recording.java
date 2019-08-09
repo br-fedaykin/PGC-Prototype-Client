@@ -33,8 +33,10 @@ public class Recording {
         EncryptedFile,
     }
 
-    private String url;
+    private String domain;
+    private String path;
     private String key;
+    private String port;
     private String originalFileName;
     private String encryptedFileName;
     private Message AESKey;
@@ -44,11 +46,11 @@ public class Recording {
     private long timestamp;
     private String signature;
     private String hash;
-    private String path;
+    private String filePath;
     private boolean originalFileChanged = false;
 
-    public Recording(String path, String fileName, CiphertextJSON ct) {
-        this.path = path;
+    public Recording(String filePath, String fileName, CiphertextJSON ct) {
+        this.filePath = filePath;
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         // gets only file name without extension
@@ -56,6 +58,34 @@ public class Recording {
         this.ct = ct;
         this.setSignature("Signature to proof ownership of id (EC public key)");
         digestData();
+    }
+
+    /**
+     * @return the path
+     */
+    public String getPath() {
+        return path;
+    }
+
+    /**
+     * @param path the path to set
+     */
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    /**
+     * @return the port
+     */
+    public String getPort() {
+        return port;
+    }
+
+    /**
+     * @param port the port to set
+     */
+    public void setPort(String port) {
+        this.port = port;
     }
 
     @JsonIgnore
@@ -75,11 +105,11 @@ public class Recording {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.ct = ct;
-        this.url = url;
+        this.domain = url;
         this.key = key;
         this.recordingFileName = recordingName;
         this.timestamp = timestamp;
-        this.path = path;
+        this.filePath = path;
         this.hash = hash;
     }
 
@@ -139,37 +169,37 @@ public class Recording {
         this.key = key;
     }
 
-    public String getUrl() {
-        return url;
+    public String getDomain() {
+        return domain;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setDomain(String domain) {
+        this.domain = domain;
     }
 
-    public String getPath() {
-        return path;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     public void decrypt(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);
-        File f = new File(path + originalFileName);
+        File f = new File(filePath + originalFileName);
         f.delete();
-        processDataWithBlockCipher(aes, path, encryptedFileName, originalFileName);
+        processDataWithBlockCipher(aes, filePath, encryptedFileName, originalFileName);
         System.out.println("Client - File decrypted: " + originalFileName);
     }
 
     public void encryptFile(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
-        File f = new File(path + encryptedFileName);
+        File f = new File(filePath + encryptedFileName);
         f.delete();
-        processDataWithBlockCipher(aes, path, originalFileName, encryptedFileName);
+        processDataWithBlockCipher(aes, filePath, originalFileName, encryptedFileName);
         System.out.println("Client - File encrypted: " + originalFileName);
     }
 
@@ -205,9 +235,9 @@ public class Recording {
     }
 
     private void writeData(List<byte[]> data, String file) {
-        File f = new File(path, file);
+        File f = new File(filePath, file);
         f.delete();
-        try (FileOutputStream fos = new FileOutputStream(path + file)) {
+        try (FileOutputStream fos = new FileOutputStream(filePath + file)) {
             for (byte[] buff : data) {
                 fos.write(buff);
             }
@@ -261,7 +291,7 @@ public class Recording {
 
     private List<byte[]> readData(String file) {
         List<byte[]> data = null;
-        try (FileInputStream fis = new FileInputStream(path + file);
+        try (FileInputStream fis = new FileInputStream(filePath + file);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             data = new ArrayList<byte[]>();
             byte[] buff = new byte[BUFFER_SIZE];

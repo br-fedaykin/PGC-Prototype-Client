@@ -175,8 +175,9 @@ public final class Client {
             // TODO: publicar todos os arquivos prontos disponíveis
         } else {
             Recording r = user.getRecordingByFile(content);
+            r.setTimestamp(System.currentTimeMillis() / 1000);
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
-            obj.remove("path");
+            obj.remove("filePath");
             blockchain.publishData(user.getID(), obj);
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
@@ -322,10 +323,12 @@ public final class Client {
             ObjectNode message = fc.getMapper().createObjectNode();
             message.put("name", user.getName());
             message.put("userID", user.getID());
+            message.put("address", user.getAddress());
             String key = server.reserveSpace(message);
-            r.setUrl(server.getHost());
+            r.setDomain(server.getHost());
+            r.setPath(server.getPath("file"));
+            r.setPort(server.getPort());
             r.setKey(key);
-            r.setTimestamp(System.currentTimeMillis() / 1000);
             publish(content);
         } else {
             String userID = user.getID();
@@ -343,7 +346,7 @@ public final class Client {
         for (String fileName : recordings) {
             oneRecord = blockchain.getRecording(userID, fileName);
             if (oneRecord != null) {
-                oneRecord.setPath(fc.getUserDirectory(user));
+                oneRecord.setFilePath(fc.getUserDirectory(user));
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
                 oneRecord.writeData(data, FileMode.EncryptedFile);
                 r.add(oneRecord);
