@@ -8,56 +8,6 @@
 			},
 			{
 				"name": "name",
-				"type": "bytes32"
-			},
-			{
-				"name": "eg1g1aiChunk1",
-				"type": "bytes32"
-			},
-			{
-				"name": "eg1g1aiChunk2",
-				"type": "bytes32"
-			},
-			{
-				"name": "eg1g1aiChunk3",
-				"type": "bytes32"
-			},
-			{
-				"name": "eg1g1aiChunk4",
-				"type": "bytes26"
-			},
-			{
-				"name": "g1yiChunk1",
-				"type": "bytes32"
-			},
-			{
-				"name": "g1yiChunk2",
-				"type": "bytes32"
-			},
-			{
-				"name": "g1yiChunk3",
-				"type": "bytes32"
-			},
-			{
-				"name": "g1yiChunk4",
-				"type": "bytes26"
-			}
-		],
-		"name": "addPublicKey",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "addr",
-				"type": "address"
-			},
-			{
-				"name": "name",
 				"type": "string"
 			},
 			{
@@ -115,6 +65,48 @@
 			},
 			{
 				"name": "name",
+				"type": "bytes32"
+			},
+			{
+				"name": "eg1g1aiChunks",
+				"type": "bytes32[3]"
+			},
+			{
+				"name": "eg1g1aiLastChunk",
+				"type": "bytes31"
+			},
+			{
+				"name": "eg1g1aiLastChunkSize",
+				"type": "uint8"
+			},
+			{
+				"name": "g1yiChunks",
+				"type": "bytes32[3]"
+			},
+			{
+				"name": "g1yiLastChunk",
+				"type": "bytes31"
+			},
+			{
+				"name": "g1yiLastChunkSize",
+				"type": "uint8"
+			}
+		],
+		"name": "addPublicKey",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "addr",
+				"type": "address"
+			},
+			{
+				"name": "name",
 				"type": "string"
 			},
 			{
@@ -144,7 +136,7 @@
 		"outputs": [
 			{
 				"name": "name",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"name": "eg1g1ai",
@@ -269,21 +261,21 @@
 			},
 			{
 				"name": "name",
-				"type": "bytes32"
+				"type": "string"
 			}
 		],
 		"name": "getPublicKeyByName",
 		"outputs": [
 			{
-				"name": "name_",
-				"type": "bytes32"
+				"name": "",
+				"type": "string"
 			},
 			{
-				"name": "eg1g1ai",
+				"name": "",
 				"type": "bytes"
 			},
 			{
-				"name": "g1yi",
+				"name": "",
 				"type": "bytes"
 			}
 		],
