@@ -108,17 +108,20 @@ public final class Client {
 
     public void getAttributes(String authority, String[] attributes) {
         Map<String, PublicKey> keys = null;
-        if (!hasPublicKeysOfAuthority(authority)) {
-            keys = blockchain.getABEPublicKeys(authority, attributes);
-            if (keys != null) {
-                if (hasPublicKeysOfAuthority(authority)) {
-                    publishedAttributes.replace(authority, keys);
+        if (!hasPublicKeyOfAuthority(authority)) {
+             publishedAttributes.put(authority, new HashMap<String, PublicKey>());
+        }
+        keys = blockchain.getABEPublicKeys(authority, attributes);
+        if (keys != null) {
+            for (String attr : attributes) {
+                if (hasPublicKeyOfAuthority(authority, attr)) {
+                    publishedAttributes.get(authority).replace(attr, keys.get(attr));
                 } else {
-                    publishedAttributes.put(authority, keys);
+                    publishedAttributes.get(authority).put(attr, keys.get(attr));
                 }
-                String path = getClientDirectory() + "PublicKeys\\";
-                fc.writeToDir(path, authority + ".json", keys);
             }
+            String path = getClientDirectory() + "PublicKeys\\";
+            fc.writeToDir(path, authority + ".json", keys);
         }
     }
 
@@ -152,20 +155,22 @@ public final class Client {
     }
 
     public void publish(String content) {
+        // TODO: create Message factory to build json objects
         String path = fc.getUserDirectory(user);
         ObjectNode obj;
         System.out.println("Client - publishing content: " + content);
         if (content.equals("user")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "User.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "personalABEKeys");
-            blockchain.publishUser(user.getID(), obj);
+            blockchain.publishUser(obj);
         } else if (content.equals("certifier")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "Certifier.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "authorityKeys.authorityID", "authorityKeys.secretKeys");
-            blockchain.publishAuthority(certifier.getID(), obj);
+            blockchain.publishAuthority(obj);
         } else if (content.equals("attributes")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "authorityPublicKeys.json");
-            blockchain.publishABEKeys(certifier.getID(), obj);
+            obj.put("address", certifier.getAddress());
+            blockchain.publishABEKeys(obj);
         } else if (content.equals(".")) {
             // TODO: publicar todos os arquivos prontos disponíveis
         } else {
@@ -215,11 +220,16 @@ public final class Client {
         return publishedAttributes.get(authority);
     }
 
-    public boolean hasPublicKeysOfAuthority(String authority) {
-        if (publishedAttributes == null) {
+    public boolean hasPublicKeyOfAuthority(String authority) {
+        if (publishedAttributes == null || !publishedAttributes.containsKey(authority)) {
             return false;
         }
-        return publishedAttributes.containsKey(authority);
+        return true;
+    }
+
+    public boolean hasPublicKeyOfAuthority(String authority, String attribute) {
+        boolean authorityExists = hasPublicKeyOfAuthority(authority);
+        return authorityExists && publishedAttributes.get(authority).containsKey(attribute);
     }
 
     /**
@@ -316,7 +326,6 @@ public final class Client {
             r.setUrl(server.getHost());
             r.setKey(key);
             r.setTimestamp(System.currentTimeMillis() / 1000);
-            System.out.println("Client - publishing file: " + content);
             publish(content);
         } else {
             String userID = user.getID();

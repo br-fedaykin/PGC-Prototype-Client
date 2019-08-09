@@ -4,6 +4,7 @@ import java.io.File;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -21,6 +22,8 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tuples.generated.Tuple3;
+import org.web3j.tuples.generated.Tuple4;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 
@@ -123,22 +126,26 @@ public class BlockchainConnection {
     }
 
     public Map<String, PublicKey> getABEPublicKeys(String authority, String[] attributes) {
-        String path = getBlockchainDataPath() + "PublicABEKeys\\";
-        File dir = new File(path);
-        if (!dir.exists()) {
-            System.out.println("A autoridade " + authority + " não publicou nenhum atributo.");
-            return null;
-        } else {
-            for (String json : dir.list()) {
-                if (json.startsWith(authority)) {
-                    try {
-                        return fc.readAsMap(path, json, String.class, PublicKey.class);
-                    } catch (Exception e) {
-                    }
+        // TODO: alternar isso para um JSON
+        String authName = authority.split("-")[0];
+        String address = authority.split("-")[1];
+        try {
+            Tuple4<String, String, String, BigInteger> certifier = contractAuthority.getCertifier(address).send();
+            if (certifier.getValue4().equals(BigInteger.ZERO)) {
+                System.out.println("A autoridade " + authName + " não publicou nenhum atributo.");
+                return null;
+            } else {
+                Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
+                for (String attr : attributes) {
+                    Tuple3<String, byte[], byte[]> keyData = contractAuthority.getPublicKeyByName(address, attr).send();
+                    keys.put(attr, new PublicKey(keyData.getValue2(), keyData.getValue3()));
                 }
+                return keys;
             }
-            return null;
+        } catch (Exception e1) {
+            e1.printStackTrace();
         }
+        return null;
     }
 
     public void publishData(String userID, ObjectNode obj) {
@@ -147,56 +154,58 @@ public class BlockchainConnection {
         String fileName = obj.get("recordingFileName").asText() + ".json";
         dir.mkdirs();
         fc.writeToDir(path, fileName, obj);
-        System.out.println("Blockchain Interface - data published: " + fileName);
+        System.out.println("Blockchain - data published: " + fileName);
     }
 
-    public void publishABEKeys(String label, ObjectNode obj) {
+    public void publishABEKeys(ObjectNode obj) {
         // TODO: criar transação ao invés de salvar arquivo
-
-        File dir = new File(getBlockchainDataPath() + "PublicABEKeys");
-        dir.mkdirs();
-        fc.writeToDir(dir.getPath() + "\\", label + ".json", obj);
-        System.out.println("Blockchain Interface - Public Keys of authority " + label + " published");
+        // TODO: checar existência de certificador com o endereço fornecido
+        String address = obj.remove("address").asText();
+        Iterator<String> it = obj.fieldNames();
+        while (it.hasNext()) {
+            String attrName = it.next();
+            JsonNode attrNode = obj.get(attrName);
+            byte[] eg1g1ai = Base64.decode(attrNode.get("eg1g1ai").asText());
+            byte[] g1yi = Base64.decode(attrNode.get("g1yi").asText());
+            if (eg1g1ai.length < 97 || eg1g1ai.length > 127) {
+                throw new RuntimeException("Key error: eg1g1ai does not fit in four sized words");
+            }
+            if (g1yi.length < 97 || g1yi.length > 127) {
+                throw new RuntimeException("Key error: g1yi does not fit in four sized words");
+            }
+            try {
+                contractAuthority.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            System.out.println("Blockchain - Public Keys of attribute " + attrName + " published");
+        }
     }
 
-	public void publishAuthority(String label, ObjectNode obj) {
+	public void publishAuthority(ObjectNode obj) {
         try {
             String address = obj.get("address").asText();
             String name = obj.get("name").asText();
             String email = obj.get("email").asText();
             contractAuthority.addCertifier(address, name, email).send();
-            Iterator<String> it = obj.get("authorityKeys").get("publicKeys").fieldNames();
-            while (it.hasNext()) {
-                String attrName = it.next();
-                JsonNode attrNode = obj.get("authorityKeys").get("publicKeys").get(attrName);
-                byte[] eg1g1ai = Base64.decode(attrNode.get("eg1g1ai").asText());
-                byte[] g1yi = Base64.decode(attrNode.get("g1yi").asText());
-                if (eg1g1ai.length < 97 || eg1g1ai.length > 128) {
-                    throw new RuntimeException("Key error: eg1g1ai does not fit four sized words");
-                }
-                if (g1yi.length < 97 || g1yi.length > 128) {
-                    throw new RuntimeException("Key error: g1yi does not fit four sized words");
-                }
-                contractAuthority.addPublicKey(address, attrName, eg1g1ai, g1yi);
-            }
+
+            System.out.println("Blockchain - Authority published: " + name);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        System.out.println("Blockchain Interface - Authority published: " + label);
 	}
 
-	public void publishUser(String label, ObjectNode obj) {
+	public void publishUser(ObjectNode obj) {
+        String address = obj.get("address").asText();
+        String name = obj.get("name").asText();
+        String email = obj.get("email").asText();
         try {
-            String address = obj.get("address").asText();
-            String name = obj.get("name").asText();
-            String email = obj.get("email").asText();
             contractFiles.addUser(address, name, email).send();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        System.out.println("Blockchain Interface - User published: " + label);
+        System.out.println("Blockchain - User published: " + name);
 	}
 
 	public Recording getRecording(String userID, String fileName) {
@@ -205,12 +214,12 @@ public class BlockchainConnection {
         String fileNameEdited = fileName.split("\\..+?$")[0] + ".json";
         if (new File(path + fileName).exists()) {
             r = fc.readFromDir(path, fileName, Recording.class);
-            System.out.println("Blockchain Interface - Data found: " + fileName);
+            System.out.println("Blockchain - Data found: " + fileName);
         } else if (new File(path + fileNameEdited).exists()) {
             r = fc.readFromDir(path, fileNameEdited, Recording.class);
-            System.out.println("Blockchain Interface - Data found: " + fileName);
+            System.out.println("Blockchain - Data found: " + fileName);
         } else {
-            System.out.println("Blockchain Interface - File " + fileName + " not found on blockchain");
+            System.out.println("Blockchain - File " + fileName + " not found on blockchain");
         }
         return r;
 	}
@@ -218,7 +227,7 @@ public class BlockchainConnection {
 	public void publishAttributeRequest(ObjectNode msg) {
         String userID = msg.get("userID").asText();
         if (!userExists(userID)) {
-            System.out.println("Blockchain Interface - User does not exist in blockchain");
+            System.out.println("Blockchain - User does not exist in blockchain");
         } else {
             String authority = msg.get("authority").asText();
             String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
@@ -228,7 +237,7 @@ public class BlockchainConnection {
                 for (JsonNode r : allRequests) {
                     if (r.get("authority").equals(msg.get("authority")) &&
                         r.get("attributes").equals(msg.get("attributes"))) {
-                        System.out.println("Blockchain Interface - Request already made.");
+                        System.out.println("Blockchain - Request already made.");
                         hadAlreadyDone = true;
                         break;
                     }
@@ -236,12 +245,12 @@ public class BlockchainConnection {
                 if (!hadAlreadyDone) {
                     allRequests.add(msg);
                     fc.writeToDir(path, userID + ".json", allRequests);
-                    System.out.println("Blockchain Interface - Attribute Request published: " + userID);
+                    System.out.println("Blockchain - Attribute Request published: " + userID);
                 }
             } else {
                 allRequests = fc.getMapper().createArrayNode().add(msg);
                 fc.writeToDir(path, userID + ".json", allRequests);
-                System.out.println("Blockchain Interface - Attribute Request published: " + userID);
+                System.out.println("Blockchain - Attribute Request published: " + userID);
             }
 
         }
@@ -301,7 +310,7 @@ public class BlockchainConnection {
             }
         }
         fc.writeToDir(path, userID + ".json", requests);
-        System.out.println("Blockchain Interface - Attribute request processed by " + certifierID + ". Result: " + newStatus);
+        System.out.println("Blockchain - Attribute request processed by " + certifierID + ". Result: " + newStatus);
 	}
 
 	public String getNetworkURL() {
