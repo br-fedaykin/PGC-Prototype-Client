@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.crypto.ECKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spongycastle.util.encoders.Base64;
+import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
@@ -149,12 +149,35 @@ public class BlockchainConnection {
     }
 
     public void publishData(String userID, ObjectNode obj) {
-        String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
-        File dir = new File(path);
-        String fileName = obj.get("recordingFileName").asText() + ".json";
-        dir.mkdirs();
-        fc.writeToDir(path, fileName, obj);
-        System.out.println("Blockchain - data published: " + fileName);
+        String domain = obj.get("domain").asText();
+        String path = obj.get("path").asText();
+        BigInteger port = obj.get("port").bigIntegerValue();
+        BigInteger serverID = null;
+        try {
+            serverID = contractFiles.getServerID(domain).send();
+            if (serverID.longValue() == -1) {
+                serverID = contractFiles.addServer(domain, path, port).send();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        String address = obj.get("address").asText();
+        BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
+        String c0 = obj.get("ciphertext").get("c0").asText();
+        String c1 = obj.get("ciphertext").get("c0").asText();
+        String c2 = obj.get("ciphertext").get("c0").asText();
+        String c3 = obj.get("ciphertext").get("c0").asText();
+        String fileName = obj.get("fileName").asText();
+        byte[] key = Base64.getDecoder().decode(obj.get("key").asText());
+        byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
+        int numRecording = -1;
+        try {
+            BigInteger numRecording_ = contractFiles.addRecording(address, timestamp, c0, c1, c2, c3, fileName, serverID, key, hash).send();
+            numRecording = numRecording_.intValue();
+            System.out.println("Blockchain - data published: " + fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void publishABEKeys(ObjectNode obj) {
@@ -165,8 +188,8 @@ public class BlockchainConnection {
         while (it.hasNext()) {
             String attrName = it.next();
             JsonNode attrNode = obj.get(attrName);
-            byte[] eg1g1ai = Base64.decode(attrNode.get("eg1g1ai").asText());
-            byte[] g1yi = Base64.decode(attrNode.get("g1yi").asText());
+            byte[] eg1g1ai = Base64.getDecoder().decode(attrNode.get("eg1g1ai").asText());
+            byte[] g1yi = Base64.getDecoder().decode(attrNode.get("g1yi").asText());
             if (eg1g1ai.length < 97 || eg1g1ai.length > 127) {
                 throw new RuntimeException("Key error: eg1g1ai does not fit in four sized words");
             }
