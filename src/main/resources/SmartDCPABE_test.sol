@@ -1,6 +1,6 @@
 pragma solidity >=0.5.1 <0.6.0;
 import "remix_tests.sol"; // this import is automatically injected by Remix.
-import "./SmartDCPABE.sol";
+import "./SmartDCPABEFiles.sol";
 
 contract UserTest {
 

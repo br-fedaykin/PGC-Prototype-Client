@@ -1,21 +1,16 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
+import "./SmartDCPABEUsers.sol";
 
 contract SmartDCPABEFiles {
 
-    struct User {
-        address addr;
-        bytes32 name;
-        bytes32 email;
-        uint32 numRecordings;
-        mapping (uint32 => Recording) files;
-    }
-
     struct Recording {
-        uint64 id;
-        uint128 timestamp;
+        string filename;
+        uint64 serverID;
+        bytes32 key;
+        bytes32 hashing;
+        uint64 timestamp;
         Ciphertext ct;
-        FileInfo info;
     }
 
     struct Ciphertext {
@@ -31,68 +26,53 @@ contract SmartDCPABEFiles {
         uint16 port;
     }
 
-    struct FileInfo {
-        string filename;
-        uint64 serverID;
-        bytes32 key;
-        bytes32 hashing;
-    }
-
-    address[] public userAddresses;
-
     uint64 public numServers;
-    uint256 public numUsers;
+    // essa estrutura presume que quem pesquisa um arquivo sabe o seu nome
+    // caso: é necessário baixar todos os arquivos de um usuário.
+    // não se sabe os nomes, então como sabê-los?
+    mapping (address => bytes32[]) fileNames;
+    mapping (address => mapping(bytes32 => Recording)) files;
 
     FileServer[] servers;
-    mapping (address => User) users;
     SmartDCPABEUtility util;
+    SmartDCPABEUsers users;
 
-    constructor () public {
+    constructor (address userContract) public {
         util = new SmartDCPABEUtility();
-    }
-
-    // TODO: create cheaper functions using bytes32 instead of string in input
-
-    function addUser(address addr, string memory name, string memory email) public {
-        userAddresses.push(addr);
-        numUsers++;
-        users[addr] = User(addr, util.stringToBytes32(name), util.stringToBytes32(email), 0);
+        users = SmartDCPABEUsers(userContract);
     }
 
     // TODO: dismember server logic from this contract
 
-    function addServer(string memory domain, string memory path, uint16 port) public returns (int64 serverIndex) {
-        servers[numServers] = FileServer(util.stringToBytes32(domain), util.stringToBytes32(path), port);
+    function addServer(string memory domain, string memory path, uint16 port) public returns (uint64 serverIndex) {
+        servers.push(FileServer(util.stringToBytes32(domain), util.stringToBytes32(path), port));
+        serverIndex = numServers;
         numServers++;
-        return int64(numServers -1);
     }
 
     function addRecording(
         address addr,
         // recordings parameters
+        string memory filename,
+        uint64 serverID,
+        bytes32 key,
+        bytes32 hashing,
         uint40 timestamp,
         // ciphertext parameters
         string memory c0,
         string memory c1,
         string memory c2,
-        string memory c3,
-        // FileInfo parameters
-        string memory filename,
-        uint64 serverID,
-        bytes32 key,
-        bytes32 hashing
+        string memory c3
     )
         public
         returns
     (
-        uint32
+        uint32 recordingID
     )
     {
-        User storage p = users[addr];
-        p.files[p.numRecordings] = Recording(p.numRecordings, timestamp, Ciphertext(c0, c1, c2, c3),
-            FileInfo(filename, serverID, key, hashing));
-        p.numRecordings++;
-        return p.numRecordings - 1;
+        assert(users.isUser(addr));
+        files[addr][filename] = Recording(filename, serverID, key, hashing, timestamp, Ciphertext(c0, c1, c2, c3));
+        fileNames[addr].push(filename);
     }
 
     function getServerID(string memory domain) public view returns (int64) {
@@ -111,57 +91,60 @@ contract SmartDCPABEFiles {
         return (util.bytes32ToString(s.domain), util.bytes32ToString(s.path), s.port);
     }
 
-    function getUser
+    function getRecording
     (
-        address addr
+        address addr,
+        uint64 index
     )
         public
         view
         returns
     (
-        address addr_,
-        string memory name,
-        string memory email,
-        uint32 numRecordings
+        string memory,
+        uint64 serverID,
+        bytes32 key,
+        bytes32 hashing,
+        uint64 timestamp,
+        string memory c0,
+        string memory c1,
+        string memory c2,
+        string memory c3
     )
     {
-        User storage u = users[addr];
-        return (addr, util.bytes32ToString(u.name), util.bytes32ToString(u.email), u.numRecordings);
+        return getRecording(addr, fileNames[addr][index]);
     }
 
     function getRecording
     (
         address addr,
-        uint32 index
+        string memory filename
     )
         public
         view
         returns
     (
-        uint64 id,
-        uint128 timestamp,
+        string memory,
+        uint64 serverID,
+        bytes32 key,
+        bytes32 hashing,
+        uint64 timestamp,
         string memory c0,
         string memory c1,
         string memory c2,
-        string memory c3,
-        string memory filename,
-        uint64 serverID,
-        bytes32 key,
-        bytes32 hashing
+        string memory c3
     )
     {
-        Recording storage r = users[addr].files[index];
+        Recording storage r = files[addr];
         return (
-            r.id,
+            r.filename,
+            r.serverID,
+            r.key,
+            r.hashing,
             r.timestamp,
             r.ct.base64C0,
             r.ct.base64C1,
             r.ct.base64C2,
-            r.ct.base64C3,
-            r.info.filename,
-            r.info.serverID,
-            r.info.key,
-            r.info.hashing
+            r.ct.base64C3
         );
     }
 }

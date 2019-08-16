@@ -48,6 +48,7 @@ public class Recording {
     private String hash;
     private String filePath;
     private boolean originalFileChanged = false;
+    private int recordingID;
 
     public Recording(String filePath, String fileName, CiphertextJSON ct) {
         this.filePath = filePath;
@@ -58,6 +59,20 @@ public class Recording {
         this.ct = ct;
         this.setSignature("Signature to proof ownership of id (EC public key)");
         digestData();
+    }
+
+    /**
+     * @return the recordingID
+     */
+    public int getRecordingID() {
+        return recordingID;
+    }
+
+    /**
+     * @param recordingID the recordingID to set
+     */
+    public void setRecordingID(int recordingID) {
+        this.recordingID = recordingID;
     }
 
     /**

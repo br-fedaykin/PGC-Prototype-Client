@@ -148,7 +148,7 @@ public class BlockchainConnection {
         return null;
     }
 
-    public void publishData(String userID, ObjectNode obj) {
+    public int publishData(String userID, ObjectNode obj) {
         String domain = obj.get("domain").asText();
         String path = obj.get("path").asText();
         BigInteger port = obj.get("port").bigIntegerValue();
@@ -156,7 +156,8 @@ public class BlockchainConnection {
         try {
             serverID = contractFiles.getServerID(domain).send();
             if (serverID.longValue() == -1) {
-                serverID = contractFiles.addServer(domain, path, port).send();
+                contractFiles.addServer(domain, path, port).send();
+                serverID = contractFiles.getServerID(domain).send();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -164,20 +165,22 @@ public class BlockchainConnection {
         String address = obj.get("address").asText();
         BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
         String c0 = obj.get("ciphertext").get("c0").asText();
-        String c1 = obj.get("ciphertext").get("c0").asText();
-        String c2 = obj.get("ciphertext").get("c0").asText();
-        String c3 = obj.get("ciphertext").get("c0").asText();
+        String c1 = obj.get("ciphertext").get("c1").asText();
+        String c2 = obj.get("ciphertext").get("c2").asText();
+        String c3 = obj.get("ciphertext").get("c3").asText();
         String fileName = obj.get("fileName").asText();
         byte[] key = Base64.getDecoder().decode(obj.get("key").asText());
         byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
         int numRecording = -1;
         try {
-            BigInteger numRecording_ = contractFiles.addRecording(address, timestamp, c0, c1, c2, c3, fileName, serverID, key, hash).send();
+            BigInteger numRecording_ = contractFiles.getUser(address).send().getValue4();
+            contractFiles.addRecording(address, timestamp, c0, c1, c2, c3, fileName, serverID, key, hash).send();
             numRecording = numRecording_.intValue();
             System.out.println("Blockchain - data published: " + fileName);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return numRecording;
     }
 
     public void publishABEKeys(ObjectNode obj) {
@@ -248,13 +251,13 @@ public class BlockchainConnection {
 	}
 
 	public void publishAttributeRequest(ObjectNode msg) {
-        String userID = msg.get("userID").asText();
-        if (!userExists(userID)) {
+        String address = msg.get("address").asText();
+        if (!userExists(address)) {
             System.out.println("Blockchain - User does not exist in blockchain");
         } else {
             String authority = msg.get("authority").asText();
             String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
-            ArrayNode allRequests = (ArrayNode) fc.loadAsJSON(path, userID + ".json");
+            ArrayNode allRequests = (ArrayNode) fc.loadAsJSON(path, address + ".json");
             if (allRequests != null) {
                 boolean hadAlreadyDone = false;
                 for (JsonNode r : allRequests) {
@@ -267,21 +270,26 @@ public class BlockchainConnection {
                 }
                 if (!hadAlreadyDone) {
                     allRequests.add(msg);
-                    fc.writeToDir(path, userID + ".json", allRequests);
-                    System.out.println("Blockchain - Attribute Request published: " + userID);
+                    fc.writeToDir(path, address + ".json", allRequests);
+                    System.out.println("Blockchain - Attribute Request published: " + address);
                 }
             } else {
                 allRequests = fc.getMapper().createArrayNode().add(msg);
-                fc.writeToDir(path, userID + ".json", allRequests);
-                System.out.println("Blockchain - Attribute Request published: " + userID);
+                fc.writeToDir(path, address + ".json", allRequests);
+                System.out.println("Blockchain - Attribute Request published: " + address);
             }
 
         }
 	}
 
-    public boolean userExists(String userID) {
-        String path = getBlockchainDataPath() + "User\\";
-        return new File(path + userID + ".json").exists();
+    public boolean userExists(String address) {
+        Tuple4<String, String, String, BigInteger> user = null;
+        try {
+            user = contractFiles.getUser(address).send();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return user != null && !user.getValue1().equals("");
     }
 
     public ArrayNode getAttributeRequestsForRequester(String userID, String status) {
