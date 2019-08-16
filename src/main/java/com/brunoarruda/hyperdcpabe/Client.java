@@ -177,8 +177,9 @@ public final class Client {
             Recording r = user.getRecordingByFile(content);
             r.setTimestamp(System.currentTimeMillis() / 1000);
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
+            obj.put("address", user.getAddress());
             obj.remove("filePath");
-            blockchain.publishData(user.getID(), obj);
+            r.setRecordingID(blockchain.publishData(user.getID(), obj));
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
         }
@@ -323,7 +324,6 @@ public final class Client {
             ObjectNode message = fc.getMapper().createObjectNode();
             message.put("name", user.getName());
             message.put("userID", user.getID());
-            message.put("address", user.getAddress());
             String key = server.reserveSpace(message);
             r.setDomain(server.getHost());
             r.setPath(server.getPath("file"));
@@ -393,7 +393,7 @@ public final class Client {
     public void requestAttribute(String authority, String[] attributes) {
         List<String> unneededRequests = new ArrayList<String>();
         ObjectNode msg = fc.getMapper().createObjectNode();
-        msg.put("userID", user.getID());
+        msg.put("address", user.getAddress());
         msg.put("authority", authority);
         msg.put("status", "pending");
         ArrayNode array = fc.getMapper().createArrayNode();
