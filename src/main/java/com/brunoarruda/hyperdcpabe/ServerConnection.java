@@ -94,7 +94,7 @@ public class ServerConnection {
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
             byte[] hash = sha256.digest(random);
             code = Base64.getEncoder().encodeToString(hash);
-            serverKeys.put(userID, code);
+            serverKeys.put(userID, code.replace("/", "-"));
             return code;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -110,7 +110,7 @@ public class ServerConnection {
                 return createKeyOnServer(userID);
             }
         }
-        return serverKeys.get(userID);
+        return serverKeys.get(userID).replace("-", "/");
     }
 
     public String getServerDataPath() {
