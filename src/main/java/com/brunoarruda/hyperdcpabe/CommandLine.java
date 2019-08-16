@@ -334,10 +334,10 @@ public class CommandLine {
         getFileFromResources(path, fileName, fileName);
     }
 
-    private static void getFileFromResources(String path, String inputfileName, String outputFileName) {
+    private static void getFileFromResources(String path, String inputFileName, String outputFileName) {
         ClassLoader classLoader = CommandLine.class.getClassLoader();
 
-        URL resource = classLoader.getResource(inputfileName);
+        URL resource = classLoader.getResource(inputFileName);
         if (resource == null) {
             throw new IllegalArgumentException("file is not found!");
         } else {
