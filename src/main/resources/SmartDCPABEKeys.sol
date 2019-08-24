@@ -68,7 +68,7 @@ contract SmartDCPABEKeys {
         public
     {
 
-        assert(authority.isAuthority(addr));
+        assert(authority.isCertifier(addr));
         Bytes127 memory eg1g1ai = Bytes127(eg1g1aiChunks[0], eg1g1aiChunks[1], eg1g1aiChunks[2], eg1g1aiLastChunk, eg1g1aiLastChunkSize);
         Bytes127 memory g1yi = Bytes127(g1yiChunks[0], g1yiChunks[1], g1yiChunks[2], g1yiLastChunk, g1yiLastChunkSize);
         ABEKeys[addr][name] = PublicKey(eg1g1ai, g1yi);
