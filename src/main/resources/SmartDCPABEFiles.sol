@@ -5,7 +5,6 @@ import "./SmartDCPABEUsers.sol";
 contract SmartDCPABEFiles {
 
     struct Recording {
-        string filename;
         uint64 serverID;
         bytes32 key;
         bytes32 hashing;
@@ -27,9 +26,6 @@ contract SmartDCPABEFiles {
     }
 
     uint64 public numServers;
-    // essa estrutura presume que quem pesquisa um arquivo sabe o seu nome
-    // caso: é necessário baixar todos os arquivos de um usuário.
-    // não se sabe os nomes, então como sabê-los?
     mapping (address => bytes32[]) fileNames;
     mapping (address => mapping(bytes32 => Recording)) files;
 
@@ -53,7 +49,7 @@ contract SmartDCPABEFiles {
     function addRecording(
         address addr,
         // recordings parameters
-        string memory filename,
+        bytes32 filename,
         uint64 serverID,
         bytes32 key,
         bytes32 hashing,
@@ -67,11 +63,11 @@ contract SmartDCPABEFiles {
         public
         returns
     (
-        uint32 recordingID
+        int64
     )
     {
         assert(users.isUser(addr));
-        files[addr][filename] = Recording(filename, serverID, key, hashing, timestamp, Ciphertext(c0, c1, c2, c3));
+        files[addr][filename] = Recording(serverID, key, hashing, timestamp, Ciphertext(c0, c1, c2, c3));
         fileNames[addr].push(filename);
     }
 
@@ -117,7 +113,7 @@ contract SmartDCPABEFiles {
     function getRecording
     (
         address addr,
-        string memory filename
+        bytes32 name
     )
         public
         view
@@ -134,9 +130,9 @@ contract SmartDCPABEFiles {
         string memory c3
     )
     {
-        Recording storage r = files[addr];
+        Recording storage r = files[addr][name];
         return (
-            r.filename,
+            util.bytes32ToString(name),
             r.serverID,
             r.key,
             r.hashing,
