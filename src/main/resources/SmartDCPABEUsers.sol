@@ -25,7 +25,7 @@ contract SmartDCPABEUsers {
     function addUser(address addr, string memory name, string memory email) public {
         userAddresses.push(addr);
         numUsers++;
-        users[addr] = User(addr, util.stringToBytes32(name), util.stringToBytes32(email), 0);
+        users[addr] = User(addr, util.stringToBytes32(name), util.stringToBytes32(email));
     }
 
     function isUser(address addr) public view returns (bool) {
@@ -42,11 +42,10 @@ contract SmartDCPABEUsers {
     (
         address addr_,
         string memory name,
-        string memory email,
-        uint32 numRecordings
+        string memory email
     )
     {
         User storage u = users[addr];
-        return (u.addr, util.bytes32ToString(u.name), util.bytes32ToString(u.email), u.numRecordings);
+        return (u.addr, util.bytes32ToString(u.name), util.bytes32ToString(u.email));
     }
 }
