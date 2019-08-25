@@ -293,6 +293,8 @@ public class BlockchainConnection {
     }
 
     public ArrayNode getAttributeRequestsForRequester(String userID, String status) {
+        // TODO: store last timestamp of checking to allow early exit of loop in smart contract
+
         String path = getBlockchainDataPath() + "AttributeRequest\\";
         String[] authorities = new File(path).list();
         ArrayNode allRequests = fc.getMapper().createArrayNode();
