@@ -41,12 +41,12 @@ public final class Client {
 
     private BlockchainConnection blockchain;
     private ServerConnection server;
-    private final String dataPath = "data";
+    private static final String DATA_PATH = "data";
 
     private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public Client() {
-        fc = FileController.getInstance().configure(dataPath);
+        fc = FileController.getInstance().configure(DATA_PATH);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
             loadUserData(clientData.get("userID").asText());
@@ -55,11 +55,14 @@ public final class Client {
                 throw new RuntimeException("Execute o comando --init informando o endereço de rede" +
                 " para conexão com a blockchain");
             }
-            String contractFilesAddress = clientData.get("contractFilesAddress").asText();
+            String contractUsersAddress = clientData.get("contractUsersAddress").asText();
             String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
+            String contractFilesAddress = clientData.get("contractFilesAddress").asText();
+            String contractKeysAddress = clientData.get("contractKeysAddress").asText();
             contractFilesAddress = (contractFilesAddress.equals("null")) ? null : contractFilesAddress;
             contractAuthorityAddress = (contractAuthorityAddress.equals("null")) ? null : contractAuthorityAddress;
-            this.blockchain = new BlockchainConnection(networkURL, contractFilesAddress, contractAuthorityAddress);
+            this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress,
+                    contractFilesAddress, contractKeysAddress);
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
@@ -68,23 +71,26 @@ public final class Client {
     }
 
     public Client(String url) {
-        this(url, null, null);
+        this(url, null, null, null, null);
     }
 
-    public Client(String networkURL, String contractFilesAddress, String contractAuthorityAddress) {
-        fc = FileController.getInstance().configure(dataPath);
+    public Client(String networkURL, String contractUsersAddress, String contractAuthorityAddress, String contractFilesAddress,
+                    String contractKeysAddress) {
+        fc = FileController.getInstance();
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractFilesAddress, contractAuthorityAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress, contractFilesAddress, contractKeysAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
         clientData = (ObjectNode) fc.getMapper().createObjectNode();
         clientData.put("networkURL", networkURL);
-        clientData.put("contractFilesAddress", contractFilesAddress);
+        clientData.put("contractUsersAddress", contractUsersAddress);
         clientData.put("contractAuthorityAddress", contractAuthorityAddress);
+        clientData.put("contractFilesAddress", contractFilesAddress);
+        clientData.put("contractKeysAddress", contractKeysAddress);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         this.server = new ServerConnection(SERVER_PORT);
     }
@@ -179,7 +185,7 @@ public final class Client {
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
             obj.put("address", user.getAddress());
             obj.remove("filePath");
-            r.setRecordingID(blockchain.publishData(user.getID(), obj));
+            r.setRecordingIndex(blockchain.publishData(user.getID(), obj));
             // TODO: modificar recording para obter informação da transação
             send(r.getFileName());
         }
@@ -237,8 +243,8 @@ public final class Client {
     /**
      * Getters and Setters
      */
-    public String getDataPath() {
-        return dataPath;
+    public static String getDataPath() {
+        return DATA_PATH;
     }
 
     public ECKey getKey() {
