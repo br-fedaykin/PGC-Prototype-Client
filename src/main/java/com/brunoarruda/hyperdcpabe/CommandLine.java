@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 import com.brunoarruda.hyperdcpabe.Client;
+import com.brunoarruda.hyperdcpabe.io.FileController;
 
 /**
  * CommandLine
@@ -21,8 +22,7 @@ public class CommandLine {
     private static final int BUFFER_SIZE = 1024;
     private static Client client;
     private static Scanner sc;
-    private static String contractFilesAddress;
-    private static String contractAuthorityAddress;
+    private static Map<String, String> contractAddress = new Hashtable<>();
 
     static {
         populateCommands();
@@ -69,18 +69,36 @@ public class CommandLine {
         switch (args[0]) {
             case "-m":
             case "--milestone":
-                sc = new Scanner(System.in);
-                System.out.println("Informe o endereço do contrato para usuários: ");
-                contractFilesAddress = sc.nextLine();
-                System.out.println("Informe o endereço do contrato para autoridades: ");
-                contractAuthorityAddress= sc.nextLine();
-                String commandArgs = "--init HTTP://127.0.0.1:7545 " + contractFilesAddress + " " + contractAuthorityAddress;
+                FileController fc = FileController.getInstance().configure(Client.getDataPath());
+                contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddress.json", String.class, String.class);
+                if (contractAddress.size() > 0 ) {
+                    System.out.println("Utilizando os contratos informados na última execução do programa.");
+                } else {
+                    sc = new Scanner(System.in);
+                    // FIXME: broken pattern, logic about contract should be in Client, not in Presentation layer
+                    // TODO: study the removal of contractAddress field from client and direct input in commandArgs
+                    System.out.println("Informe o endereço do contrato para usuários: ");
+                    contractAddress.put("Users", sc.nextLine());
+                    System.out.println("Informe o endereço do contrato para certificadores e requisições de atributos: ");
+                    contractAddress.put("Authority", sc.nextLine());
+                    System.out.println("Informe o endereço do contrato para os arquivos: ");
+                    contractAddress.put("Files", sc.nextLine());
+                    System.out.println("Informe o endereço do contrato para os atributos: ");
+                    contractAddress.put("Keys", sc.nextLine());
+                }
+                String commandArgs = "--init HTTP://127.0.0.1:7545";
+                commandArgs += " " + contractAddress.get("Users");
+                commandArgs += " " + contractAddress.get("Authority");
+                commandArgs += " " + contractAddress.get("Files");
+                commandArgs += " " + contractAddress.get("Keys");
                 runCommand(commandArgs.split(" "));
+
                 commandArgs = "--create-user contract_owner contract_owner@email.com ";
                 commandArgs = commandArgs + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
                 runCommand(commandArgs.split(" "));
                 runCommand("--deploy".split(" "));
-                // needed to provide the file to be encrypted
+
+                // parsing necessary to navigate through milestone function
                 String[] numberSplit = args[1].split("\\.");
                 int[] choices = new int[numberSplit.length];
                 for (int i = 0; i < choices.length; i++) {
@@ -90,27 +108,35 @@ public class CommandLine {
                 sc.close();
                 break;
             default:
+                if (client == null) {
+                    client = new Client();
+                }
                 runCommand(args);
                 break;
         }
+
+        FileController fc = FileController.getInstance();
+        fc.writeToDir(fc.getDataDirectory(), "contractAddress.json", contractAddress);
     }
 
     public static void runCommand(String[] args) {
-        if (client == null && !args[0].equals("-i") && !args[0].equals("--init")) {
-            client = new Client();
-        }
         String[] attributes;
         switch (args[0]) {
         case "-i":
         case "--init":
             String networkURL = args[1];
-            String contractFilesAddress = null;
+            String contractUsersAddress = null;
             String contractAuthorityAddress = null;
-            if (args.length == 4) {
+            String contractFilesAddress = null;
+            String contractKeysAddress = null;
+            if (args.length == 6) {
                 contractFilesAddress = args[2];
                 contractAuthorityAddress = args[3];
+                contractAuthorityAddress = args[4];
+                contractAuthorityAddress = args[5];
             }
-            client = new Client(networkURL, contractFilesAddress, contractAuthorityAddress);
+            client = new Client(networkURL, contractUsersAddress, contractAuthorityAddress, contractFilesAddress,
+                    contractKeysAddress);
             break;
         case "-l":
         case "--load":
