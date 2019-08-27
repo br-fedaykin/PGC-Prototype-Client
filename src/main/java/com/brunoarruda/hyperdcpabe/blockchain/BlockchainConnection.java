@@ -40,10 +40,18 @@ public class BlockchainConnection {
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
     private final String networkURL;
-    private String contractFilesAddress;
+    /*
+     * TODO: get contracts addresses together in a Map, or do that with contract
+     * objects, as they have the addresses in them
+     */
+    private String contractUsersAddress;
     private String contractAuthorityAddress;
-    private SmartDCPABEFiles contractFiles;
+    private String contractFilesAddress;
+    private String contractKeysAddress;
+    private SmartDCPABEUsers contractUsers;
     private SmartDCPABEAuthority contractAuthority;
+    private SmartDCPABEFiles contractFiles;
+    private SmartDCPABEKeys contractKeys;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -56,41 +64,43 @@ public class BlockchainConnection {
 
     // TODO: refactor URL as a POM field or command line/file config
     // POM field seems better, as it would allow different value for deploy/test cycles
-    public BlockchainConnection(String networkURL, String contractAddress, String contractAuthorityAddress) {
+    public BlockchainConnection(String networkURL, String contractUsersAddress, String contractAuthorityAddress, String contractFilesAddress, String contractKeysAddress) {
         this.networkURL = networkURL;
-        this.contractFilesAddress = contractAddress;
+        this.contractUsersAddress = contractUsersAddress;
         this.contractAuthorityAddress = contractAuthorityAddress;
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
     }
 
     public void deployContracts(Credentials credentials) {
-        ContractGasProvider cgp = new DefaultGasProvider();;
-        if (contractFilesAddress == null) {
-            RemoteCall<SmartDCPABEFiles> contractTX = SmartDCPABEFiles.deploy(web3j, credentials, cgp);
+        ContractGasProvider cgp = new DefaultGasProvider();
+        if (contractUsersAddress == null) {
+            RemoteCall<SmartDCPABEUsers> contractTX = SmartDCPABEUsers.deploy(web3j, credentials, cgp);
             // BUG: the send() method leads to a RuntimeException about an invalid opcode.
             try {
-                contractFiles = contractTX.send();
+                contractUsers = contractTX.send();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            contractFilesAddress = contractFiles.getContractAddress();
+            contractUsersAddress = contractUsers.getContractAddress();
         } else {
-            contractFiles = SmartDCPABEFiles.load(contractFilesAddress, web3j, credentials, cgp);
+            contractUsers = SmartDCPABEUsers.load(contractUsersAddress, web3j, credentials, cgp);
         }
         cgp = new DefaultGasProvider();
         if (contractAuthorityAddress == null) {
-            RemoteCall<SmartDCPABEAuthority> contractTX = SmartDCPABEAuthority.deploy(web3j, credentials, cgp);
+            RemoteCall<SmartDCPABEAuthority> contractTX = SmartDCPABEAuthority.deploy(web3j, credentials, cgp,
+                    contractUsersAddress);
             // BUG: the send() method leads to a RuntimeException about an invalid opcode.
             try {
                 contractAuthority = contractTX.send();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            contractAuthorityAddress = contractFiles.getContractAddress();
+            contractAuthorityAddress = contractUsers.getContractAddress();
         } else {
             contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);
         }
+        cgp = new DefaultGasProvider();
     }
 
     // TODO: add similar methods to get events about all editable objects on blockchain
@@ -110,6 +120,7 @@ public class BlockchainConnection {
         return false;
     }
 
+    @Deprecated
     public ECKey generateECKeys(String privateKey) {
         ECKey keys = null;
         if (privateKey != null) {
@@ -137,7 +148,7 @@ public class BlockchainConnection {
             } else {
                 Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
                 for (String attr : attributes) {
-                    Tuple3<String, byte[], byte[]> keyData = contractAuthority.getPublicKeyByName(address, attr).send();
+                    Tuple3<String, byte[], byte[]> keyData = contractKeys.getPublicKey(address, attr).send();
                     keys.put(attr, new PublicKey(keyData.getValue2(), keyData.getValue3()));
                 }
                 return keys;
@@ -173,10 +184,10 @@ public class BlockchainConnection {
         byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
         int numRecording = -1;
         try {
-            BigInteger numRecording_ = contractFiles.getUser(address).send().getValue4();
-            contractFiles.addRecording(address, timestamp, c0, c1, c2, c3, fileName, serverID, key, hash).send();
-            numRecording = numRecording_.intValue();
+            BigInteger numRecording_ = contractFiles.getFileIndex(address).send();
+            contractFiles.addRecording(address, fileName.getBytes(), serverID, key, hash, timestamp, c0, c1, c2, c3).send();
             System.out.println("Blockchain - data published: " + fileName);
+            numRecording = numRecording_.intValue();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -200,7 +211,7 @@ public class BlockchainConnection {
                 throw new RuntimeException("Key error: g1yi does not fit in four sized words");
             }
             try {
-                contractAuthority.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+                contractKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -226,7 +237,7 @@ public class BlockchainConnection {
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
         try {
-            contractFiles.addUser(address, name, email).send();
+            contractUsers.addUser(address, name, email).send();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -283,9 +294,9 @@ public class BlockchainConnection {
 	}
 
     public boolean userExists(String address) {
-        Tuple4<String, String, String, BigInteger> user = null;
+        Tuple3<String, String, String> user = null;
         try {
-            user = contractFiles.getUser(address).send();
+            user = contractUsers.getUser(address).send();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -351,6 +362,6 @@ public class BlockchainConnection {
 	}
 
 	public String getContractAddress() {
-		return contractFilesAddress;
+		return contractUsersAddress;
 	}
 }
