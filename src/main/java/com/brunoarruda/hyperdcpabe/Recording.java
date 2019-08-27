@@ -64,15 +64,15 @@ public class Recording {
     /**
      * @return the recordingID
      */
-    public int getRecordingID() {
+    public int getRecordingIndex() {
         return recordingID;
     }
 
     /**
-     * @param recordingID the recordingID to set
+     * @param recordingIndex the recordingID to set
      */
-    public void setRecordingID(int recordingID) {
-        this.recordingID = recordingID;
+    public void setRecordingIndex(int recordingIndex) {
+        this.recordingID = recordingIndex;
     }
 
     /**

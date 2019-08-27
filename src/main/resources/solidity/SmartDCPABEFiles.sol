@@ -61,10 +61,6 @@ contract SmartDCPABEFiles {
         string memory c3
     )
         public
-        returns
-    (
-        int64
-    )
     {
         assert(users.isUser(addr));
         files[addr][filename] = Recording(serverID, key, hashing, timestamp, Ciphertext(c0, c1, c2, c3));
@@ -142,5 +138,9 @@ contract SmartDCPABEFiles {
             r.ct.base64C2,
             r.ct.base64C3
         );
+    }
+
+    function getFileIndex(address addr) public view returns (uint256) {
+        return fileNames[addr].length;
     }
 }
