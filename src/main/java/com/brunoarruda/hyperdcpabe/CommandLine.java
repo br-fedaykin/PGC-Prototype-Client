@@ -70,7 +70,7 @@ public class CommandLine {
             case "-m":
             case "--milestone":
                 FileController fc = FileController.getInstance().configure(Client.getDataPath());
-                contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddress.json", String.class, String.class);
+                contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
                 if (contractAddress.size() > 0 ) {
                     System.out.println("Utilizando os contratos informados na última execução do programa.");
                 } else {
@@ -85,6 +85,7 @@ public class CommandLine {
                     contractAddress.put("Files", sc.nextLine());
                     System.out.println("Informe o endereço do contrato para os atributos: ");
                     contractAddress.put("Keys", sc.nextLine());
+                    fc.writeToDir(fc.getDataDirectory(), "contractAddresses.json", contractAddress);
                 }
                 String commandArgs = "--init HTTP://127.0.0.1:7545";
                 commandArgs += " " + contractAddress.get("Users");
@@ -114,9 +115,6 @@ public class CommandLine {
                 runCommand(args);
                 break;
         }
-
-        FileController fc = FileController.getInstance();
-        fc.writeToDir(fc.getDataDirectory(), "contractAddress.json", contractAddress);
     }
 
     public static void runCommand(String[] args) {
@@ -130,10 +128,10 @@ public class CommandLine {
             String contractFilesAddress = null;
             String contractKeysAddress = null;
             if (args.length == 6) {
-                contractFilesAddress = args[2];
+                contractUsersAddress = args[2];
                 contractAuthorityAddress = args[3];
-                contractAuthorityAddress = args[4];
-                contractAuthorityAddress = args[5];
+                contractFilesAddress = args[4];
+                contractKeysAddress = args[5];
             }
             client = new Client(networkURL, contractUsersAddress, contractAuthorityAddress, contractFilesAddress,
                     contractKeysAddress);

@@ -68,39 +68,26 @@ public class BlockchainConnection {
         this.networkURL = networkURL;
         this.contractUsersAddress = contractUsersAddress;
         this.contractAuthorityAddress = contractAuthorityAddress;
+        this.contractFilesAddress = contractFilesAddress;
+        this.contractKeysAddress = contractKeysAddress;
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
     }
 
     public void deployContracts(Credentials credentials) {
         ContractGasProvider cgp = new DefaultGasProvider();
-        if (contractUsersAddress == null) {
-            RemoteCall<SmartDCPABEUsers> contractTX = SmartDCPABEUsers.deploy(web3j, credentials, cgp);
-            // BUG: the send() method leads to a RuntimeException about an invalid opcode.
-            try {
-                contractUsers = contractTX.send();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            contractUsersAddress = contractUsers.getContractAddress();
-        } else {
+        if (contractUsersAddress != null) {
             contractUsers = SmartDCPABEUsers.load(contractUsersAddress, web3j, credentials, cgp);
         }
-        cgp = new DefaultGasProvider();
-        if (contractAuthorityAddress == null) {
-            RemoteCall<SmartDCPABEAuthority> contractTX = SmartDCPABEAuthority.deploy(web3j, credentials, cgp,
-                    contractUsersAddress);
-            // BUG: the send() method leads to a RuntimeException about an invalid opcode.
-            try {
-                contractAuthority = contractTX.send();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            contractAuthorityAddress = contractUsers.getContractAddress();
-        } else {
+        if (contractAuthorityAddress != null) {
             contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);
         }
-        cgp = new DefaultGasProvider();
+        if (contractFilesAddress != null) {
+            contractFiles = SmartDCPABEFiles.load(contractFilesAddress, web3j, credentials, cgp);
+        }
+        if (contractKeysAddress != null) {
+            contractKeys = SmartDCPABEKeys.load(contractKeysAddress, web3j, credentials, cgp);
+        }
     }
 
     // TODO: add similar methods to get events about all editable objects on blockchain
