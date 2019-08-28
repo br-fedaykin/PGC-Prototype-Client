@@ -415,6 +415,8 @@ public final class Client {
             System.out.println(String.join(", ", unneededRequests));
         }
         msg.set("attributes", array);
+        // TODO: L418-431 should be encapsulated in a method to update attribute request list,
+        // checking local file system and the blockchain
         if (array.size() > 0) {
             String path = fc.getUserDirectory(user);
             ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, "attributeRequests.json");
