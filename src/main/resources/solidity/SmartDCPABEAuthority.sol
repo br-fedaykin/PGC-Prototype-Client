@@ -89,6 +89,10 @@ contract SmartDCPABEAuthority {
         return pendingRequestsOwners[requesterIndex];
     }
 
+    function getRequestStatus(address authority, address requester, uint64 index) public view returns (KeyRequestStatus status) {
+        return requests[authority][requester][index].status;
+    }
+
     function getPendingRequest
     (
         address authority,
