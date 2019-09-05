@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
+import java.util.stream.IntStream;
 
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.CiphertextJSON;
@@ -181,7 +183,7 @@ public final class Client {
             // TODO: publicar todos os arquivos prontos disponíveis
         } else {
             Recording r = user.getRecordingByFile(content);
-            r.setTimestamp(System.currentTimeMillis() / 1000);
+            r.setTimestamp(System.currentTimeMillis());
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
             obj.put("address", user.getAddress());
             obj.remove("filePath");
@@ -396,50 +398,54 @@ public final class Client {
         // TODO: update local requests
     }
 
+    private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address) {
+        String path = fc.getUserDirectory(user);
+        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class, ArrayNode.class);
+        this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
+        fc.writeToDir(path, "attributeRequests.json", requestCache);
+        return requestCache;
+    }
+
+    private void updateAttributeRequestCache(String authority, String address, ObjectNode request){
+        String path = fc.getUserDirectory(user);
+        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class, ArrayNode.class);
+        requestCache.get(authority).add(request);
+        fc.writeToDir(path, "attributeRequests.json", requestCache);
+    }
+
+    private List<Integer> hasRequestForAttributes(String authority, String address, String[] attributes) {
+        List<Integer> alreadyAsked = new ArrayList<Integer>();
+        Map<String, ArrayNode> requestCache = syncAttributeRequestsCache(authority, address);
+        if (requestCache != null) {
+            for (JsonNode r : requestCache.get(authority)) {
+                // verificar se atributo está em request
+                String requestAttributes = r.get("attributes").asText();
+                IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i])).forEach(i -> alreadyAsked.add(i));
+            }
+            if (alreadyAsked.size() > 0) {
+                StringJoiner message = new StringJoiner(", ");
+                alreadyAsked.forEach(i -> message.add(attributes[i]));
+                System.out.println("Already asked attributes: " + message.toString() + ".");
+            }
+        }
+        return alreadyAsked;
+    }
+
     public void requestAttribute(String authority, String[] attributes) {
-        List<String> unneededRequests = new ArrayList<String>();
-        ObjectNode msg = fc.getMapper().createObjectNode();
-        msg.put("address", user.getAddress());
-        msg.put("authority", authority);
-        msg.put("status", "pending");
-        ArrayNode array = fc.getMapper().createArrayNode();
-        for (String attr : attributes) {
-            if (user.getABEKeys().getKey(attr) != null) {
-                unneededRequests.add(attr);
-            } else {
-                array.add(attr);
-            }
+        String[] temp = authority.split("-");
+        authority = temp[temp.length - 1];
+        List<Integer> alreadyOwned = new ArrayList<Integer>();
+        IntStream.range(0, attributes.length).filter(i -> user.getABEKeys().getKey(attributes[i]) != null).forEach(i -> alreadyOwned.add(i));
+        if (alreadyOwned.size() > 0) {
+            StringJoiner message = new StringJoiner(", ");
+            alreadyOwned.forEach(i -> message.add(attributes[i]));
+            System.out.println("Already owned attributes: " + message.toString() + ".");
         }
-        if (unneededRequests.size() > 0) {
-            System.out.println("Following attributes already given to this user: ");
-            System.out.println(String.join(", ", unneededRequests));
-        }
-        msg.set("attributes", array);
-        // TODO: L418-431 should be encapsulated in a method to update attribute request list,
-        // checking local file system and the blockchain
-        if (array.size() > 0) {
-            String path = fc.getUserDirectory(user);
-            ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, "attributeRequests.json");
-            if (requests != null) {
-                boolean hadAlreadyDone = false;
-                for (JsonNode r : requests) {
-                    if (r.get("authority").equals(msg.get("authority"))
-                            && r.get("attributes").equals(msg.get("attributes"))) {
-                        System.out.println("Client: Request already made.");
-                        hadAlreadyDone = true;
-                        break;
-                    }
-                }
-                if (!hadAlreadyDone) {
-                    requests.add(msg);
-                    fc.writeToDir(path, "attributeRequests.json", requests);
-                }
-            } else {
-                requests = fc.getMapper().createArrayNode().add(msg);
-                fc.writeToDir(path, "attributeRequests.json", requests);
-            }
-            this.blockchain.publishAttributeRequest(msg);
-        }
+        List<Integer> alreadyAsked = hasRequestForAttributes(authority, user.getAddress(), attributes);
+        List<String> requests = new ArrayList<String>();
+        IntStream.range(0, attributes.length).filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i)).forEach(i -> requests.add(attributes[i]));
+        ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
+        updateAttributeRequestCache(authority, user.getAddress(), request);
     }
 
     public void yieldAttribute(String userID, String[] attributes) {

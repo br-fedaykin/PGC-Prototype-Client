@@ -1,11 +1,14 @@
 package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Recording;
@@ -20,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tuples.generated.Tuple3;
 import org.web3j.tuples.generated.Tuple4;
@@ -63,8 +65,10 @@ public class BlockchainConnection {
     }
 
     // TODO: refactor URL as a POM field or command line/file config
-    // POM field seems better, as it would allow different value for deploy/test cycles
-    public BlockchainConnection(String networkURL, String contractUsersAddress, String contractAuthorityAddress, String contractFilesAddress, String contractKeysAddress) {
+    // POM field seems better, as it would allow different value for deploy/test
+    // cycles
+    public BlockchainConnection(String networkURL, String contractUsersAddress, String contractAuthorityAddress,
+            String contractFilesAddress, String contractKeysAddress) {
         this.networkURL = networkURL;
         this.contractUsersAddress = contractUsersAddress;
         this.contractAuthorityAddress = contractAuthorityAddress;
@@ -90,7 +94,8 @@ public class BlockchainConnection {
         }
     }
 
-    // TODO: add similar methods to get events about all editable objects on blockchain
+    // TODO: add similar methods to get events about all editable objects on
+    // blockchain
     public boolean hasCiphertextChanged() {
         // Events enable us to log specific events happening during the execution of our
         // smart
@@ -99,10 +104,13 @@ public class BlockchainConnection {
         // value.
         // For further information, refer to
         // https://docs.web3j.io/filters.html#filters-and-events
-        // for (Greeter.ModifiedEventResponse event : contract.getModifiedEvents(transactionReceipt)) {
-        //     log.info("Modify event fired, previous value: " + event.oldGreeting + ", new value: " + event.newGreeting);
-        //     log.info("Indexed event previous value: " + Numeric.toHexString(event.oldGreetingIdx) + ", new value: "
-        //             + Numeric.toHexString(event.newGreetingIdx));
+        // for (Greeter.ModifiedEventResponse event :
+        // contract.getModifiedEvents(transactionReceipt)) {
+        // log.info("Modify event fired, previous value: " + event.oldGreeting + ", new
+        // value: " + event.newGreeting);
+        // log.info("Indexed event previous value: " +
+        // Numeric.toHexString(event.oldGreetingIdx) + ", new value: "
+        // + Numeric.toHexString(event.newGreetingIdx));
         // }
         return false;
     }
@@ -172,7 +180,8 @@ public class BlockchainConnection {
         int numRecording = -1;
         try {
             BigInteger numRecording_ = contractFiles.getFileIndex(address).send();
-            contractFiles.addRecording(address, fileName.getBytes(), serverID, key, hash, timestamp, c0, c1, c2, c3).send();
+            contractFiles.addRecording(address, fileName.getBytes(), serverID, key, hash, timestamp, c0, c1, c2, c3)
+                    .send();
             System.out.println("Blockchain - data published: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
@@ -206,7 +215,7 @@ public class BlockchainConnection {
         }
     }
 
-	public void publishAuthority(ObjectNode obj) {
+    public void publishAuthority(ObjectNode obj) {
         try {
             String address = obj.get("address").asText();
             String name = obj.get("name").asText();
@@ -217,9 +226,9 @@ public class BlockchainConnection {
         } catch (Exception e) {
             e.printStackTrace();
         }
-	}
+    }
 
-	public void publishUser(ObjectNode obj) {
+    public void publishUser(ObjectNode obj) {
         String address = obj.get("address").asText();
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
@@ -230,9 +239,9 @@ public class BlockchainConnection {
             e.printStackTrace();
         }
         System.out.println("Blockchain - User published: " + name);
-	}
+    }
 
-	public Recording getRecording(String userID, String fileName) {
+    public Recording getRecording(String userID, String fileName) {
         Recording r = null;
         String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
         String fileNameEdited = fileName.split("\\..+?$")[0] + ".json";
@@ -246,38 +255,60 @@ public class BlockchainConnection {
             System.out.println("Blockchain - File " + fileName + " not found on blockchain");
         }
         return r;
-	}
+    }
 
-	public void publishAttributeRequest(ObjectNode msg) {
-        String address = msg.get("address").asText();
-        if (!userExists(address)) {
-            System.out.println("Blockchain - User does not exist in blockchain");
-        } else {
-            String authority = msg.get("authority").asText();
-            String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
-            ArrayNode allRequests = (ArrayNode) fc.loadAsJSON(path, address + ".json");
-            if (allRequests != null) {
-                boolean hadAlreadyDone = false;
-                for (JsonNode r : allRequests) {
-                    if (r.get("authority").equals(msg.get("authority")) &&
-                        r.get("attributes").equals(msg.get("attributes"))) {
-                        System.out.println("Blockchain - Request already made.");
-                        hadAlreadyDone = true;
-                        break;
-                    }
-                }
-                if (!hadAlreadyDone) {
-                    allRequests.add(msg);
-                    fc.writeToDir(path, address + ".json", allRequests);
-                    System.out.println("Blockchain - Attribute Request published: " + address);
-                }
-            } else {
-                allRequests = fc.getMapper().createArrayNode().add(msg);
-                fc.writeToDir(path, address + ".json", allRequests);
-                System.out.println("Blockchain - Attribute Request published: " + address);
+    public ArrayNode checkAttributeRequest(String authority, String address, int listSizeLocal) {
+        ArrayNode requests = fc.getMapper().createArrayNode();
+        try {
+            for (int i = 0; i < listSizeLocal; i++) {
+                BigInteger status = contractAuthority.getRequestStatus(authority, address, BigInteger.valueOf(i))
+                        .send();
+                requests.add(status);
             }
-
+            BigInteger numRequests_ = contractAuthority.getPendingListSize(authority, address).send();
+            for (int i = listSizeLocal; i < numRequests_.intValue(); i++) {
+                Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                requestTuple = contractAuthority.getPendingRequest(authority, address, BigInteger.valueOf(i)).send();
+                ObjectNode request = fc.getMapper().createObjectNode();
+                request.put("status", requestTuple.getValue1());
+                request.put("timestamp", requestTuple.getValue2());
+                request.put("responseTimestamp", requestTuple.getValue3());
+                ArrayNode attributes = request.putArray("attributes");
+                for (byte[] attrName_ : requestTuple.getValue4()) {
+                    String attrName = new String(attrName_, "UTF-8").replaceFirst("\u0000+$", "");
+                    attributes.add(attrName);
+                }
+                requests.add(request);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return requests;
+    }
+
+    public ObjectNode publishAttributeRequest(String authority, String address, List<String> attributes) {
+        List<byte[]> attributes_ = new ArrayList<byte[]>();
+        long timestamp = System.currentTimeMillis();
+        attributes.forEach(s -> {
+            try {
+                attributes_.add(Arrays.copyOf(s.getBytes("UTF-8"), 32));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        });
+        ObjectNode request = null;
+        try {
+            contractAuthority.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            request = fc.getMapper().createObjectNode();
+            // check if pending corresponds to zero, and check if enum values on solidity can be enforced explicitly
+            request.put("status", BigInteger.ZERO);
+            request.put("timestamp", timestamp);
+            ArrayNode attributesNode = request.putArray("attributes");
+            attributes.forEach(s -> attributesNode.add(s));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return request;
 	}
 
     public boolean userExists(String address) {
@@ -350,5 +381,48 @@ public class BlockchainConnection {
 
 	public String getContractAddress() {
 		return contractUsersAddress;
+	}
+
+	public int getAttributeRequestListSize(ObjectNode msg) {
+        String authority = msg.get("authority").asText();
+        String address = msg.get("address").asText();
+        int numRequests = -1;
+        try {
+            BigInteger numRequests_ = contractAuthority.getPendingListSize(authority, address).send();
+            numRequests = numRequests_.intValue();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		return numRequests;
+	}
+
+	public void updateAttributeRequestCache(String address, Map<String, ArrayNode> requestCache) {
+        for (String authority : requestCache.keySet()) {
+            syncAttributeRequestCache(address, requestCache, authority);
+        }
+	}
+
+	public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
+        if (!userExists(address)) {
+            System.out.println("Blockchain - User does not exist in blockchain");
+            return;
+        }
+        ArrayNode cache = requestCache.get(authority);
+        if (cache == null) {
+            cache = fc.getMapper().createArrayNode();
+            requestCache.put(authority, cache);
+        }
+        int listSizeLocal = requestCache.get(authority).size();
+        ArrayNode requests = checkAttributeRequest(authority, address, listSizeLocal);
+        for (int i = 0; i < cache.size(); i++) {
+            ObjectNode request = (ObjectNode) cache.get(i);
+            if (request.get("status").asInt() != requests.get(i).asInt()) {
+                String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
+                message = String.format(message, request.get("timestamp").asInt(), request.get("status").asInt(), requests.get(i).asInt());
+                System.out.println(message);
+                request.replace("status", requests.get(i));
+            }
+        }
+        cache.addAll(requests);
 	}
 }
