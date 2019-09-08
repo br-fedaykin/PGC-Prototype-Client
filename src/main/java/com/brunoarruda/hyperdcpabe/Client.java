@@ -14,6 +14,7 @@ import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.Recording.FileMode;
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -54,8 +55,8 @@ public final class Client {
             loadUserData(clientData.get("userID").asText());
             String networkURL = clientData.get("networkURL").asText();
             if (networkURL.equals("null")) {
-                throw new RuntimeException("Execute o comando --init informando o endereço de rede" +
-                " para conexão com a blockchain");
+                throw new RuntimeException(
+                        "Execute o comando --init informando o endereço de rede" + " para conexão com a blockchain");
             }
             String contractUsersAddress = clientData.get("contractUsersAddress").asText();
             String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
@@ -76,14 +77,15 @@ public final class Client {
         this(url, null, null, null, null);
     }
 
-    public Client(String networkURL, String contractUsersAddress, String contractAuthorityAddress, String contractFilesAddress,
-                    String contractKeysAddress) {
+    public Client(String networkURL, String contractUsersAddress, String contractAuthorityAddress,
+            String contractFilesAddress, String contractKeysAddress) {
         fc = FileController.getInstance();
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress, contractFilesAddress, contractKeysAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress,
+                contractFilesAddress, contractKeysAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
@@ -117,7 +119,7 @@ public final class Client {
     public void getAttributes(String authority, String[] attributes) {
         Map<String, PublicKey> keys = null;
         if (!hasPublicKeyOfAuthority(authority)) {
-             publishedAttributes.put(authority, new HashMap<String, PublicKey>());
+            publishedAttributes.put(authority, new HashMap<String, PublicKey>());
         }
         keys = blockchain.getABEPublicKeys(authority, attributes);
         if (keys != null) {
@@ -400,15 +402,17 @@ public final class Client {
 
     private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address) {
         String path = fc.getUserDirectory(user);
-        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class, ArrayNode.class);
+        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
+                ArrayNode.class);
         this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
         fc.writeToDir(path, "attributeRequests.json", requestCache);
         return requestCache;
     }
 
-    private void updateAttributeRequestCache(String authority, String address, ObjectNode request){
+    private void updateAttributeRequestCache(String authority, String address, ObjectNode request) {
         String path = fc.getUserDirectory(user);
-        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class, ArrayNode.class);
+        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
+                ArrayNode.class);
         requestCache.get(authority).add(request);
         fc.writeToDir(path, "attributeRequests.json", requestCache);
     }
@@ -419,8 +423,13 @@ public final class Client {
         if (requestCache != null) {
             for (JsonNode r : requestCache.get(authority)) {
                 // verificar se atributo está em request
-                String requestAttributes = r.get("attributes").asText();
-                IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i])).forEach(i -> alreadyAsked.add(i));
+                String requestAttributes;
+                try {
+                    requestAttributes = fc.getMapper().writeValueAsString(r.get("attributes"));
+                    IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i])).forEach(i -> alreadyAsked.add(i));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
             }
             if (alreadyAsked.size() > 0) {
                 StringJoiner message = new StringJoiner(", ");
@@ -444,8 +453,10 @@ public final class Client {
         List<Integer> alreadyAsked = hasRequestForAttributes(authority, user.getAddress(), attributes);
         List<String> requests = new ArrayList<String>();
         IntStream.range(0, attributes.length).filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i)).forEach(i -> requests.add(attributes[i]));
-        ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
-        updateAttributeRequestCache(authority, user.getAddress(), request);
+        if (requests.size() > 0) {
+            ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
+            updateAttributeRequestCache(authority, user.getAddress(), request);
+        }
     }
 
     public void yieldAttribute(String userID, String[] attributes) {

@@ -257,7 +257,7 @@ public class BlockchainConnection {
         return r;
     }
 
-    public ArrayNode checkAttributeRequest(String authority, String address, int listSizeLocal) {
+    public ArrayNode getAttributeRequests(String authority, String address, int listSizeLocal) {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < listSizeLocal; i++) {
@@ -265,12 +265,12 @@ public class BlockchainConnection {
                         .send();
                 requests.add(status);
             }
-            BigInteger numRequests_ = contractAuthority.getPendingListSize(authority, address).send();
-            for (int i = listSizeLocal; i < numRequests_.intValue(); i++) {
+            BigInteger numRequests = contractAuthority.getPendingListSize(authority, address).send();
+            for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
                 Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
                 requestTuple = contractAuthority.getPendingRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
-                request.put("status", requestTuple.getValue1());
+                request.put("status", requestTuple.getValue1().intValue());
                 request.put("timestamp", requestTuple.getValue2());
                 request.put("responseTimestamp", requestTuple.getValue3());
                 ArrayNode attributes = request.putArray("attributes");
@@ -412,15 +412,18 @@ public class BlockchainConnection {
             cache = fc.getMapper().createArrayNode();
             requestCache.put(authority, cache);
         }
-        int listSizeLocal = requestCache.get(authority).size();
-        ArrayNode requests = checkAttributeRequest(authority, address, listSizeLocal);
-        for (int i = 0; i < cache.size(); i++) {
-            ObjectNode request = (ObjectNode) cache.get(i);
-            if (request.get("status").asInt() != requests.get(i).asInt()) {
+        int listSizeLocal = cache.size();
+        ArrayNode requests = getAttributeRequests(authority, address, listSizeLocal);
+
+        for (int i = 0; i < listSizeLocal; i++) {
+            ObjectNode cachedRequest = (ObjectNode) cache.get(i);
+            JsonNode status = requests.remove(0);
+            if (cachedRequest.get("status").asInt() != status.asInt()) {
                 String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
-                message = String.format(message, request.get("timestamp").asInt(), request.get("status").asInt(), requests.get(i).asInt());
+                message = String.format(message, cachedRequest.get("timestamp").asInt(), cachedRequest.get("status").asInt(),
+                        status.asInt());
                 System.out.println(message);
-                request.replace("status", requests.get(i));
+                cachedRequest.replace("status", status);
             }
         }
         cache.addAll(requests);
