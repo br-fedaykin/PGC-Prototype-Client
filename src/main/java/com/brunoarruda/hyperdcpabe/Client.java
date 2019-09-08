@@ -422,11 +422,11 @@ public final class Client {
         Map<String, ArrayNode> requestCache = syncAttributeRequestsCache(authority, address);
         if (requestCache != null) {
             for (JsonNode r : requestCache.get(authority)) {
-                // verificar se atributo está em request
                 String requestAttributes;
                 try {
                     requestAttributes = fc.getMapper().writeValueAsString(r.get("attributes"));
-                    IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i])).forEach(i -> alreadyAsked.add(i));
+                    int status = r.get("status").asInt();
+                    IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i]) && status == 0).forEach(i -> alreadyAsked.add(i));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
