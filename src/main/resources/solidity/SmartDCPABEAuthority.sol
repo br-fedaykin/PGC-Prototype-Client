@@ -32,10 +32,23 @@ contract SmartDCPABEAuthority {
     mapping (address => mapping (address => KeyRequest[])) requests;
     SmartDCPABEUtility util;
     SmartDCPABEUsers user;
+    address owner;
+    address contractKeys;
 
     constructor (address userContract) public {
+        owner = msg.sender;
         util = new SmartDCPABEUtility();
         user = SmartDCPABEUsers(userContract);
+    }
+
+    function setContractKeysAddress(address addr) public {
+        require(msg.sender == owner, "Operation not allowed. Must be the owner of this contract.");
+        contractKeys = addr;
+    }
+
+    function incrementPublicKeyCount(address addr) public {
+        require(msg.sender == contractKeys, "Operation not allowed.");
+        certifiers[addr].numPublicKeys++;
     }
 
     function isCertifier(address addr) public view returns (bool) {

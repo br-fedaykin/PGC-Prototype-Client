@@ -73,6 +73,7 @@ contract SmartDCPABEKeys {
         Bytes127 memory g1yi = Bytes127(g1yiChunks[0], g1yiChunks[1], g1yiChunks[2], g1yiLastChunk, g1yiLastChunkSize);
         ABEKeys[addr][name] = PublicKey(eg1g1ai, g1yi);
         publicKeyNames[addr].push(name);
+        authority.incrementPublicKeyCount(addr);
     }
 
     function getPublicKey
