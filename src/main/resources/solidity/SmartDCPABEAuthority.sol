@@ -1,8 +1,9 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
 import "./SmartDCPABEUsers.sol";
+import "./Collection.sol";
 
-contract SmartDCPABEAuthority {
+contract SmartDCPABEAuthority is Collection {
 
     struct Certifier {
         address addr;

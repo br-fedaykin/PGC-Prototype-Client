@@ -1,8 +1,9 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
 import "./SmartDCPABEUsers.sol";
+import "./Collection.sol";
 
-contract SmartDCPABEFiles {
+contract SmartDCPABEFiles is Collection {
 
     struct Recording {
         uint64 serverID;

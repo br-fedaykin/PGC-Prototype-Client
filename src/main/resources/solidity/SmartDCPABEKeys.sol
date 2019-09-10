@@ -1,8 +1,9 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
 import "./SmartDCPABEAuthority.sol";
+import "./Collection.sol";
 
-contract SmartDCPABEKeys {
+contract SmartDCPABEKeys is Collection {
 
     struct PublicKey {
         Bytes127 eg1g1ai;
