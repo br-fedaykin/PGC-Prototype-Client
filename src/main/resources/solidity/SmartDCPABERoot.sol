@@ -45,6 +45,13 @@ contract SmartDCPABERoot {
         }
     }
 
+    function setContractDependencies(ContractType contractType) public {
+        uint8 index = uint8(contractType);
+        require(index < 5, "targered contract type aren't implemented yet.");
+        // if clauses to select contracts that will be sent to target contract
+        // loop over selection to send a address over each iteration
+    }
+
     function getContractAddress(ContractType contractType) public view returns (address) {
         return contractAddress[uint(contractType)];
     }
