@@ -14,11 +14,24 @@ contract SmartDCPABEUsers is Collection {
     address[] public userAddresses;
     mapping (address => User) users;
     uint64 public numUsers;
+    address owner;
 
     SmartDCPABEUtility util;
 
     constructor () public {
-        util = new SmartDCPABEUtility();
+        owner = msg.sender;
+    }
+
+    function setContractDependencies(ContractType contractType, address addr) public {
+        require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
+        if (contractType == ContractType.UTILITY) {
+            util = SmartDCPABEUtility(addr);
+        }
+    }
+
+    function setContractDependencies(address utility) public {
+        require(msg.sender == owner, "Operation not allowed.");
+        util = SmartDCPABEUtility(utility);
     }
 
     // TODO: create cheaper functions using bytes32 instead of string in input

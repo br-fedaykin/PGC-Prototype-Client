@@ -34,9 +34,13 @@ contract SmartDCPABEFiles is Collection {
     SmartDCPABEUtility util;
     SmartDCPABEUsers users;
 
-    constructor (address userContract) public {
-        util = new SmartDCPABEUtility();
-        users = SmartDCPABEUsers(userContract);
+    function setContractDependencies(ContractType contractType, address addr) public {
+        require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
+        if (contractType == ContractType.UTILITY) {
+            util = SmartDCPABEUtility(addr);
+        } else if (contractType == ContractType.USERS) {
+            users = SmartDCPABEUsers(addr);
+        }
     }
 
     // TODO: dismember server logic from this contract

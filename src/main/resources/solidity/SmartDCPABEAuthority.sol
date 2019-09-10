@@ -33,18 +33,17 @@ contract SmartDCPABEAuthority is Collection {
     mapping (address => mapping (address => KeyRequest[])) requests;
     SmartDCPABEUtility util;
     SmartDCPABEUsers user;
-    address owner;
     address contractKeys;
 
-    constructor (address userContract) public {
-        owner = msg.sender;
-        util = new SmartDCPABEUtility();
-        user = SmartDCPABEUsers(userContract);
-    }
-
-    function setContractKeysAddress(address addr) public {
-        require(msg.sender == owner, "Operation not allowed. Must be the owner of this contract.");
-        contractKeys = addr;
+    function setContractDependencies(ContractType contractType, address addr) public {
+        require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
+        if (contractType == ContractType.UTILITY) {
+            util = SmartDCPABEUtility(addr);
+        } else if (contractType == ContractType.USERS) {
+            user = SmartDCPABEUsers(addr);
+        } else if (contractType == ContractType.KEYS) {
+            contractKeys = addr;
+        }
     }
 
     function incrementPublicKeyCount(address addr) public {
