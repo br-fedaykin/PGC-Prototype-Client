@@ -1,7 +1,7 @@
 pragma solidity ^0.5.1;
 import "./Collection.sol";
 
-contract SmartDCPABEUtility is Collection{
+contract SmartDCPABEUtility is Collection {
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
