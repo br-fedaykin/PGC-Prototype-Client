@@ -10,29 +10,21 @@ import "./Collection.sol";
 
 contract SmartDCPABERoot {
 
-    enum contractType {AUTHORITY, FILES, KEYS, USERS, UTILITY }
-
     Collection[5] contracts;
+    address[5] public contractAddress;
 
-    // método para instanciar contratos não criados
     function deployContracts() public {
-        contracts[uint(contractType.UTILITY)] = new SmartDCPABEUtility();
-        contracts[uint(contractType.USERS)] = new SmartDCPABEUsers();
-        contracts[uint(contractType.FILES)] = new SmartDCPABEFiles(getFileContract());
-        contracts[uint(contractType.AUTHORITY)] = new SmartDCPABEAuthority(getFileContract());
-        contracts[uint(contractType.KEYS)] = new SmartDCPABEKeys(getFileContract());
+        contracts[uint(ContractType.AUTHORITY)] = new SmartDCPABEAuthority();
+        contracts[uint(ContractType.FILES)] = new SmartDCPABEFiles();
+        contracts[uint(ContractType.KEYS)] = new SmartDCPABEKeys();
+        contracts[uint(ContractType.USERS)] = new SmartDCPABEUsers();
+        contracts[uint(ContractType.UTILITY)] = new SmartDCPABEUtility();
+        for (uint8 i = 0; i < 5; i++) {
+            contractAddress[i] = address(contracts[i]);
+        }
     }
 
-    function getFileContract() public view returns (address) {
-        return address(contracts[uint(contractType(0))]);
+    function getContractAddress(ContractType contractType) public view returns (address) {
+        return contractAddress[uint(contractType)];
     }
-
-    // método para carregar contratos não criados
-
-    // método para setar um contrato específico
-
-    // método para devolver todos os contratos
-
-    // método para atualizar as referências a um contrato
-
 }
