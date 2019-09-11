@@ -29,11 +29,6 @@ contract SmartDCPABEUsers is Collection {
         }
     }
 
-    function setContractDependencies(address utility) public {
-        require(msg.sender == owner, "Operation not allowed.");
-        util = SmartDCPABEUtility(utility);
-    }
-
     // TODO: create cheaper functions using bytes32 instead of string in input
     function addUser(address addr, string memory name, string memory email) public {
         userAddresses.push(addr);
