@@ -1,4 +1,5 @@
 pragma solidity ^0.5.1;
+
 import "./Collection.sol";
 
 contract SmartDCPABEUtility is Collection {
@@ -40,5 +41,10 @@ contract SmartDCPABEUtility is Collection {
             output[j] = char;
         }
         return output;
+    }
+
+    function setContractDependencies(ContractType contractType, address addr) public {
+        delete contractType;
+        delete addr;
     }
 }
