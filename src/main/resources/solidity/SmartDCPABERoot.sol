@@ -26,6 +26,7 @@ contract SmartDCPABERoot {
         contracts[uint(UTILITY)] = new SmartDCPABEUtility();
         for (uint8 i = 0; i < 5; i++) {
             contractAddress[i] = address(contracts[i]);
+            setContractDependencies(Collection.ContractType(i));
         }
     }
 
@@ -48,13 +49,36 @@ contract SmartDCPABERoot {
             contracts[index] = SmartDCPABEUtility(addr);
             contractAddress[index] = addr;
         }
+        setContractDependencies(contractType);
     }
 
     function setContractDependencies(Collection.ContractType contractType) public {
         uint8 index = uint8(contractType);
         require(index < 5, "targered contract type aren't implemented yet.");
-        // if clauses to select contracts that will be sent to target contract
-        // loop over selection to send a address over each iteration
+        Collection.ContractType[5] memory dependencies;
+        uint8 numDependencies = 0;
+        if (contractType == AUTHORITY) {
+            dependencies[0] = KEYS;
+            numDependencies = 1;
+        } else if (contractType == KEYS) {
+            dependencies[0] = AUTHORITY;
+            numDependencies = 1;
+        }else if (contractType == USERS) {
+            dependencies[0] = AUTHORITY;
+            dependencies[1] = FILES;
+            numDependencies = 2;
+        } else if (contractType == UTILITY) {
+            dependencies[0] = AUTHORITY;
+            dependencies[1] = FILES;
+            dependencies[2] = KEYS;
+            dependencies[3] = USERS;
+            dependencies[4] = UTILITY;
+            numDependencies = 5;
+        }
+        for (uint8 i = 0; i < numDependencies; i++) {
+            index = uint8(dependencies[i]);
+            contracts[index].setContractDependencies(dependencies[i], contractAddress[index]);
+        }
     }
 
     function getContractAddress(Collection.ContractType contractType) public view returns (address) {
