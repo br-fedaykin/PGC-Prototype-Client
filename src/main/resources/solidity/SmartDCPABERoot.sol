@@ -10,6 +10,22 @@ contract SmartDCPABERoot {
     Collection.ContractType KEYS = Collection.ContractType.KEYS;
     Collection.ContractType USERS = Collection.ContractType.USERS;
     Collection.ContractType UTILITY = Collection.ContractType.UTILITY;
+    address owner;
+
+    constructor () public {
+        owner = msg.sender;
+    }
+
+    function changeOwnership(address newRoot) public {
+        require(msg.sender == owner, "Operation not allowed.");
+        for (uint8 i = 0; i < 5; i++) {
+            bytes memory payload = abi.encodeWithSignature("changeOwnership(address)", newRoot);
+            (bool success, ) = contractAddress[i].call(payload);
+
+            // NOTE: this could lead to consistency problems if a failed require() breaks the loop and ownership is not restored.
+            require(success, "Contract method invocation failed.");
+        }
+    }
 
     function setAllContracts(Collection.ContractType[5] memory contractType, address[5] memory addr) public {
         for (uint8 i = 0; i < 5; i++) {
