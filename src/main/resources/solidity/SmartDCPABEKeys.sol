@@ -29,7 +29,7 @@ contract SmartDCPABEKeys is Collection {
         require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
         if (contractType == ContractType.UTILITY) {
             util = SmartDCPABEUtility(addr);
-        } else if (contractType == ContractType.USERS) {
+        } else if (contractType == ContractType.AUTHORITY) {
             authority = SmartDCPABEAuthority(addr);
         }
     }
