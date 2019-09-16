@@ -35,14 +35,15 @@ contract SmartDCPABERoot {
         }
         for (uint8 i = 0; i < 5; i++) {
             if (uint(addr[i]) != 0) {
-                setContractDependencies(contractType[i]);
+                supplyContractDependencies(contractType[i]);
             }
         }
     }
 
     function setContract(Collection.ContractType contractType, address addr) public {
         setContractAddress(contractType, addr);
-        setContractDependencies(contractType);
+        supplyContractDependencies(contractType);
+        receiveContractDependencies(contractType);
     }
 
     function setContractAddress(Collection.ContractType contractType, address addr) private {
@@ -61,7 +62,37 @@ contract SmartDCPABERoot {
         }
     }
 
-    function setContractDependencies(Collection.ContractType contractType) private {
+    function receiveContractDependencies(Collection.ContractType contractType) private {
+        uint8 index = uint8(contractType);
+        require(index < 5, "targered contract type aren't implemented yet.");
+        Collection.ContractType[5] memory dependencies;
+        uint8 numDependencies = 0;
+        if (contractType != UTILITY) {
+            dependencies[0] = UTILITY;
+            if (contractType == AUTHORITY) {
+                dependencies[1] = KEYS;
+                dependencies[2] = USERS;
+                numDependencies = 3;
+            } else if (contractType == FILES) {
+                dependencies[1] = USERS;
+                numDependencies = 2;
+            } else if (contractType == KEYS) {
+                dependencies[1] = AUTHORITY;
+                numDependencies = 2;
+            } else if (contractType == USERS) {
+                numDependencies = 1;
+            }
+        }
+
+        for (uint8 i = 0; i < numDependencies; i++) {
+            uint8 indexContract = uint8(dependencies[i]);
+            bytes memory payload = abi.encodeWithSignature("setContractDependencies(uint8,address)", indexContract, contractAddress[indexContract]);
+            (bool success, ) = contractAddress[index].call(payload);
+            require(success, "Contract method invocation failed.");
+        }
+    }
+
+    function supplyContractDependencies(Collection.ContractType contractType) private {
         uint8 index = uint8(contractType);
         require(index < 5, "targered contract type aren't implemented yet.");
         Collection.ContractType[5] memory dependencies;
