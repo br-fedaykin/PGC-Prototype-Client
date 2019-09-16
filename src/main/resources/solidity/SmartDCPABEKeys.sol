@@ -23,6 +23,8 @@ contract SmartDCPABEKeys is Collection {
     mapping (address => bytes32[]) publicKeyNames;
     mapping (address => mapping (bytes32 => PublicKey)) ABEKeys;
 
+    constructor(address root) Collection(root) public {}
+
     function setContractDependencies(ContractType contractType, address addr) public {
         require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
         if (contractType == ContractType.UTILITY) {

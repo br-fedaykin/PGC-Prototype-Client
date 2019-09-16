@@ -25,6 +25,8 @@ contract SmartDCPABEAuthority is Collection {
         bytes32[] attrNames;
     }
 
+    // FIX: add constructor as stated on solidity documentation: https://solidity.readthedocs.io/en/develop/contracts.html#arguments-for-base-constructors
+
     address[] public certifierAddresses;
     mapping (address => Certifier) certifiers;
     uint64 public numRequestOwners;
@@ -34,6 +36,8 @@ contract SmartDCPABEAuthority is Collection {
     SmartDCPABEUtility util;
     SmartDCPABEUsers user;
     address contractKeys;
+
+    constructor(address root) Collection(root) public {}
 
     function setContractDependencies(ContractType contractType, address addr) public {
         require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");

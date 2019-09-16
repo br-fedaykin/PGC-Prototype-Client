@@ -2,7 +2,10 @@ pragma solidity ^0.5.1;
 
 import "./Collection.sol";
 
+// TODO: change Utility to a Library
 contract SmartDCPABEUtility is Collection {
+
+    constructor(address root) Collection(root) public {}
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
@@ -16,7 +19,7 @@ contract SmartDCPABEUtility is Collection {
     }
 
     function bytes32ToString(bytes32 source) public pure returns (string memory value) {
-        // TODO: Optimize that code to avoid loops somehow.
+        // OPTIMIZE: avoid loops somehow, look for a solution with assembly.
         bytes memory bytesString = new bytes(32);
         uint charCount = 0;
         for (uint j = 0; j < 32; j++) {
