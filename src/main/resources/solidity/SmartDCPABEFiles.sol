@@ -14,10 +14,10 @@ contract SmartDCPABEFiles is Collection {
     }
 
     struct Ciphertext {
-        string base64C0;
-        string base64C1;
-        string base64C2;
-        string base64C3;
+        bytes c0;
+        bytes c1;
+        bytes c2;
+        bytes c3;
     }
 
     struct FileServer {
@@ -62,10 +62,10 @@ contract SmartDCPABEFiles is Collection {
         bytes32 hashing,
         uint40 timestamp,
         // ciphertext parameters
-        string memory c0,
-        string memory c1,
-        string memory c2,
-        string memory c3
+        bytes memory c0,
+        bytes memory c1,
+        bytes memory c2,
+        bytes memory c3
     )
         public
     {
@@ -104,10 +104,10 @@ contract SmartDCPABEFiles is Collection {
         bytes32 key,
         bytes32 hashing,
         uint64 timestamp,
-        string memory c0,
-        string memory c1,
-        string memory c2,
-        string memory c3
+        bytes memory c0,
+        bytes memory c1,
+        bytes memory c2,
+        bytes memory c3
     )
     {
         return getRecording(addr, fileNames[addr][index]);
@@ -127,10 +127,10 @@ contract SmartDCPABEFiles is Collection {
         bytes32 key,
         bytes32 hashing,
         uint64 timestamp,
-        string memory c0,
-        string memory c1,
-        string memory c2,
-        string memory c3
+        bytes memory c0,
+        bytes memory c1,
+        bytes memory c2,
+        bytes memory c3
     )
     {
         Recording storage r = files[addr][name];
@@ -140,10 +140,10 @@ contract SmartDCPABEFiles is Collection {
             r.key,
             r.hashing,
             r.timestamp,
-            r.ct.base64C0,
-            r.ct.base64C1,
-            r.ct.base64C2,
-            r.ct.base64C3
+            r.ct.c0,
+            r.ct.c1,
+            r.ct.c2,
+            r.ct.c3
         );
     }
 
