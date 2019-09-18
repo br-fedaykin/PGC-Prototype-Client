@@ -375,7 +375,7 @@ public final class Client {
         if (certifier != null) {
             requests = this.blockchain.getAttributeRequestsForCertifier(certifier.getID(), status);
         } else if (user != null) {
-            requests = this.blockchain.getAttributeRequestsForRequester(user.getID(), status);
+            requests = this.blockchain.getAttributeRequestsForUser(user.getID(), status);
             if (requests.size() == 0) {
                 System.out.println("No attributes requests with status: " + status);
                 return;
@@ -409,7 +409,7 @@ public final class Client {
         return requestCache;
     }
 
-    private void updateAttributeRequestCache(String authority, String address, ObjectNode request) {
+    private void saveAttributeRequestInCache(String authority, String address, ObjectNode request) {
         String path = fc.getUserDirectory(user);
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
                 ArrayNode.class);
@@ -455,7 +455,7 @@ public final class Client {
         IntStream.range(0, attributes.length).filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i)).forEach(i -> requests.add(attributes[i]));
         if (requests.size() > 0) {
             ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
-            updateAttributeRequestCache(authority, user.getAddress(), request);
+            saveAttributeRequestInCache(authority, user.getAddress(), request);
         }
     }
 
