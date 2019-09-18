@@ -60,7 +60,7 @@ contract SmartDCPABEFiles is Collection {
         uint64 serverID,
         bytes32 key,
         bytes32 hashing,
-        uint40 timestamp,
+        uint64 timestamp,
         // ciphertext parameters
         bytes memory c0,
         bytes memory c1,
