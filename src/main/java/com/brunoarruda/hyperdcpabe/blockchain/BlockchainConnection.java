@@ -170,17 +170,17 @@ public class BlockchainConnection {
         }
         String address = obj.get("address").asText();
         BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
-        String c0 = obj.get("ciphertext").get("c0").asText();
-        String c1 = obj.get("ciphertext").get("c1").asText();
-        String c2 = obj.get("ciphertext").get("c2").asText();
-        String c3 = obj.get("ciphertext").get("c3").asText();
+        byte[] c0 = Base64.getDecoder().decode(obj.get("ciphertext").get("c0").asText());
+        byte[] c1 = Base64.getDecoder().decode(obj.get("ciphertext").get("c1").asText());
+        byte[] c2 = Base64.getDecoder().decode(obj.get("ciphertext").get("c2").asText());
+        byte[] c3 = Base64.getDecoder().decode(obj.get("ciphertext").get("c3").asText());
         String fileName = obj.get("fileName").asText();
         byte[] key = Base64.getDecoder().decode(obj.get("key").asText());
         byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
         int numRecording = -1;
         try {
             BigInteger numRecording_ = contractFiles.getFileIndex(address).send();
-            contractFiles.addRecording(address, fileName.getBytes(), serverID, key, hash, timestamp, c0, c1, c2, c3)
+            contractFiles.addRecording(address, Arrays.copyOf(fileName.getBytes(), 32), serverID, key, hash, timestamp, c0, c1, c2, c3)
                     .send();
             System.out.println("Blockchain - data published: " + fileName);
             numRecording = numRecording_.intValue();
@@ -321,7 +321,7 @@ public class BlockchainConnection {
         return user != null && !user.getValue1().equals("");
     }
 
-    public ArrayNode getAttributeRequestsForRequester(String userID, String status) {
+    public ArrayNode getAttributeRequestsForUser(String userID, String status) {
         // TODO: store last timestamp of checking to allow early exit of loop in smart contract
 
         String path = getBlockchainDataPath() + "AttributeRequest\\";
@@ -396,6 +396,7 @@ public class BlockchainConnection {
 		return numRequests;
 	}
 
+    // NOTE: Function not used yet in Client.
 	public void updateAttributeRequestCache(String address, Map<String, ArrayNode> requestCache) {
         for (String authority : requestCache.keySet()) {
             syncAttributeRequestCache(address, requestCache, authority);
