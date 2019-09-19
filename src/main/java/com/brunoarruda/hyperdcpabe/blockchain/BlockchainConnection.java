@@ -401,7 +401,7 @@ public class BlockchainConnection {
         for (String authority : requestCache.keySet()) {
             syncAttributeRequestCache(address, requestCache, authority);
         }
-	}
+    }
 
 	public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
         if (!userExists(address)) {
@@ -429,4 +429,44 @@ public class BlockchainConnection {
         }
         cache.addAll(requests);
 	}
+
+    public void getPendingAttributeRequests(String address, Map<String, ArrayNode> requestCache, String authority) {
+        if (!certifierExists(address)) {
+            System.out.println("Blockchain - User does not exist in blockchain");
+            return;
+        }
+        ArrayNode cache = requestCache.get(address);
+        if (cache == null) {
+            cache = fc.getMapper().createArrayNode();
+            requestCache.put(authority, cache);
+        }
+        int listSizeLocal = cache.size();
+        // get size of pending list
+        // iterate over it to see the indexes of the requests
+        // não sei o que fazer
+        ArrayNode requests = getAttributeRequests(authority, address, listSizeLocal);
+
+        for (int i = 0; i < listSizeLocal; i++) {
+            ObjectNode cachedRequest = (ObjectNode) cache.get(i);
+            JsonNode status = requests.remove(0);
+            if (cachedRequest.get("status").asInt() != status.asInt()) {
+                String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
+                message = String.format(message, cachedRequest.get("timestamp").asInt(),
+                        cachedRequest.get("status").asInt(), status.asInt());
+                System.out.println(message);
+                cachedRequest.replace("status", status);
+            }
+        }
+        cache.addAll(requests);
+    }
+
+    private boolean certifierExists(String address) {
+        Tuple4<String, String, String, BigInteger> certifier = null;
+        try {
+            certifier = contractAuthority.getCertifier(address).send();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return certifier != null && !certifier.getValue1().equals("");
+    }
 }

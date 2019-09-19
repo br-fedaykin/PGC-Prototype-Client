@@ -409,6 +409,15 @@ public final class Client {
         return requestCache;
     }
 
+    private Map<String, ArrayNode> syncPendentAttributeRequestsCache(String authority, String address) {
+        String path = fc.getUserDirectory(user);
+        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "pendingAttributeRequests.json", String.class,
+                ArrayNode.class);
+        this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
+        fc.writeToDir(path, "pendingAttributeRequests.json", requestCache);
+        return requestCache;
+    }
+
     private void saveAttributeRequestInCache(String authority, String address, ObjectNode request) {
         String path = fc.getUserDirectory(user);
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
