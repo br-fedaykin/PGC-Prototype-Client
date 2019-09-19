@@ -29,8 +29,7 @@ contract SmartDCPABEAuthority is Collection {
 
     address[] public certifierAddresses;
     mapping (address => Certifier) certifiers;
-    uint64 public numRequestOwners;
-    mapping (uint64 => address) pendingRequestsOwners;
+    mapping (address => address[]) attributeRequesters;
     mapping (address => mapping (address => uint64[])) pendingRequests;
     mapping (address => mapping (address => KeyRequest[])) requests;
     SmartDCPABEUtility util;
@@ -75,26 +74,27 @@ contract SmartDCPABEAuthority is Collection {
         uint64 pendingIndex = uint64(requests[authority][requester].length);
         requests[authority][requester].push(KeyRequest(KeyRequestStatus.PENDING, timestamp, 0, attrNames));
         pendingRequests[authority][requester].push(pendingIndex);
-        pendingRequestsOwners[numRequestOwners] = requester;
-        numRequestOwners++;
+        attributeRequesters[authority].push(requester);
     }
 
     function processRequest(address authority, uint64 requesterIndex, uint64 pendingIndex, KeyRequestStatus newStatus) public {
-        address requester = pendingRequestsOwners[requesterIndex];
+        address requester = attributeRequesters[authority][requesterIndex];
+        require(pendingRequests[authority][requester].length >= 1, "No pending requests for this authority.");
         uint64 index = pendingRequests[authority][requester][pendingIndex];
         requests[authority][requester][index].status = newStatus;
         if (pendingRequests[authority][requester].length == 1) {
             pendingRequests[authority][requester].pop();
-            for (uint64 i = requesterIndex; i < numRequestOwners; i++) {
-                pendingRequestsOwners[i] = pendingRequestsOwners[i + 1];
+            address lastRequester = attributeRequesters[authority][attributeRequesters[authority].length - 1];
+            attributeRequesters[authority].length--;
+            if (pendingIndex != attributeRequesters[authority].length) {
+                attributeRequesters[authority][pendingIndex] = lastRequester;
             }
         } else {
-            uint64[] memory smallerList = pendingRequests[authority][requester];
-            for (uint64 i = pendingIndex; i < smallerList.length - 1; i++) {
-                smallerList[i] = smallerList[i + 1];
+            uint64 lastIndex = pendingRequests[authority][requester][pendingRequests[authority][requester].length - 1];
+            pendingRequests[authority][requester].length--;
+            if (pendingIndex != pendingRequests[authority][requester][pendingRequests[authority][requester].length - 1]) {
+                pendingRequests[authority][requester][pendingIndex] = lastIndex;
             }
-            pendingRequests[authority][requester] = smallerList;
-            pendingRequests[authority][requester].pop();
         }
     }
 
@@ -102,8 +102,8 @@ contract SmartDCPABEAuthority is Collection {
         return pendingRequests[authority][requester].length;
     }
 
-    function getPendingRequesterAddress(uint64 requesterIndex) public view returns (address) {
-        return pendingRequestsOwners[requesterIndex];
+    function getPendingRequesterAddress(address authority, uint64 requesterIndex) public view returns (address) {
+        return attributeRequesters[authority][requesterIndex];
     }
 
     function getRequestStatus(address authority, address requester, uint64 index) public view returns (KeyRequestStatus status) {
