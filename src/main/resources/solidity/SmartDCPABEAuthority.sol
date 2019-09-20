@@ -98,6 +98,10 @@ contract SmartDCPABEAuthority is Collection {
         }
     }
 
+    function getRequestListSize(address authority, address requester) public view returns (uint256) {
+        return requests[authority][requester].length;
+    }
+
     function getPendingListSize(address authority, address requester) public view returns (uint256) {
         return pendingRequests[authority][requester].length;
     }

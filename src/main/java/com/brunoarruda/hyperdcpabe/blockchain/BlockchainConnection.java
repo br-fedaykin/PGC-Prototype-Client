@@ -265,7 +265,8 @@ public class BlockchainConnection {
                         .send();
                 requests.add(status);
             }
-            BigInteger numRequests = contractAuthority.getPendingListSize(authority, address).send();
+
+            BigInteger numRequests = contractAuthority.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
                 Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
                 requestTuple = contractAuthority.getPendingRequest(authority, address, BigInteger.valueOf(i)).send();
