@@ -415,40 +415,45 @@ public final class Client {
         fc.writeToDir(fc.getUserDirectory(user), "recordings.json", user.getRecordings());
     }
 
-    public void checkAttributeRequests(String status) {
-        ArrayNode requests = fc.getMapper().createArrayNode();
-        if (certifier != null) {
-            requests = this.blockchain.getAttributeRequestsForCertifier(certifier.getID(), status);
-        } else if (user != null) {
-            requests = this.blockchain.getAttributeRequestsForUser(user.getID(), status);
-            if (requests.size() == 0) {
-                System.out.println("No attributes requests with status: " + status);
-                return;
-            }
-        } else {
+    public void checkAttributeRequests(RequestStatus status) {
+        Map<String, ArrayNode> requests = null;
+        if (certifier == null && user == null) {
             System.out.println("No user/certifier loaded in client");
             return;
         }
-        System.out.println("Client - Attributes Requests with status: " + status);
-        for (JsonNode r : requests) {
-            String attr = r.get("attributes").toString();
-            String msg = "\tRequest %s %s asking atributes: %s";
-            if (certifier != null) {
-                String userID = r.get("userID").asText();
-                msg = String.format(msg, "from", userID, attr);
-            } else {
-                String auth = r.get("authority").asText();
-                msg = String.format(msg, "to", auth, attr);
-            }
-            System.out.println(msg);
+        if (certifier != null) {
+            throw new RuntimeException("not implemented");
+            // requests =
+            // this.blockchain.getAttributeRequestsForCertifier(certifier.getID(), status);
         }
-        // TODO: update local requests
+        if (user != null) {
+            System.out.println("Client - Attributes Requests with status: " + status);
+            for (String authority : requests.keySet()) {
+                syncAttributeRequestsCache(authority, user.getAddress(), requests);
+                System.out.printf("Authority %s:\n", authority.substring(0, 6));
+                for (JsonNode node : requests.get(authority)) {
+                    RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
+                    if (status.equals(rs)) {
+                        System.out.printf("%s - s%", node.get("timestamp").asText(), node.get("attributes").asText());
+                    }
+                }
+            }
+        }
     }
 
-    private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address) {
+    private Map<String, ArrayNode> loadAttributeRequestsCache(String authority, String address) {
         String path = fc.getUserDirectory(user);
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
                 ArrayNode.class);
+        return requestCache;
+    }
+
+    private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address,
+            Map<String, ArrayNode> requestCache) {
+        if (requestCache == null) {
+            requestCache = loadAttributeRequestsCache(authority, address);
+        }
+        String path = fc.getUserDirectory(user);
         this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
         fc.writeToDir(path, "attributeRequests.json", requestCache);
         return requestCache;
@@ -473,7 +478,8 @@ public final class Client {
 
     private List<Integer> hasRequestForAttributes(String authority, String address, String[] attributes) {
         List<Integer> alreadyAsked = new ArrayList<Integer>();
-        Map<String, ArrayNode> requestCache = syncAttributeRequestsCache(authority, address);
+        Map<String, ArrayNode> requestCache = null;
+        requestCache = syncAttributeRequestsCache(authority, address, requestCache);
         if (requestCache != null) {
             for (JsonNode r : requestCache.get(authority)) {
                 String requestAttributes;

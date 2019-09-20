@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 import com.brunoarruda.hyperdcpabe.Client;
+import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 
 /**
@@ -186,7 +187,7 @@ public class CommandLine {
             if (args[1].equals("download")) {
                 client.getPersonalKeys();
             } else {
-                client.checkAttributeRequests(args[1]);
+                client.checkAttributeRequests(RequestStatus.valueOf(args[1]));
             }
             break;
         case "-p":
