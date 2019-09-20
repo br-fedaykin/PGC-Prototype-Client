@@ -35,15 +35,48 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 public final class Client {
 
     public enum RequestStatus {
-        PENDING("pending"),
-        OK("ok"),
-        INVALID("invalid");
+        PENDING("pending", 0),
+        OK("ok", 1),
+        REJECTED("rejected", 2);
 
-        private final String value;
+        private final String label;
+        private final int value;
+        private static final Map<String, RequestStatus> labels = new HashMap<>();
+        private static final Map<Integer, RequestStatus> values = new HashMap<>();
 
-        RequestStatus(String value) {
+        RequestStatus(String label, int value) {
+            this.label = label;
             this.value = value;
         }
+
+        static {
+            for (RequestStatus status : RequestStatus.values()) {
+                labels.put(status.label, status);
+                values.put(status.value, status);
+            }
+        }
+
+        public static RequestStatus valueOf(int value) {
+            return (RequestStatus) values.get(value);
+        }
+
+        public static RequestStatus labelOf(String label) {
+            return (RequestStatus) labels.get(label.toLowerCase());
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        @Override
+        public String toString() {
+            return label.toUpperCase();
+        }
+
     }
 
     private static final int SERVER_PORT = 8080;
@@ -447,7 +480,9 @@ public final class Client {
                 try {
                     requestAttributes = fc.getMapper().writeValueAsString(r.get("attributes"));
                     int status = r.get("status").asInt();
-                    IntStream.range(0, attributes.length).filter(i -> requestAttributes.contains(attributes[i]) && status == 0).forEach(i -> alreadyAsked.add(i));
+                    IntStream.range(0, attributes.length)
+                            .filter(i -> requestAttributes.contains(attributes[i]) && status == 0)
+                            .forEach(i -> alreadyAsked.add(i));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
@@ -465,7 +500,8 @@ public final class Client {
         String[] temp = authority.split("-");
         authority = temp[temp.length - 1];
         List<Integer> alreadyOwned = new ArrayList<Integer>();
-        IntStream.range(0, attributes.length).filter(i -> user.getABEKeys().getKey(attributes[i]) != null).forEach(i -> alreadyOwned.add(i));
+        IntStream.range(0, attributes.length).filter(i -> user.getABEKeys().getKey(attributes[i]) != null)
+                .forEach(i -> alreadyOwned.add(i));
         if (alreadyOwned.size() > 0) {
             StringJoiner message = new StringJoiner(", ");
             alreadyOwned.forEach(i -> message.add(attributes[i]));
@@ -473,7 +509,9 @@ public final class Client {
         }
         List<Integer> alreadyAsked = hasRequestForAttributes(authority, user.getAddress(), attributes);
         List<String> requests = new ArrayList<String>();
-        IntStream.range(0, attributes.length).filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i)).forEach(i -> requests.add(attributes[i]));
+        IntStream.range(0, attributes.length)
+                .filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i))
+                .forEach(i -> requests.add(attributes[i]));
         if (requests.size() > 0) {
             ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
             saveAttributeRequestInCache(authority, user.getAddress(), request);
@@ -500,18 +538,20 @@ public final class Client {
         }
         fc.writeToDir(path, userID + "-pks.json", pks);
         blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, "ok");
-	}
+    }
 
-	public void sendAttributes(String userID) {
-        // TODO: elliptic encrypting of Personal Keys using secp256k-1 curve (Bitcoin key curve)
-        // see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but may be util)
+    public void sendAttributes(String userID) {
+        // TODO: elliptic encrypting of Personal Keys using secp256k-1 curve (Bitcoin
+        // key curve)
+        // see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but may be
+        // util)
         String path = fc.getUserDirectory(user);
 
         ArrayNode pks = (ArrayNode) fc.loadAsJSON(path, userID + "-pks.json");
         server.sendKeys(userID, pks);
     }
 
-	public void getPersonalKeys() {
+    public void getPersonalKeys() {
         List<PersonalKey> pks = server.getPersonalKeys(user.getID());
         if (pks != null) {
             int size = user.getABEKeys().size();
@@ -527,9 +567,9 @@ public final class Client {
         } else {
             System.out.println("No personal ABE Keys available for download.");
         }
-	}
+    }
 
-	public void deploy() {
+    public void deploy() {
         this.blockchain.deployContracts(user.getCredentials());
-	}
+    }
 }
