@@ -34,6 +34,18 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
 
+    public enum RequestStatus {
+        PENDING("pending"),
+        OK("ok"),
+        INVALID("invalid");
+
+        private final String value;
+
+        RequestStatus(String value) {
+            this.value = value;
+        }
+    }
+
     private static final int SERVER_PORT = 8080;
 
     private final FileController fc;
