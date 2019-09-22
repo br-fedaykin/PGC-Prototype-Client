@@ -2,8 +2,8 @@ pragma solidity ^0.5.1;
 
 contract Collection {
 
-    address owner;
-    enum ContractType {AUTHORITY, FILES, KEYS, USERS, UTILITY }
+    address public owner;
+    enum ContractType {AUTHORITY, FILES, KEYS, REQUESTS, USERS, UTILITY }
 
     /* FIX: rootContract should intanciate them to be their original owner, but it couldn't be done because it would exceed maximum size by doing so
      * https://github.com/ethereum/EIPs/blob/master/EIPS/eip-170.md

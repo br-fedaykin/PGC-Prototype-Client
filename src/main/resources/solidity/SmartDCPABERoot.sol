@@ -4,10 +4,12 @@ import "./Collection.sol";
 
 contract SmartDCPABERoot {
 
-    address[5] public contractAddress;
+    uint8 constant numContracts = 6;
+    address[numContracts] public contractAddress;
     Collection.ContractType AUTHORITY = Collection.ContractType.AUTHORITY;
     Collection.ContractType FILES = Collection.ContractType.FILES;
     Collection.ContractType KEYS = Collection.ContractType.KEYS;
+    Collection.ContractType REQUESTS = Collection.ContractType.REQUESTS;
     Collection.ContractType USERS = Collection.ContractType.USERS;
     Collection.ContractType UTILITY = Collection.ContractType.UTILITY;
     address owner;
@@ -18,7 +20,7 @@ contract SmartDCPABERoot {
 
     function changeOwnership(address newRoot) public {
         require(msg.sender == owner, "Operation not allowed.");
-        for (uint8 i = 0; i < 5; i++) {
+        for (uint8 i = 0; i < numContracts; i++) {
             bytes memory payload = abi.encodeWithSignature("changeOwnership(address)", newRoot);
             (bool success, ) = contractAddress[i].call(payload);
 
@@ -27,13 +29,13 @@ contract SmartDCPABERoot {
         }
     }
 
-    function setAllContracts(Collection.ContractType[5] memory contractType, address[5] memory addr) public {
-        for (uint8 i = 0; i < 5; i++) {
+    function setAllContracts(Collection.ContractType[numContracts] memory contractType, address[numContracts] memory addr) public {
+        for (uint8 i = 0; i < numContracts; i++) {
             if (uint(addr[i]) != 0) {
                 setContractAddress(contractType[i], addr[i]);
             }
         }
-        for (uint8 i = 0; i < 5; i++) {
+        for (uint8 i = 0; i < numContracts; i++) {
             if (uint(addr[i]) != 0) {
                 supplyContractDependencies(contractType[i]);
             }
@@ -48,12 +50,14 @@ contract SmartDCPABERoot {
 
     function setContractAddress(Collection.ContractType contractType, address addr) private {
         uint8 index = uint8(contractType);
-        require(index < 5, "targered contract type aren't implemented yet.");
+        require(index < numContracts, "targered contract type aren't implemented yet.");
         if (contractType == AUTHORITY) {
             contractAddress[index] = addr;
         } else if (contractType == FILES) {
             contractAddress[index] = addr;
         } else if (contractType == KEYS) {
+            contractAddress[index] = addr;
+        } else if (contractType == REQUESTS) {
             contractAddress[index] = addr;
         }else if (contractType == USERS) {
             contractAddress[index] = addr;
@@ -64,8 +68,8 @@ contract SmartDCPABERoot {
 
     function receiveContractDependencies(Collection.ContractType contractType) private {
         uint8 index = uint8(contractType);
-        require(index < 5, "targered contract type aren't implemented yet.");
-        Collection.ContractType[5] memory dependencies;
+        require(index < numContracts, "targered contract type aren't implemented yet.");
+        Collection.ContractType[numContracts] memory dependencies;
         uint8 numDependencies = 0;
         if (contractType != UTILITY) {
             dependencies[0] = UTILITY;
@@ -77,6 +81,11 @@ contract SmartDCPABERoot {
                 dependencies[1] = USERS;
                 numDependencies = 2;
             } else if (contractType == KEYS) {
+                dependencies[1] = AUTHORITY;
+                numDependencies = 2;
+            } else if (contractType == REQUESTS) {
+                // overwrites utility preset dependency, its the only contract that doesn't use it (yet).
+                dependencies[0] = USERS;
                 dependencies[1] = AUTHORITY;
                 numDependencies = 2;
             } else if (contractType == USERS) {
@@ -94,8 +103,8 @@ contract SmartDCPABERoot {
 
     function supplyContractDependencies(Collection.ContractType contractType) private {
         uint8 index = uint8(contractType);
-        require(index < 5, "targered contract type aren't implemented yet.");
-        Collection.ContractType[5] memory dependencies;
+        require(index < numContracts, "targered contract type aren't implemented yet.");
+        Collection.ContractType[numContracts] memory dependencies;
         uint8 numDependencies = 0;
         if (contractType == AUTHORITY) {
             dependencies[0] = KEYS;
@@ -103,7 +112,7 @@ contract SmartDCPABERoot {
         } else if (contractType == KEYS) {
             dependencies[0] = AUTHORITY;
             numDependencies = 1;
-        }else if (contractType == USERS) {
+        } else if (contractType == USERS) {
             dependencies[0] = AUTHORITY;
             dependencies[1] = FILES;
             numDependencies = 2;
@@ -124,7 +133,7 @@ contract SmartDCPABERoot {
         }
     }
 
-    function getAllContractAddresses() public view returns (address[5] memory) {
+    function getAllContractAddresses() public view returns (address[numContracts] memory) {
         return contractAddress;
     }
 }
