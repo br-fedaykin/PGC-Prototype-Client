@@ -1,4 +1,5 @@
 pragma solidity ^0.5.1;
+
 import "./SmartDCPABEUtility.sol";
 import "./SmartDCPABEUsers.sol";
 import "./Collection.sol";
@@ -20,8 +21,7 @@ contract SmartDCPABEAuthority is Collection {
 
     constructor(address root) Collection(root) public {}
 
-    function setContractDependencies(ContractType contractType, address addr) public {
-        require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
+    function setContractDependencies(ContractType contractType, address addr) public onlyOwner {
         if (contractType == ContractType.UTILITY) {
             util = SmartDCPABEUtility(addr);
         } else if (contractType == ContractType.USERS) {
@@ -44,8 +44,6 @@ contract SmartDCPABEAuthority is Collection {
         certifierAddresses.push(addr);
         certifiers[addr] = Certifier(addr, util.stringToBytes32(name), util.stringToBytes32(email), 0);
     }
-
-
 
     function getCertifier
     (

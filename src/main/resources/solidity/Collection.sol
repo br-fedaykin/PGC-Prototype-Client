@@ -12,10 +12,14 @@ contract Collection {
         owner = rootContract;
     }
 
-    function setContractDependencies(Collection.ContractType contractType, address addr) public;
+    function setContractDependencies(ContractType contractType, address addr) public;
 
-    function changeOwnership(address newOwner) public {
-        require(msg.sender == owner, "Operation not allowed.");
+    function changeOwnership(address newOwner) public onlyOwner {
         owner = newOwner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Operation not allowed.");
+        _;
     }
 }

@@ -20,8 +20,7 @@ contract SmartDCPABEUsers is Collection {
     constructor(address root) Collection(root) public {}
 
 
-    function setContractDependencies(ContractType contractType, address addr) public {
-        require(msg.sender == owner, "Operation not allowed. Must be the done by the owner of the contract.");
+    function setContractDependencies(ContractType contractType, address addr) public onlyOwner {
         if (contractType == ContractType.UTILITY) {
             util = SmartDCPABEUtility(addr);
         }
