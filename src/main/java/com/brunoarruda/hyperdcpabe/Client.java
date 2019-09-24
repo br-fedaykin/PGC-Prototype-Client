@@ -103,14 +103,15 @@ public final class Client {
                 throw new RuntimeException(
                         "Execute o comando --init informando o endereço de rede" + " para conexão com a blockchain");
             }
-            String contractUsersAddress = clientData.get("contractUsersAddress").asText();
             String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
             String contractFilesAddress = clientData.get("contractFilesAddress").asText();
             String contractKeysAddress = clientData.get("contractKeysAddress").asText();
+            String contractRequestsAddress = clientData.get("contractRequestsAddress").asText();
+            String contractUsersAddress = clientData.get("contractUsersAddress").asText();
             contractFilesAddress = (contractFilesAddress.equals("null")) ? null : contractFilesAddress;
             contractAuthorityAddress = (contractAuthorityAddress.equals("null")) ? null : contractAuthorityAddress;
-            this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress,
-                    contractFilesAddress, contractKeysAddress);
+            this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress,
+                    contractFilesAddress, contractKeysAddress, contractRequestsAddress, contractUsersAddress);
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
@@ -119,27 +120,29 @@ public final class Client {
     }
 
     public Client(String url) {
-        this(url, null, null, null, null);
+        this(url, null, null, null, null, null);
     }
 
-    public Client(String networkURL, String contractUsersAddress, String contractAuthorityAddress,
-            String contractFilesAddress, String contractKeysAddress) {
+    public Client(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
+            String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
         fc = FileController.getInstance();
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractUsersAddress, contractAuthorityAddress,
-                contractFilesAddress, contractKeysAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress,
+                contractFilesAddress, contractKeysAddress, contractRequestsAddress, contractUsersAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
         clientData = (ObjectNode) fc.getMapper().createObjectNode();
+        // TODO: refactor contract configuration and delete code below
         clientData.put("networkURL", networkURL);
-        clientData.put("contractUsersAddress", contractUsersAddress);
         clientData.put("contractAuthorityAddress", contractAuthorityAddress);
         clientData.put("contractFilesAddress", contractFilesAddress);
         clientData.put("contractKeysAddress", contractKeysAddress);
+        clientData.put("contractRequestsAddress", contractRequestsAddress);
+        clientData.put("contractUsersAddress", contractUsersAddress);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         this.server = new ServerConnection(SERVER_PORT);
     }
@@ -422,11 +425,19 @@ public final class Client {
             return;
         }
         if (certifier != null) {
-            throw new RuntimeException("not implemented");
-            // requests =
-            // this.blockchain.getAttributeRequestsForCertifier(certifier.getID(), status);
-        }
-        if (user != null) {
+            System.out.println("Certifier - Attributes Requests with status: " + status);
+            requests = syncPendingAttributeRequestsCache(certifier.getAddress(), requests);
+            for (String user : requests.keySet()) {
+                System.out.printf("User %s...:\n", user.substring(0, 6));
+                for (JsonNode node : requests.get(user)) {
+                    RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
+                    if (status.equals(rs)) {
+                        System.out.printf("timestamp %s - %s", node.get("timestamp").asText(), node.get("attributes").toString());
+                    }
+                }
+            }
+        } else if (user != null) {
+            // FIX: this disjuntion avoids an authority to check for attributes asked to another authorities
             System.out.println("Client - Attributes Requests with status: " + status);
             for (String authority : requests.keySet()) {
                 syncAttributeRequestsCache(authority, user.getAddress(), requests);
@@ -441,17 +452,19 @@ public final class Client {
         }
     }
 
-    private Map<String, ArrayNode> loadAttributeRequestsCache(String authority, String address) {
+    private Map<String, ArrayNode> loadAttributeRequestsCache() {
         String path = fc.getUserDirectory(user);
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
                 ArrayNode.class);
         return requestCache;
     }
 
+
+
     private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address,
             Map<String, ArrayNode> requestCache) {
         if (requestCache == null) {
-            requestCache = loadAttributeRequestsCache(authority, address);
+            requestCache = loadAttributeRequestsCache();
         }
         String path = fc.getUserDirectory(user);
         this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
@@ -459,13 +472,22 @@ public final class Client {
         return requestCache;
     }
 
-    private Map<String, ArrayNode> syncPendentAttributeRequestsCache(String authority, String address) {
+    private Map<String, ArrayNode> loadPendingAttributeRequestsCache() {
         String path = fc.getUserDirectory(user);
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "pendingAttributeRequests.json", String.class,
                 ArrayNode.class);
-        this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
-        fc.writeToDir(path, "pendingAttributeRequests.json", requestCache);
         return requestCache;
+    }
+
+    private Map<String, ArrayNode> syncPendingAttributeRequestsCache(String authority,
+            Map<String, ArrayNode> pendingRequestCache) {
+        if (pendingRequestCache == null) {
+            pendingRequestCache = loadPendingAttributeRequestsCache();
+        }
+        String path = fc.getUserDirectory(user);
+        this.blockchain.syncPendingAttributeRequests(authority, pendingRequestCache);
+        fc.writeToDir(path, "pendingAttributeRequests.json", pendingRequestCache);
+        return pendingRequestCache;
     }
 
     private void saveAttributeRequestInCache(String authority, String address, ObjectNode request) {
@@ -534,7 +556,7 @@ public final class Client {
                 SecretKey sk = skeys.get(attr);
                 if (null == sk) {
                     System.err.println("Attribute not handled");
-                    blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, "failed");
+                    blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, RequestStatus.REJECTED);
                     return;
                 }
                 pks.add(DCPABE.keyGen(userID, attr, sk, gp));
@@ -543,7 +565,7 @@ public final class Client {
             e.printStackTrace();
         }
         fc.writeToDir(path, userID + "-pks.json", pks);
-        blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, "ok");
+        blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, RequestStatus.OK);
     }
 
     public void sendAttributes(String userID) {

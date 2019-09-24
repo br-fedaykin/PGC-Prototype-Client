@@ -72,27 +72,13 @@ public class CommandLine {
             case "--milestone":
                 FileController fc = FileController.getInstance().configure(Client.getDataPath());
                 contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
-                if (contractAddress.size() > 0 ) {
-                    System.out.println("Utilizando os contratos informados na última execução do programa.");
-                } else {
-                    sc = new Scanner(System.in);
-                    // FIXME: broken pattern, logic about contract should be in Client, not in Presentation layer
-                    // TODO: study the removal of contractAddress field from client and direct input in commandArgs
-                    System.out.println("Informe o endereço do contrato para usuários: ");
-                    contractAddress.put("Users", sc.nextLine());
-                    System.out.println("Informe o endereço do contrato para certificadores e requisições de atributos: ");
-                    contractAddress.put("Authority", sc.nextLine());
-                    System.out.println("Informe o endereço do contrato para os arquivos: ");
-                    contractAddress.put("Files", sc.nextLine());
-                    System.out.println("Informe o endereço do contrato para os atributos: ");
-                    contractAddress.put("Keys", sc.nextLine());
-                    fc.writeToDir(fc.getDataDirectory(), "contractAddresses.json", contractAddress);
-                }
+                System.out.println("Utilizando os contratos informados na última execução do programa.");
                 String commandArgs = "--init HTTP://127.0.0.1:7545";
-                commandArgs += " " + contractAddress.get("Users");
                 commandArgs += " " + contractAddress.get("Authority");
                 commandArgs += " " + contractAddress.get("Files");
                 commandArgs += " " + contractAddress.get("Keys");
+                commandArgs += " " + contractAddress.get("Requests");
+                commandArgs += " " + contractAddress.get("Users");
                 runCommand(commandArgs.split(" "));
 
                 commandArgs = "--create-user contract_owner contract_owner@email.com ";
@@ -124,18 +110,20 @@ public class CommandLine {
         case "-i":
         case "--init":
             String networkURL = args[1];
-            String contractUsersAddress = null;
             String contractAuthorityAddress = null;
             String contractFilesAddress = null;
             String contractKeysAddress = null;
-            if (args.length == 6) {
-                contractUsersAddress = args[2];
-                contractAuthorityAddress = args[3];
-                contractFilesAddress = args[4];
-                contractKeysAddress = args[5];
+            String contractRequestsAddress = null;
+            String contractUsersAddress = null;
+            if (args.length == 7) {
+                contractAuthorityAddress = args[2];
+                contractFilesAddress = args[3];
+                contractKeysAddress = args[4];
+                contractRequestsAddress = args[5];
+                contractUsersAddress = args[6];
             }
-            client = new Client(networkURL, contractUsersAddress, contractAuthorityAddress, contractFilesAddress,
-                    contractKeysAddress);
+            client = new Client(networkURL, contractAuthorityAddress, contractFilesAddress,
+                    contractKeysAddress, contractRequestsAddress, contractUsersAddress);
             break;
         case "-l":
         case "--load":
@@ -187,7 +175,7 @@ public class CommandLine {
             if (args[1].equals("download")) {
                 client.getPersonalKeys();
             } else {
-                client.checkAttributeRequests(RequestStatus.valueOf(args[1]));
+                client.checkAttributeRequests(RequestStatus.valueOf(args[1].toUpperCase()));
             }
             break;
         case "-p":

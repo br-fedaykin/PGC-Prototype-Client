@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Recording;
+import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -46,14 +47,16 @@ public class BlockchainConnection {
      * TODO: get contracts addresses together in a Map, or do that with contract
      * objects, as they have the addresses in them
      */
-    private String contractUsersAddress;
     private String contractAuthorityAddress;
     private String contractFilesAddress;
     private String contractKeysAddress;
-    private SmartDCPABEUsers contractUsers;
+    private String contractUsersAddress;
+    private String contractRequestsAddress;
     private SmartDCPABEAuthority contractAuthority;
     private SmartDCPABEFiles contractFiles;
     private SmartDCPABEKeys contractKeys;
+    private SmartDCPABERequests contractRequests;
+    private SmartDCPABEUsers contractUsers;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -67,22 +70,20 @@ public class BlockchainConnection {
     // TODO: refactor URL as a POM field or command line/file config
     // POM field seems better, as it would allow different value for deploy/test
     // cycles
-    public BlockchainConnection(String networkURL, String contractUsersAddress, String contractAuthorityAddress,
-            String contractFilesAddress, String contractKeysAddress) {
+    public BlockchainConnection(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
+            String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
         this.networkURL = networkURL;
-        this.contractUsersAddress = contractUsersAddress;
         this.contractAuthorityAddress = contractAuthorityAddress;
         this.contractFilesAddress = contractFilesAddress;
         this.contractKeysAddress = contractKeysAddress;
+        this.contractRequestsAddress = contractRequestsAddress;
+        this.contractUsersAddress = contractUsersAddress;
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
     }
 
     public void deployContracts(Credentials credentials) {
         ContractGasProvider cgp = new DefaultGasProvider();
-        if (contractUsersAddress != null) {
-            contractUsers = SmartDCPABEUsers.load(contractUsersAddress, web3j, credentials, cgp);
-        }
         if (contractAuthorityAddress != null) {
             contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);
         }
@@ -91,6 +92,12 @@ public class BlockchainConnection {
         }
         if (contractKeysAddress != null) {
             contractKeys = SmartDCPABEKeys.load(contractKeysAddress, web3j, credentials, cgp);
+        }
+        if (contractRequestsAddress != null) {
+            contractRequests = SmartDCPABERequests.load(contractRequestsAddress, web3j, credentials, cgp);
+        }
+        if (contractUsersAddress != null) {
+            contractUsers = SmartDCPABEUsers.load(contractUsersAddress, web3j, credentials, cgp);
         }
     }
 
@@ -180,8 +187,8 @@ public class BlockchainConnection {
         int numRecording = -1;
         try {
             BigInteger numRecording_ = contractFiles.getFileIndex(address).send();
-            contractFiles.addRecording(address, Arrays.copyOf(fileName.getBytes(), 32), serverID, key, hash, timestamp, c0, c1, c2, c3)
-                    .send();
+            contractFiles.addRecording(address, Arrays.copyOf(fileName.getBytes(), 32), serverID, key, hash, timestamp,
+                    c0, c1, c2, c3).send();
             System.out.println("Blockchain - data published: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
@@ -261,23 +268,25 @@ public class BlockchainConnection {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < listSizeLocal; i++) {
-                BigInteger status = contractAuthority.getRequestStatus(authority, address, BigInteger.valueOf(i))
-                        .send();
+                /*
+                 * NOTE: this could lead to error, since it is expected to always have the
+                 * request on blockchain, which could not be true if the contract is a new one.
+                 * Needs more work to stablish a migration model that does not break the client
+                 */
+                BigInteger status = contractRequests.getRequestStatus(authority, address, BigInteger.valueOf(i)).send();
                 requests.add(status);
             }
-
-            BigInteger numRequests = contractAuthority.getRequestListSize(authority, address).send();
+            BigInteger numRequests = contractRequests.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
                 Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
-                requestTuple = contractAuthority.getPendingRequest(authority, address, BigInteger.valueOf(i)).send();
+                requestTuple = contractRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("status", requestTuple.getValue1().intValue());
                 request.put("timestamp", requestTuple.getValue2());
                 request.put("responseTimestamp", requestTuple.getValue3());
                 ArrayNode attributes = request.putArray("attributes");
-                for (byte[] attrName_ : requestTuple.getValue4()) {
-                    String attrName = new String(attrName_, "UTF-8").replaceFirst("\u0000+$", "");
-                    attributes.add(attrName);
+                for (byte[] attrName : requestTuple.getValue4()) {
+                    attributes.add(trimmedToString(attrName));
                 }
                 requests.add(request);
             }
@@ -285,6 +294,11 @@ public class BlockchainConnection {
             e.printStackTrace();
         }
         return requests;
+    }
+
+    // NOTE: check if this code and others could be confined in a util class
+    private String trimmedToString(byte[] data) throws UnsupportedEncodingException {
+        return new String(data, "UTF-8").replaceFirst("\u0000+$", "");
     }
 
     public ObjectNode publishAttributeRequest(String authority, String address, List<String> attributes) {
@@ -299,9 +313,10 @@ public class BlockchainConnection {
         });
         ObjectNode request = null;
         try {
-            contractAuthority.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            contractRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
             request = fc.getMapper().createObjectNode();
-            // check if pending corresponds to zero, and check if enum values on solidity can be enforced explicitly
+            // check if pending corresponds to zero, and check if enum values on solidity
+            // can be enforced explicitly
             request.put("status", BigInteger.ZERO);
             request.put("timestamp", timestamp);
             ArrayNode attributesNode = request.putArray("attributes");
@@ -310,7 +325,7 @@ public class BlockchainConnection {
             e.printStackTrace();
         }
         return request;
-	}
+    }
 
     public boolean userExists(String address) {
         Tuple3<String, String, String> user = null;
@@ -323,7 +338,8 @@ public class BlockchainConnection {
     }
 
     public ArrayNode getAttributeRequestsForUser(String userID, String status) {
-        // TODO: store last timestamp of checking to allow early exit of loop in smart contract
+        // TODO: store last timestamp of checking to allow early exit of loop in smart
+        // contract
 
         String path = getBlockchainDataPath() + "AttributeRequest\\";
         String[] authorities = new File(path).list();
@@ -344,14 +360,14 @@ public class BlockchainConnection {
         return allRequests;
     }
 
-	public ArrayNode getAttributeRequestsForCertifier(String authority, String status) {
+    public ArrayNode getAttributeRequestsForCertifier(String authority, String status) {
         String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
         ArrayNode allRequests = fc.getMapper().createArrayNode();
         File f = new File(path);
         for (String user : f.list()) {
             ArrayNode userRequests = (ArrayNode) fc.loadAsJSON(path, user);
             Iterator<JsonNode> iter = userRequests.elements();
-            while(iter.hasNext()) {
+            while (iter.hasNext()) {
                 JsonNode element = iter.next();
                 if (!element.get("status").asText().equals(status)) {
                     iter.remove();
@@ -360,51 +376,46 @@ public class BlockchainConnection {
             allRequests.addAll(userRequests);
         }
         return allRequests;
-	}
+    }
 
-	public void publishAttributeRequestUpdate(String certifierID, String userID, String[] attributes, String newStatus) {
+    public void publishAttributeRequestUpdate(String certifierID, String userID, String[] attributes,
+            RequestStatus newStatus) {
         String path = getBlockchainDataPath() + "AttributeRequest\\" + certifierID + "\\";
         ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, userID + ".json");
         for (JsonNode node : requests) {
             String nodeAttributes = node.get("attributes").toString().replace("\"", "");
             if (nodeAttributes.equals(Arrays.toString(attributes))) {
-                ((ObjectNode) node).put("status", newStatus);
+                ((ObjectNode) node).put("status", newStatus.toString());
                 break;
             }
         }
         fc.writeToDir(path, userID + ".json", requests);
         System.out.println("Blockchain - Attribute request processed by " + certifierID + ". Result: " + newStatus);
-	}
+    }
 
-	public String getNetworkURL() {
-		return networkURL;
-	}
+    public String getNetworkURL() {
+        return networkURL;
+    }
 
-	public String getContractAddress() {
-		return contractUsersAddress;
-	}
+    public String getContractAddress() {
+        return contractUsersAddress;
+    }
 
-	public int getAttributeRequestListSize(ObjectNode msg) {
+    // NOTE: function not used
+    public int getAttributeRequestListSize(ObjectNode msg) {
         String authority = msg.get("authority").asText();
         String address = msg.get("address").asText();
         int numRequests = -1;
         try {
-            BigInteger numRequests_ = contractAuthority.getPendingListSize(authority, address).send();
+            BigInteger numRequests_ = contractRequests.getRequestListSize(authority, address).send();
             numRequests = numRequests_.intValue();
         } catch (Exception e) {
             e.printStackTrace();
         }
-		return numRequests;
-	}
-
-    // NOTE: Function not used yet in Client.
-	public void updateAttributeRequestCache(String address, Map<String, ArrayNode> requestCache) {
-        for (String authority : requestCache.keySet()) {
-            syncAttributeRequestCache(address, requestCache, authority);
-        }
+        return numRequests;
     }
 
-	public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
+    public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
         if (!userExists(address)) {
             System.out.println("Blockchain - User does not exist in blockchain");
             return;
@@ -422,36 +433,6 @@ public class BlockchainConnection {
             JsonNode status = requests.remove(0);
             if (cachedRequest.get("status").asInt() != status.asInt()) {
                 String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
-                message = String.format(message, cachedRequest.get("timestamp").asInt(), cachedRequest.get("status").asInt(),
-                        status.asInt());
-                System.out.println(message);
-                cachedRequest.replace("status", status);
-            }
-        }
-        cache.addAll(requests);
-	}
-
-    public void getPendingAttributeRequests(String address, Map<String, ArrayNode> requestCache, String authority) {
-        if (!certifierExists(address)) {
-            System.out.println("Blockchain - User does not exist in blockchain");
-            return;
-        }
-        ArrayNode cache = requestCache.get(address);
-        if (cache == null) {
-            cache = fc.getMapper().createArrayNode();
-            requestCache.put(authority, cache);
-        }
-        int listSizeLocal = cache.size();
-        // get size of pending list
-        // iterate over it to see the indexes of the requests
-        // não sei o que fazer
-        ArrayNode requests = getAttributeRequests(authority, address, listSizeLocal);
-
-        for (int i = 0; i < listSizeLocal; i++) {
-            ObjectNode cachedRequest = (ObjectNode) cache.get(i);
-            JsonNode status = requests.remove(0);
-            if (cachedRequest.get("status").asInt() != status.asInt()) {
-                String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
                 message = String.format(message, cachedRequest.get("timestamp").asInt(),
                         cachedRequest.get("status").asInt(), status.asInt());
                 System.out.println(message);
@@ -459,6 +440,54 @@ public class BlockchainConnection {
             }
         }
         cache.addAll(requests);
+    }
+
+    public ArrayNode getPendingAttributeRequests(String authority, String address, List<BigInteger> pendingRequests) {
+        ArrayNode requests = fc.getMapper().createArrayNode();
+        try {
+            for (BigInteger i : pendingRequests) {
+                Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                requestTuple = contractRequests.getRequest(authority, address, i).send();
+                ObjectNode request = fc.getMapper().createObjectNode();
+                request.put("status", requestTuple.getValue1().intValue());
+                request.put("timestamp", requestTuple.getValue2());
+                request.put("responseTimestamp", requestTuple.getValue3());
+                ArrayNode attributes = request.putArray("attributes");
+                for (byte[] attrName : requestTuple.getValue4()) {
+                    attributes.add(trimmedToString(attrName));
+                }
+                requests.add(request);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void syncPendingAttributeRequests(String authority, Map<String, ArrayNode> requestCache) {
+        if (!certifierExists(authority)) {
+            System.out.println("Blockchain - Certifier does not exist in blockchain");
+            return;
+        }
+        BigInteger numRequesters;
+        try {
+            numRequesters = contractRequests.getPendingRequesterListSize(authority).send();
+            for (int i = 0; i < numRequesters.intValue(); i++) {
+                String address = contractRequests.getPendingRequesterAddress(authority, BigInteger.valueOf(i)).send();
+                ArrayNode cache = requestCache.get(address);
+                if (cache == null) {
+                    cache = fc.getMapper().createArrayNode();
+                    requestCache.put(address, cache);
+                }
+                List<BigInteger> pendingRequestsIndexes = contractRequests.getPendingList(authority, address).send();
+                ArrayNode pendingRequests = getPendingAttributeRequests(authority, address, pendingRequestsIndexes);
+                cache.removeAll();
+                cache.addAll(pendingRequests);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private boolean certifierExists(String address) {
