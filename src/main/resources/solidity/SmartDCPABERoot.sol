@@ -106,14 +106,16 @@ contract SmartDCPABERoot {
         uint8 numDependencies = 0;
         if (contractType == AUTHORITY) {
             dependencies[0] = KEYS;
-            numDependencies = 1;
+            dependencies[1] = REQUESTS;
+            numDependencies = 2;
         } else if (contractType == KEYS) {
             dependencies[0] = AUTHORITY;
             numDependencies = 1;
         } else if (contractType == USERS) {
             dependencies[0] = AUTHORITY;
             dependencies[1] = FILES;
-            numDependencies = 2;
+            dependencies[2] = REQUESTS;
+            numDependencies = 3;
         } else if (contractType == UTILITY) {
             dependencies[0] = AUTHORITY;
             dependencies[1] = FILES;
