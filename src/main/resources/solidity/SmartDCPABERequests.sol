@@ -77,6 +77,10 @@ contract SmartDCPABERequests is Collection {
         return pendingRequests[certifier][requester].length;
     }
 
+    function getPendingList(address certifier, address requester) public view returns (uint64[] memory) {
+        return pendingRequests[certifier][requester];
+    }
+
     function getPendingRequesterListSize(address certifier) public view returns (uint256) {
         return attributeRequesters[certifier].length;
     }
