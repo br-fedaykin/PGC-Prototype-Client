@@ -27,6 +27,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tuples.generated.Tuple3;
 import org.web3j.tuples.generated.Tuple4;
+import org.web3j.tuples.generated.Tuple5;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 
@@ -278,14 +279,15 @@ public class BlockchainConnection {
             }
             BigInteger numRequests = contractRequests.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
-                Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
                 requestTuple = contractRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("status", requestTuple.getValue1().intValue());
-                request.put("timestamp", requestTuple.getValue2());
-                request.put("responseTimestamp", requestTuple.getValue3());
+                request.put("index", requestTuple.getValue2().intValue());
+                request.put("timestamp", requestTuple.getValue3());
+                request.put("responseTimestamp", requestTuple.getValue4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (byte[] attrName : requestTuple.getValue4()) {
+                for (byte[] attrName : requestTuple.getValue5()) {
                     attributes.add(trimmedToString(attrName));
                 }
                 requests.add(request);
@@ -303,7 +305,6 @@ public class BlockchainConnection {
 
     public ObjectNode publishAttributeRequest(String authority, String address, List<String> attributes) {
         List<byte[]> attributes_ = new ArrayList<byte[]>();
-        long timestamp = System.currentTimeMillis();
         attributes.forEach(s -> {
             try {
                 attributes_.add(Arrays.copyOf(s.getBytes("UTF-8"), 32));
@@ -313,10 +314,11 @@ public class BlockchainConnection {
         });
         ObjectNode request = null;
         try {
+            BigInteger index = contractRequests.getRequestListSize(authority, address).send();
+            long timestamp = System.currentTimeMillis();
             contractRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
             request = fc.getMapper().createObjectNode();
-            // check if pending corresponds to zero, and check if enum values on solidity
-            // can be enforced explicitly
+            request.put("index", index);
             request.put("status", BigInteger.ZERO);
             request.put("timestamp", timestamp);
             ArrayNode attributesNode = request.putArray("attributes");
@@ -446,14 +448,15 @@ public class BlockchainConnection {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (BigInteger i : pendingRequests) {
-                Tuple4<BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
                 requestTuple = contractRequests.getRequest(authority, address, i).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("status", requestTuple.getValue1().intValue());
-                request.put("timestamp", requestTuple.getValue2());
-                request.put("responseTimestamp", requestTuple.getValue3());
+                request.put("index", requestTuple.getValue2().intValue());
+                request.put("timestamp", requestTuple.getValue3());
+                request.put("responseTimestamp", requestTuple.getValue4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (byte[] attrName : requestTuple.getValue4()) {
+                for (byte[] attrName : requestTuple.getValue5()) {
                     attributes.add(trimmedToString(attrName));
                 }
                 requests.add(request);
