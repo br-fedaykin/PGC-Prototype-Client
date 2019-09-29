@@ -18,6 +18,16 @@ contract SmartDCPABERequests is Collection {
         bytes32[] attrNames;
     }
 
+    event pendingRequestIndexChanged (
+        uint64 oldIndex,
+        uint64 newIndex
+    );
+
+    event pendingRequesterIndexChanged (
+        uint64 oldIndex,
+        uint64 newIndex
+    );
+
     mapping (address => address[]) pendingRequesters;
     mapping (address => mapping (address => uint64[])) pendingRequests;
     mapping (address => mapping (address => KeyRequest[])) requests;
@@ -50,21 +60,24 @@ contract SmartDCPABERequests is Collection {
 
     function processRequest(address certifier, uint64 requesterIndex, uint64 pendingIndex, KeyRequestStatus newStatus) public {
         address requester = pendingRequesters[certifier][requesterIndex];
-        require(pendingRequests[certifier][requester].length >= 1, "No pending requests for this certifier.");
+        uint64 listSize = uint64(pendingRequests[certifier][requester].length);
+        require(listSize >= 1, "No pending requests for this certifier.");
         uint64 index = pendingRequests[certifier][requester][pendingIndex];
         requests[certifier][requester][index].status = newStatus;
-        if (pendingRequests[certifier][requester].length == 1) {
+        if (listSize == 1) {
             pendingRequests[certifier][requester].pop();
             address lastRequester = pendingRequesters[certifier][pendingRequesters[certifier].length - 1];
             pendingRequesters[certifier].length--;
-            if (pendingIndex != pendingRequesters[certifier].length) {
-                pendingRequesters[certifier][pendingIndex] = lastRequester;
+            if (requesterIndex != pendingRequesters[certifier].length) {
+                pendingRequesters[certifier][requesterIndex] = lastRequester;
+                emit pendingRequesterIndexChanged(uint64(pendingRequesters[certifier].length), requesterIndex);
             }
         } else {
-            uint64 lastIndex = pendingRequests[certifier][requester][pendingRequests[certifier][requester].length - 1];
+            uint64 lastIndex = pendingRequests[certifier][requester][listSize - 1];
             pendingRequests[certifier][requester].length--;
-            if (pendingIndex != pendingRequests[certifier][requester][pendingRequests[certifier][requester].length - 1]) {
+            if (pendingIndex != listSize - 1) {
                 pendingRequests[certifier][requester][pendingIndex] = lastIndex;
+                emit pendingRequestIndexChanged(listSize - 1, pendingIndex);
             }
         }
     }
