@@ -13,6 +13,8 @@ import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Recording;
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
+import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequestIndexChangedEventResponse;
+import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequesterIndexChangedEventResponse;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tuples.generated.Tuple3;
 import org.web3j.tuples.generated.Tuple4;
@@ -380,20 +383,37 @@ public class BlockchainConnection {
         return allRequests;
     }
 
-    public void publishAttributeRequestUpdate(String certifierID, String userID, String[] attributes,
-            RequestStatus newStatus) {
-        String path = getBlockchainDataPath() + "AttributeRequest\\" + certifierID + "\\";
-        ArrayNode requests = (ArrayNode) fc.loadAsJSON(path, userID + ".json");
-        for (JsonNode node : requests) {
-            String nodeAttributes = node.get("attributes").toString().replace("\"", "");
-            if (nodeAttributes.equals(Arrays.toString(attributes))) {
-                ((ObjectNode) node).put("status", newStatus.toString());
-                break;
+    public Map<String, int[]> publishAttributeRequestUpdate(String authority, String user, BigInteger pendingRequesterIndex,
+            BigInteger pendingRequestIndex, RequestStatus newStatus) {
+        TransactionReceipt tx = null;
+        Map<String, int[]> changedIndexes = new HashMap<>();
+        try {
+            tx = contractRequests.processRequest(authority, pendingRequesterIndex,
+                    pendingRequestIndex, BigInteger.valueOf(newStatus.getValue())).send();
+            System.out.printf("Blockchain - Attribute request processed by %s.... Result: %s\n", authority.substring(0, 6), newStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.printf("Blockchain - Attribute request not processed by %s....", authority.substring(0, 6));
+        }
+        if (tx != null) {
+            List<PendingRequesterIndexChangedEventResponse> changedRequesterIndexes;
+            changedRequesterIndexes = contractRequests.getPendingRequesterIndexChangedEvents(tx);
+            if (changedRequesterIndexes.size() > 0) {
+                int[] requesterChanges = { changedRequesterIndexes.get(0).oldIndex.intValue(),
+                        changedRequesterIndexes.get(0).newIndex.intValue() };
+                changedIndexes.put("requester", requesterChanges);
+            }
+            List<PendingRequestIndexChangedEventResponse> changedRequestIndexes;
+            changedRequestIndexes = contractRequests.getPendingRequestIndexChangedEvents(tx);
+            if (changedRequestIndexes.size() > 0) {
+                int[] requestChanges = {changedRequestIndexes.get(0).oldIndex.intValue(),
+                    changedRequestIndexes.get(0).newIndex.intValue()};
+                changedIndexes.put("request", requestChanges);
             }
         }
-        fc.writeToDir(path, userID + ".json", requests);
-        System.out.println("Blockchain - Attribute request processed by " + certifierID + ". Result: " + newStatus);
+        return changedIndexes;
     }
+
 
     public String getNetworkURL() {
         return networkURL;
@@ -451,6 +471,7 @@ public class BlockchainConnection {
                 Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
                 requestTuple = contractRequests.getRequest(authority, address, i).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
+                request.put("pendingIndex", i);
                 request.put("status", requestTuple.getValue1().intValue());
                 request.put("index", requestTuple.getValue2().intValue());
                 request.put("timestamp", requestTuple.getValue3());
@@ -468,7 +489,7 @@ public class BlockchainConnection {
     }
 
     @SuppressWarnings("unchecked")
-    public void syncPendingAttributeRequests(String authority, Map<String, ArrayNode> requestCache) {
+    public void syncPendingAttributeRequests(String authority, Map<String, ObjectNode> requestCache) {
         if (!certifierExists(authority)) {
             System.out.println("Blockchain - Certifier does not exist in blockchain");
             return;
@@ -477,16 +498,18 @@ public class BlockchainConnection {
         try {
             numRequesters = contractRequests.getPendingRequesterListSize(authority).send();
             for (int i = 0; i < numRequesters.intValue(); i++) {
+                // FIX: return proper address with valid Checksum. Currently the address is all lowercase
                 String address = contractRequests.getPendingRequesterAddress(authority, BigInteger.valueOf(i)).send();
-                ArrayNode cache = requestCache.get(address);
-                if (cache == null) {
-                    cache = fc.getMapper().createArrayNode();
-                    requestCache.put(address, cache);
+                ObjectNode cacheWrapper = requestCache.get(address);
+                if (cacheWrapper == null) {
+                    cacheWrapper = fc.getMapper().createObjectNode();
+                    requestCache.put(address, cacheWrapper);
+                    cacheWrapper.put("index", i);
+                    cacheWrapper.put("address", address);
                 }
                 List<BigInteger> pendingRequestsIndexes = contractRequests.getPendingList(authority, address).send();
                 ArrayNode pendingRequests = getPendingAttributeRequests(authority, address, pendingRequestsIndexes);
-                cache.removeAll();
-                cache.addAll(pendingRequests);
+                cacheWrapper.withArray("requests").removeAll().addAll(pendingRequests);
             }
         } catch (Exception e) {
             e.printStackTrace();

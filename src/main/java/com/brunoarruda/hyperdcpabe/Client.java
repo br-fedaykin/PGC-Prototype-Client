@@ -2,6 +2,7 @@ package com.brunoarruda.hyperdcpabe;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -35,9 +36,7 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 public final class Client {
 
     public enum RequestStatus {
-        PENDING("pending", 0),
-        OK("ok", 1),
-        REJECTED("rejected", 2);
+        PENDING("pending", 0), OK("ok", 1), REJECTED("rejected", 2);
 
         private final String label;
         private final int value;
@@ -110,8 +109,8 @@ public final class Client {
             String contractUsersAddress = clientData.get("contractUsersAddress").asText();
             contractFilesAddress = (contractFilesAddress.equals("null")) ? null : contractFilesAddress;
             contractAuthorityAddress = (contractAuthorityAddress.equals("null")) ? null : contractAuthorityAddress;
-            this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress,
-                    contractFilesAddress, contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+            this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
+                    contractKeysAddress, contractRequestsAddress, contractUsersAddress);
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
@@ -130,8 +129,8 @@ public final class Client {
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress,
-                contractFilesAddress, contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
+                contractKeysAddress, contractRequestsAddress, contractUsersAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
@@ -419,25 +418,29 @@ public final class Client {
     }
 
     public void checkAttributeRequests(RequestStatus status) {
-        Map<String, ArrayNode> requests = null;
         if (certifier == null && user == null) {
             System.out.println("No user/certifier loaded in client");
             return;
         }
         if (certifier != null) {
+            Map<String, ObjectNode> requests = null;
             System.out.println("Certifier - Attributes Requests with status: " + status);
             requests = syncPendingAttributeRequestsCache(certifier.getAddress(), requests);
             for (String user : requests.keySet()) {
                 System.out.printf("User %s...:\n", user.substring(0, 6));
-                for (JsonNode node : requests.get(user)) {
+                for (JsonNode node : requests.get(user).withArray("requests")) {
                     RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
                     if (status.equals(rs)) {
-                        System.out.printf("timestamp %s - %s", node.get("timestamp").asText(), node.get("attributes").toString());
+                        System.out.printf("\trequest #%d - timestamp %s - %s\n", node.get("index").asInt(),
+                                node.get("timestamp").asText(), node.get("attributes").toString());
                     }
                 }
             }
         } else if (user != null) {
-            // FIX: this disjuntion avoids an authority to check for attributes asked to another authorities
+            Map<String, ArrayNode> requests = loadAttributeRequestsCache();
+            /* FIX: this disjunction avoids an authority to check for attributes asked to
+             * another authorities
+             */
             System.out.println("Client - Attributes Requests with status: " + status);
             for (String authority : requests.keySet()) {
                 syncAttributeRequestsCache(authority, user.getAddress(), requests);
@@ -445,7 +448,8 @@ public final class Client {
                 for (JsonNode node : requests.get(authority)) {
                     RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
                     if (status.equals(rs)) {
-                        System.out.printf("%s - s%", node.get("timestamp").asText(), node.get("attributes").asText());
+                        System.out.printf("\trequest #%d - timestamp %s - %s", node.get("index").asInt(),
+                                node.get("timestamp").asText(), node.get("attributes").toString());
                     }
                 }
             }
@@ -459,8 +463,6 @@ public final class Client {
         return requestCache;
     }
 
-
-
     private Map<String, ArrayNode> syncAttributeRequestsCache(String authority, String address,
             Map<String, ArrayNode> requestCache) {
         if (requestCache == null) {
@@ -472,15 +474,15 @@ public final class Client {
         return requestCache;
     }
 
-    private Map<String, ArrayNode> loadPendingAttributeRequestsCache() {
+    private Map<String, ObjectNode> loadPendingAttributeRequestsCache() {
         String path = fc.getUserDirectory(user);
-        Map<String, ArrayNode> requestCache = fc.readAsMap(path, "pendingAttributeRequests.json", String.class,
-                ArrayNode.class);
+        Map<String, ObjectNode> requestCache = fc.readAsMap(path, "pendingAttributeRequests.json", String.class,
+                ObjectNode.class);
         return requestCache;
     }
 
-    private Map<String, ArrayNode> syncPendingAttributeRequestsCache(String authority,
-            Map<String, ArrayNode> pendingRequestCache) {
+    private Map<String, ObjectNode> syncPendingAttributeRequestsCache(String authority,
+            Map<String, ObjectNode> pendingRequestCache) {
         if (pendingRequestCache == null) {
             pendingRequestCache = loadPendingAttributeRequestsCache();
         }
@@ -489,6 +491,8 @@ public final class Client {
         fc.writeToDir(path, "pendingAttributeRequests.json", pendingRequestCache);
         return pendingRequestCache;
     }
+
+
 
     private void saveAttributeRequestInCache(String authority, String address, ObjectNode request) {
         String path = fc.getUserDirectory(user);
@@ -537,8 +541,7 @@ public final class Client {
         }
         List<Integer> alreadyAsked = hasRequestForAttributes(authority, user.getAddress(), attributes);
         List<String> requests = new ArrayList<String>();
-        IntStream.range(0, attributes.length)
-                .filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i))
+        IntStream.range(0, attributes.length).filter(i -> !alreadyAsked.contains(i) && !alreadyOwned.contains(i))
                 .forEach(i -> requests.add(attributes[i]));
         if (requests.size() > 0) {
             ObjectNode request = this.blockchain.publishAttributeRequest(authority, user.getAddress(), requests);
@@ -546,33 +549,97 @@ public final class Client {
         }
     }
 
-    public void yieldAttribute(String userID, String[] attributes) {
+    public void yieldAttribute(String userID, int requestIndex) {
+        String address = userID.split("-")[1];
         String path = fc.getUserDirectory(user);
         ArrayList<PersonalKey> pks = new ArrayList<PersonalKey>();
         Map<String, SecretKey> skeys = null;
         try {
             skeys = Utility.readSecretKeys(path + "authoritySecretKey");
-            for (String attr : attributes) {
+            Map<String, ObjectNode> pendingRequests = loadPendingAttributeRequestsCache();
+            // UGLY: applying lowercase to address because it was recorded that way as a key
+            ObjectNode requesterData = pendingRequests.get(address.toLowerCase());
+            if (requesterData == null) {
+                System.out.printf("\trequester %s... did not ask any attribute\n.", address.substring(0, 6));
+                return;
+            }
+            JsonNode request = null;
+            for (JsonNode r : requesterData.get("requests")) {
+                if (r.get("index").asInt() == requestIndex) {
+                    request = r;
+                    break;
+                }
+            }
+            if (request == null) {
+                System.out.printf("request #%d doesn't exist yet.");
+                return;
+            }
+            BigInteger pendingRequesterIndex = BigInteger.valueOf(requesterData.get("index").asInt());
+            BigInteger pendingRequestIndex = BigInteger.valueOf(request.get("pendingIndex").asInt());
+            Map<String, int[]> changes = null;
+            for (JsonNode attr_ : request.get("attributes")) {
+                String attr = attr_.asText();
                 SecretKey sk = skeys.get(attr);
                 if (null == sk) {
-                    System.err.println("Attribute not handled");
-                    blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, RequestStatus.REJECTED);
+                    System.err.printf("Authority doesn't have the secret key for %s\n", attr);
+                    changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address,
+                            pendingRequesterIndex, pendingRequestIndex, RequestStatus.REJECTED);
                     return;
                 }
                 pks.add(DCPABE.keyGen(userID, attr, sk, gp));
             }
+            fc.writeToDir(path, userID + "-pks.json", pks);
+            changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address, pendingRequesterIndex,
+                    pendingRequestIndex, RequestStatus.OK);
+            updateCertifierCache(pendingRequests, changes, address.toLowerCase());
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
-        fc.writeToDir(path, userID + "-pks.json", pks);
-        blockchain.publishAttributeRequestUpdate(certifier.getID(), userID, attributes, RequestStatus.OK);
+    }
+
+    private void updateCertifierCache(Map<String, ObjectNode> cache, Map<String, int[]> changes, String address) {
+        if (changes.get("requester") != null) {
+            /*
+             * if an index swap ocurred for requester, it means the original requester was
+             * not the last one added to pending list, but he was removed from pending list
+             * and there are no requests from them to process
+             */
+            int oldRequesterIndex = changes.get("requester")[0];
+            for (ObjectNode requester : cache.values()) {
+                if (requester.get("index").asInt() == oldRequesterIndex) {
+                    requester.put("index", changes.get("requester")[1]);
+                    break;
+                }
+            }
+        } else if (changes.get("request") != null) {
+            /*
+            * if an index swap ocurred for request, it means that its requesters remains in
+            * the pending list, but the processed request was not the last one in his list
+            */
+            int oldRequestIndex = changes.get("request")[0];
+            for (JsonNode request : cache.get(address).withArray("requests")) {
+                if (request.get("index").asInt() == oldRequestIndex) {
+                    ((ObjectNode) request).put("index", changes.get("request")[1]);
+                    break;
+                }
+            }
+        } else {
+            /*
+            * if no swap ocurred in buffer, it means that the requester does not exist
+            * anymore on pending list and he was the last in the list stored in the
+            * blockchain
+            */
+            cache.remove(address);
+        }
+        String path = fc.getUserDirectory(user);
+        fc.writeToDir(path, "pendingAttributeRequests.json", cache);
     }
 
     public void sendAttributes(String userID) {
-        // TODO: elliptic encrypting of Personal Keys using secp256k-1 curve (Bitcoin
-        // key curve)
-        // see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but may be
-        // util)
+        /* TODO: elliptic encrypting of Personal Keys using secp256k-1 curve (Bitcoin
+         * key curve) see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but
+         * may be util)
+         */
         String path = fc.getUserDirectory(user);
 
         ArrayNode pks = (ArrayNode) fc.loadAsJSON(path, userID + "-pks.json");

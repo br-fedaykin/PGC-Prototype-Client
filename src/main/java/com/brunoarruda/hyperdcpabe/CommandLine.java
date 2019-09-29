@@ -186,11 +186,9 @@ public class CommandLine {
             break;
         case "-y":
         case "--yield-attributes":
-            attributes = new String[args.length - 2];
-            for (int i = 0; i < attributes.length; i++) {
-                attributes[i] = args[i + 2];
+            for (int i = 2; i < args.length; i++) {
+                client.yieldAttribute(args[1], Integer.parseInt(args[i]));
             }
-            client.yieldAttribute(args[1], attributes);
             break;
         case "-ga":
         case "--get-attributes":
@@ -278,7 +276,7 @@ public class CommandLine {
             // certificador recebe requisição de atributo e o concede ao Bob
             runCommand("--load CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
             runCommand("--check-requests pending".split(" "));
-            runCommand("--yield-attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc atributo1".split(" "));
+            runCommand("--yield-attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc 0".split(" "));
             runCommand("--send attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
