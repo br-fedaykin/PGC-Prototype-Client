@@ -10,10 +10,10 @@ contract SmartDCPABEFiles is Collection {
         bytes32 key;
         bytes32 hashing;
         uint64 timestamp;
-        Ciphertext ct;
     }
 
     struct Ciphertext {
+        string policy;
         bytes c0;
         bytes c1;
         bytes c2;
@@ -27,8 +27,12 @@ contract SmartDCPABEFiles is Collection {
     }
 
     uint64 public numServers;
-    mapping (address => bytes32[]) fileNames;
-    mapping (address => mapping(bytes32 => Recording)) files;
+    mapping (address => string[]) fileNames;
+    mapping (address => mapping(string => Recording)) files;
+    mapping (address => mapping(string => Ciphertext)) ciphertexts;
+    /* IDEIA: in order to allow ciphertext changes, ciphertext must be decoupled from Recording,
+     * maybe in a map of the recording to a Ciphertext object
+     */
 
     FileServer[] servers;
     SmartDCPABEUtility util;
@@ -44,33 +48,72 @@ contract SmartDCPABEFiles is Collection {
         }
     }
 
-    // TODO: dismember server logic from this contract
-
     function addServer(string memory domain, string memory path, uint16 port) public returns (uint64 serverIndex) {
         servers.push(FileServer(util.stringToBytes32(domain), util.stringToBytes32(path), port));
         serverIndex = numServers;
         numServers++;
     }
 
-    function addRecording(
+    function addRecording (
         address addr,
-        // recordings parameters
-        bytes32 filename,
+        string memory filename,
         uint64 serverID,
         bytes32 key,
         bytes32 hashing,
-        uint64 timestamp,
-        // ciphertext parameters
+        uint64 timestamp
+    )
+        public
+        onlyFileOwner(addr)
+        validUser(addr)
+
+    {
+        if (files[addr][filename].timestamp == 0) {
+            fileNames[addr].push(filename);
+        }
+        files[addr][filename] = Recording(serverID, key, hashing, timestamp);
+    }
+
+    function addRecordingCiphertext
+    (
+        address addr,
+        string memory fileName,
+        string memory policy,
         bytes memory c0,
         bytes memory c1,
         bytes memory c2,
         bytes memory c3
     )
         public
+        onlyFileOwner(addr)
     {
-        assert(users.isUser(addr));
-        files[addr][filename] = Recording(serverID, key, hashing, timestamp, Ciphertext(c0, c1, c2, c3));
-        fileNames[addr].push(filename);
+        require (msg.sender == addr, "Only file owner is allowed to change file register.");
+        ciphertexts[addr][fileName] = Ciphertext(policy, c0, c1, c2, c3);
+    }
+
+    function getCiphertext
+    (
+        address addr,
+        string memory fileName
+    )
+        public
+        view
+        returns
+    (
+        string memory policy,
+        bytes memory c0,
+        bytes memory c1,
+        bytes memory c2,
+        bytes memory c3
+    )
+    {
+        Ciphertext memory ct = ciphertexts[addr][fileName];
+        return (
+            ct.policy,
+            ct.c0,
+            ct.c1,
+            ct.c2,
+            ct.c3
+        );
     }
 
     function getServerID(string memory domain) public view returns (int64) {
@@ -102,11 +145,7 @@ contract SmartDCPABEFiles is Collection {
         uint64 serverID,
         bytes32 key,
         bytes32 hashing,
-        uint64 timestamp,
-        bytes memory c0,
-        bytes memory c1,
-        bytes memory c2,
-        bytes memory c3
+        uint64 timestamp
     )
     {
         return getRecording(addr, fileNames[addr][index]);
@@ -115,7 +154,7 @@ contract SmartDCPABEFiles is Collection {
     function getRecording
     (
         address addr,
-        bytes32 name
+        string memory name
     )
         public
         view
@@ -125,28 +164,39 @@ contract SmartDCPABEFiles is Collection {
         uint64 serverID,
         bytes32 key,
         bytes32 hashing,
-        uint64 timestamp,
-        bytes memory c0,
-        bytes memory c1,
-        bytes memory c2,
-        bytes memory c3
+        uint64 timestamp
     )
     {
         Recording storage r = files[addr][name];
         return (
-            util.bytes32ToString(name),
+            name,
             r.serverID,
             r.key,
             r.hashing,
-            r.timestamp,
-            r.ct.c0,
-            r.ct.c1,
-            r.ct.c2,
-            r.ct.c3
+            r.timestamp
         );
     }
 
-    function getFileIndex(address addr) public view returns (uint256) {
+    function getFileNameByIndex(address addr, uint64 index) public view returns (string memory) {
+        return fileNames[addr][index];
+    }
+
+    function getFileCounting(address addr) public view returns (uint256) {
         return fileNames[addr].length;
+    }
+
+    modifier onlyFileOwner(address addr) {
+        require (msg.sender == addr, "Operation not allowed. User must be the file owner");
+        _;
+    }
+
+    modifier validUser(address addr) {
+        require(users.isUser(addr), "User not registered");
+        _;
+    }
+
+    modifier validFile(address addr, string memory fileName) {
+        require(files[addr][fileName].timestamp != 0, "File does not exist.");
+        _;
     }
 }
