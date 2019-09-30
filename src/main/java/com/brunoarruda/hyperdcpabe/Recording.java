@@ -34,7 +34,7 @@ public class Recording {
     }
 
     private String domain;
-    private String path;
+    private String serverPath;
     private String key;
     private int port;
     private String originalFileName;
@@ -63,7 +63,7 @@ public class Recording {
 
     @JsonCreator
     public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct,
-            @JsonProperty("domain") String domain, @JsonProperty("path") String serverPath,
+            @JsonProperty("domain") String domain, @JsonProperty("serverPath") String serverPath,
             @JsonProperty("port") int port, @JsonProperty("key") String key,
             @JsonProperty("RecordingFileName") String recordingName, @JsonProperty("timestamp") long timestamp,
             @JsonProperty("hash") String hash, @JsonProperty("path") String filePath) {
@@ -71,7 +71,7 @@ public class Recording {
         this.encryptedFileName = "(enc)" + fileName;
         this.ct = ct;
         this.domain = domain;
-        this.path = serverPath;
+        this.serverPath = serverPath;
         this.port = port;
         this.key = key;
         this.recordingFileName = recordingName;
@@ -97,15 +97,15 @@ public class Recording {
     /**
      * @return the path
      */
-    public String getPath() {
-        return path;
+    public String getServerPath() {
+        return serverPath;
     }
 
     /**
-     * @param path the path to set
+     * @param serverPath the path to set
      */
-    public void setPath(String path) {
-        this.path = path;
+    public void setServerPath(String serverPath) {
+        this.serverPath = serverPath;
     }
 
     /**

@@ -391,7 +391,7 @@ public final class Client {
             message.put("userID", user.getID());
             String key = server.reserveSpace(message);
             r.setDomain(server.getHost());
-            r.setPath(server.getPath("file"));
+            r.setServerPath(server.getPath("file"));
             r.setPort(server.getPort());
             r.setKey(key);
             publish(content);
@@ -401,7 +401,8 @@ public final class Client {
             if (data != null) {
                 System.out.println("Client - uploading file to server: " + content);
                 server.sendFile(userID, content, data);
-            }
+                String path = fc.getUserDirectory(user);
+                fc.writeToDir(path, "recordings.json", user.getRecordings());            }
         }
     }
 
