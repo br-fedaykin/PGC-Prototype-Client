@@ -19,7 +19,7 @@ contract Collection {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Operation not allowed.");
+        require(msg.sender == owner, "Operation not allowed. User must be the contract owner");
         _;
     }
 }
