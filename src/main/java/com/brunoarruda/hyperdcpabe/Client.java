@@ -125,12 +125,12 @@ public final class Client {
     public Client(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
             String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
         fc = FileController.getInstance();
+        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
+        contractKeysAddress, contractRequestsAddress, contractUsersAddress);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
         }
-        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
-                contractKeysAddress, contractRequestsAddress, contractUsersAddress);
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
@@ -157,6 +157,7 @@ public final class Client {
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         user = new User(name, email, keys);
         fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
+        this.blockchain.deployContracts(user.getCredentials());
     }
 
     private String getClientDirectory() {
@@ -230,15 +231,20 @@ public final class Client {
             blockchain.publishABEKeys(obj);
         } else if (content.equals(".")) {
             // TODO: publicar todos os arquivos prontos disponíveis
+            throw new RuntimeException("Option not implemented.");
         } else {
             Recording r = user.getRecordingByFile(content);
             r.setTimestamp(System.currentTimeMillis());
             obj = fc.getMapper().convertValue(r, ObjectNode.class);
             obj.put("address", user.getAddress());
             obj.remove("filePath");
-            r.setRecordingIndex(blockchain.publishData(user.getID(), obj));
-            // TODO: modificar recording para obter informação da transação
-            send(r.getFileName());
+            int resultIndex = blockchain.publishData(user.getID(), obj);
+            if (resultIndex != -1) {
+                r.setRecordingIndex(resultIndex);
+                send(r.getFileName());
+            } else {
+                System.out.printf("Publishing of file %s failed.\n", content);
+            }
         }
     }
 
@@ -335,6 +341,8 @@ public final class Client {
         if (ABEKeys != null) {
             user.setABEKeys(ABEKeys);
         }
+
+        this.blockchain.deployContracts(user.getCredentials());
         System.out.println("Client - user data loaded: " + userID);
     }
 
@@ -398,10 +406,11 @@ public final class Client {
     }
 
     public void getRecordings(String userID, String[] recordings) {
+        String address = userID.split("-")[1];
         List<Recording> r = new ArrayList<Recording>();
         Recording oneRecord;
         for (String fileName : recordings) {
-            oneRecord = blockchain.getRecording(userID, fileName);
+            oneRecord = blockchain.getRecording(address, fileName);
             if (oneRecord != null) {
                 oneRecord.setFilePath(fc.getUserDirectory(user));
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
@@ -571,7 +580,7 @@ public final class Client {
                 }
             }
             if (request == null) {
-                System.out.printf("request #%d doesn't exist yet.");
+                System.out.printf("request #%d was either already processed or doesn't exist yet.", requestIndex);
                 return;
             }
             BigInteger pendingRequesterIndex = BigInteger.valueOf(requesterData.get("index").asInt());
@@ -662,9 +671,5 @@ public final class Client {
         } else {
             System.out.println("No personal ABE Keys available for download.");
         }
-    }
-
-    public void deploy() {
-        this.blockchain.deployContracts(user.getCredentials());
     }
 }

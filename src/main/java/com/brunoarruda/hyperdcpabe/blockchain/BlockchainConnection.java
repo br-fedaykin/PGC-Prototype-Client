@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.Recording;
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequestIndexChangedEventResponse;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tuples.generated.Tuple3;
@@ -34,6 +36,7 @@ import org.web3j.tuples.generated.Tuple5;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 
+import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 
 public class BlockchainConnection {
@@ -126,7 +129,6 @@ public class BlockchainConnection {
         return false;
     }
 
-    @Deprecated
     public ECKey generateECKeys(String privateKey) {
         ECKey keys = null;
         if (privateKey != null) {
@@ -181,18 +183,20 @@ public class BlockchainConnection {
         }
         String address = obj.get("address").asText();
         BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
-        byte[] c0 = Base64.getDecoder().decode(obj.get("ciphertext").get("c0").asText());
-        byte[] c1 = Base64.getDecoder().decode(obj.get("ciphertext").get("c1").asText());
-        byte[] c2 = Base64.getDecoder().decode(obj.get("ciphertext").get("c2").asText());
-        byte[] c3 = Base64.getDecoder().decode(obj.get("ciphertext").get("c3").asText());
         String fileName = obj.get("fileName").asText();
         byte[] key = Base64.getDecoder().decode(obj.get("key").asText());
         byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
         int numRecording = -1;
+        String policy = obj.get("ciphertext").get("accessStructure").get("policy").asText();
+        // BUG: decoded binary format becomes corrupt in blockchain, changing c0 to string binary format
+        byte[] c0 = obj.get("ciphertext").get("c0").asText().getBytes();
+        byte[] c1 = obj.get("ciphertext").get("c1").toString().getBytes();
+        byte[] c2 = obj.get("ciphertext").get("c2").toString().getBytes();
+        byte[] c3 = obj.get("ciphertext").get("c3").toString().getBytes();
         try {
-            BigInteger numRecording_ = contractFiles.getFileIndex(address).send();
-            contractFiles.addRecording(address, Arrays.copyOf(fileName.getBytes(), 32), serverID, key, hash, timestamp,
-                    c0, c1, c2, c3).send();
+            BigInteger numRecording_ = contractFiles.getFileCounting(address).send();
+            contractFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
+            contractFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
             System.out.println("Blockchain - data published: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
@@ -252,18 +256,59 @@ public class BlockchainConnection {
         System.out.println("Blockchain - User published: " + name);
     }
 
-    public Recording getRecording(String userID, String fileName) {
+    private CiphertextJSON getCiphertext(String user, String fileName) throws Exception {
+        CiphertextJSON ct = null;
+        Tuple5<String, byte[], byte[], byte[], byte[]> ciphertextData;
+        ciphertextData = contractFiles.getCiphertext(user, fileName).send();
+        if (!ciphertextData.getValue1().equals("")) {
+            AccessStructure as = AccessStructure.buildFromPolicy(ciphertextData.getValue1());
+            String c0_ = new String(ciphertextData.getValue2(), "UTF-8");
+            byte[] c0 = Base64.getDecoder().decode(c0_);
+            String c1x_ = new String(ciphertextData.getValue3(), "UTF-8");
+            List<byte[]> c1x = new ArrayList<>();
+            for (String x : c1x_.replace("[", "").replace("]", "").split(",")) {
+                c1x.add(Base64.getDecoder().decode(x.replace("\"", "")));
+            }
+            String c2x_ = new String(ciphertextData.getValue4(), "UTF-8");
+            List<byte[]> c2x = new ArrayList<>();
+            for (String x : c2x_.replace("[", "").replace("]", "").split(",")) {
+                c2x.add(Base64.getDecoder().decode(x.replace("\"", "")));
+            }
+            String c3x_ = new String(ciphertextData.getValue5(), "UTF-8");
+            List<byte[]> c3x = new ArrayList<>();
+            for (String x : c3x_.replace("[", "").replace("]", "").split(",")) {
+                c3x.add(Base64.getDecoder().decode(x.replace("\"", "")));
+            }
+            ct = new CiphertextJSON(c0, c1x, c2x, c3x, as);
+        }
+        return ct;
+    }
+
+    public Recording getRecording(String user, String fileName) {
         Recording r = null;
-        String path = getBlockchainDataPath() + "Files\\" + userID + "\\";
-        String fileNameEdited = fileName.split("\\..+?$")[0] + ".json";
-        if (new File(path + fileName).exists()) {
-            r = fc.readFromDir(path, fileName, Recording.class);
-            System.out.println("Blockchain - Data found: " + fileName);
-        } else if (new File(path + fileNameEdited).exists()) {
-            r = fc.readFromDir(path, fileNameEdited, Recording.class);
-            System.out.println("Blockchain - Data found: " + fileName);
-        } else {
-            System.out.println("Blockchain - File " + fileName + " not found on blockchain");
+        try {
+            Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
+            recordingData = contractFiles.getRecording(user, fileName).send();
+            if (recordingData.getValue5().intValue() != 0) {
+                String key = new String(recordingData.getValue3(), "UTF-8");
+                String hash = new String(recordingData.getValue4(), "UTF-8");
+                long timestamp = recordingData.getValue5().longValue();
+                Tuple3<String, String, BigInteger> serverData = contractFiles.getServer(recordingData.getValue2()).send();
+                String domain = serverData.getValue1();
+                String serverPath = serverData.getValue2();
+                int port = serverData.getValue3().intValue();
+                String recordingFN = fileName.split("\\.")[0];
+                CiphertextJSON ct = getCiphertext(user, fileName);
+                if (ct != null) {
+                    r = new Recording(fileName, ct, domain, serverPath, port, key, recordingFN, timestamp, hash, null);
+                } else {
+                    System.out.printf("File %s found but ciphertext is not published.\n", fileName);
+                }
+            } else {
+                System.out.printf("File %s not found.\n", fileName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return r;
     }

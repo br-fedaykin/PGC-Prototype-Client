@@ -81,11 +81,6 @@ public class CommandLine {
                 commandArgs += " " + contractAddress.get("Users");
                 runCommand(commandArgs.split(" "));
 
-                commandArgs = "--create-user contract_owner contract_owner@email.com ";
-                commandArgs = commandArgs + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
-                runCommand(commandArgs.split(" "));
-                runCommand("--deploy".split(" "));
-
                 // parsing necessary to navigate through milestone function
                 String[] numberSplit = args[1].split("\\.");
                 int[] choices = new int[numberSplit.length];
@@ -128,10 +123,6 @@ public class CommandLine {
         case "-l":
         case "--load":
             client.changeUser(args[1]);
-            break;
-        case "-o":
-        case "--deploy":
-            client.deploy();
             break;
         case "-u":
         case "--create-user":
