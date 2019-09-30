@@ -36,7 +36,7 @@ public class Recording {
     private String domain;
     private String path;
     private String key;
-    private String port;
+    private int port;
     private String originalFileName;
     private String encryptedFileName;
     private Message AESKey;
@@ -59,6 +59,25 @@ public class Recording {
         this.ct = ct;
         this.setSignature("Signature to proof ownership of id (EC public key)");
         digestData();
+    }
+
+    @JsonCreator
+    public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct,
+            @JsonProperty("domain") String domain, @JsonProperty("path") String serverPath,
+            @JsonProperty("port") int port, @JsonProperty("key") String key,
+            @JsonProperty("RecordingFileName") String recordingName, @JsonProperty("timestamp") long timestamp,
+            @JsonProperty("hash") String hash, @JsonProperty("path") String filePath) {
+        this.originalFileName = fileName;
+        this.encryptedFileName = "(enc)" + fileName;
+        this.ct = ct;
+        this.domain = domain;
+        this.path = serverPath;
+        this.port = port;
+        this.key = key;
+        this.recordingFileName = recordingName;
+        this.timestamp = timestamp;
+        this.filePath = filePath;
+        this.hash = hash;
     }
 
     /**
@@ -92,14 +111,14 @@ public class Recording {
     /**
      * @return the port
      */
-    public String getPort() {
+    public int getPort() {
         return port;
     }
 
     /**
      * @param port the port to set
      */
-    public void setPort(String port) {
+    public void setPort(int port) {
         this.port = port;
     }
 
@@ -110,22 +129,6 @@ public class Recording {
 
     public void setOriginalFileChanged(boolean originalFileChanged) {
         this.originalFileChanged = originalFileChanged;
-    }
-
-    @JsonCreator
-    public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct,
-            @JsonProperty("url") String url, @JsonProperty("key") String key,
-            @JsonProperty("RecordingFileName") String recordingName, @JsonProperty("timestamp") long timestamp,
-            @JsonProperty("hash") String hash, @JsonProperty("path") String path) {
-        this.originalFileName = fileName;
-        this.encryptedFileName = "(enc)" + fileName;
-        this.ct = ct;
-        this.domain = url;
-        this.key = key;
-        this.recordingFileName = recordingName;
-        this.timestamp = timestamp;
-        this.filePath = path;
-        this.hash = hash;
     }
 
     public String getHash() {

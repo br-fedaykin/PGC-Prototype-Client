@@ -38,7 +38,7 @@ public class ServerConnection {
 
     private static final String HOST = "127.0.0.1";
     private static final String dataPath = "server";
-    private static final String port = "8081";
+    private static final int port = 8081;
     private final int SERVER_PORT;
     private final FileController fc;
     private Map<String, String> serverKeys;
@@ -57,7 +57,7 @@ public class ServerConnection {
     /**
      * @return the port
      */
-    public String getPort() {
+    public int getPort() {
         return port;
     }
 
