@@ -135,7 +135,7 @@ public class ServerConnection {
 
 	public List<byte[]> getFile(String key, String fileName) {
         List<byte[]> data = new ArrayList<byte[]>();
-        String path = getServerDataPath() + key + "\\";
+        String path = getServerDataPath() + key.replace("-", "/") + "\\";
         try (FileInputStream fis = new FileInputStream(path + fileName);
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             byte[] buff = new byte[BUFFER_SIZE];
