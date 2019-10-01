@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tuples.generated.Tuple3;
@@ -108,27 +107,6 @@ public class BlockchainConnection {
         }
     }
 
-    // TODO: add similar methods to get events about all editable objects on
-    // blockchain
-    public boolean hasCiphertextChanged() {
-        // Events enable us to log specific events happening during the execution of our
-        // smart
-        // contract to the blockchain. Index events cannot be logged in their entirety.
-        // For Strings and arrays, the hash of values is provided, not the original
-        // value.
-        // For further information, refer to
-        // https://docs.web3j.io/filters.html#filters-and-events
-        // for (Greeter.ModifiedEventResponse event :
-        // contract.getModifiedEvents(transactionReceipt)) {
-        // log.info("Modify event fired, previous value: " + event.oldGreeting + ", new
-        // value: " + event.newGreeting);
-        // log.info("Indexed event previous value: " +
-        // Numeric.toHexString(event.oldGreetingIdx) + ", new value: "
-        // + Numeric.toHexString(event.newGreetingIdx));
-        // }
-        return false;
-    }
-
     public ECKey generateECKeys(String privateKey) {
         ECKey keys = null;
         if (privateKey != null) {
@@ -169,13 +147,13 @@ public class BlockchainConnection {
 
     public int publishData(String userID, ObjectNode obj) {
         String domain = obj.get("domain").asText();
-        String path = obj.get("path").asText();
+        String serverPath = obj.get("serverPath").asText();
         BigInteger port = obj.get("port").bigIntegerValue();
         BigInteger serverID = null;
         try {
             serverID = contractFiles.getServerID(domain).send();
             if (serverID.longValue() == -1) {
-                contractFiles.addServer(domain, path, port).send();
+                contractFiles.addServer(domain, serverPath, port).send();
                 serverID = contractFiles.getServerID(domain).send();
             }
         } catch (Exception e) {
@@ -184,17 +162,20 @@ public class BlockchainConnection {
         String address = obj.get("address").asText();
         BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
         String fileName = obj.get("fileName").asText();
-        byte[] key = Base64.getDecoder().decode(obj.get("key").asText());
-        byte[] hash = Base64.getDecoder().decode(obj.get("hash").asText());
         int numRecording = -1;
         String policy = obj.get("ciphertext").get("accessStructure").get("policy").asText();
-        // BUG: decoded binary format becomes corrupt in blockchain, changing c0 to string binary format
+        /* BUG: decoded binary format becomes corrupt in blockchain, changing c0 to string binary format.
+         * The problem could be in negative byte value, as string binary format only have positive bytes
+         */
+
         byte[] c0 = obj.get("ciphertext").get("c0").asText().getBytes();
         byte[] c1 = obj.get("ciphertext").get("c1").toString().getBytes();
         byte[] c2 = obj.get("ciphertext").get("c2").toString().getBytes();
         byte[] c3 = obj.get("ciphertext").get("c3").toString().getBytes();
         try {
             BigInteger numRecording_ = contractFiles.getFileCounting(address).send();
+            byte[] key = obj.get("key").binaryValue();
+            byte[] hash = obj.get("hash").binaryValue();
             contractFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
             contractFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
             System.out.println("Blockchain - data published: " + fileName);
@@ -290,8 +271,8 @@ public class BlockchainConnection {
             Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
             recordingData = contractFiles.getRecording(user, fileName).send();
             if (recordingData.getValue5().intValue() != 0) {
-                String key = new String(recordingData.getValue3(), "UTF-8");
-                String hash = new String(recordingData.getValue4(), "UTF-8");
+                String key = Base64.getEncoder().encodeToString(recordingData.getValue3());
+                String hash = Base64.getEncoder().encodeToString(recordingData.getValue4());
                 long timestamp = recordingData.getValue5().longValue();
                 Tuple3<String, String, BigInteger> serverData = contractFiles.getServer(recordingData.getValue2()).send();
                 String domain = serverData.getValue1();
