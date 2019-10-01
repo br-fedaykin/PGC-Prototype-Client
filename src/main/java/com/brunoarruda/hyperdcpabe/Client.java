@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -96,26 +97,26 @@ public final class Client {
         fc = FileController.getInstance().configure(DATA_PATH);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
-            loadUserData(clientData.get("userID").asText());
             String networkURL = clientData.get("networkURL").asText();
             if (networkURL.equals("null")) {
                 throw new RuntimeException(
-                        "Execute o comando --init informando o endereço de rede" + " para conexão com a blockchain");
+                    "Execute o comando --init informando o endereço de rede" + " para conexão com a blockchain");
             }
             String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
             String contractFilesAddress = clientData.get("contractFilesAddress").asText();
             String contractKeysAddress = clientData.get("contractKeysAddress").asText();
             String contractRequestsAddress = clientData.get("contractRequestsAddress").asText();
             String contractUsersAddress = clientData.get("contractUsersAddress").asText();
-            contractFilesAddress = (contractFilesAddress.equals("null")) ? null : contractFilesAddress;
-            contractAuthorityAddress = (contractAuthorityAddress.equals("null")) ? null : contractAuthorityAddress;
             this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
-                    contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+            contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+            loadUserData(clientData.get("userID").asText());
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
                     "Execute o comando --init informando o endereço de rede para conexão com a blockchain");
         }
+        this.server = new ServerConnection(SERVER_PORT);
+        gp = fc.readFromDir(fc.getDataDirectory(), "globalParameters.json", GlobalParameters.class);
     }
 
     public Client(String url) {
@@ -130,12 +131,13 @@ public final class Client {
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null && clientData.get("userID") != null) {
             loadUserData(clientData.get("userID").asText());
+        } else if (clientData == null) {
+            clientData = (ObjectNode) fc.getMapper().createObjectNode();
         }
         loadAttributes();
         gp = DCPABE.globalSetup(160);
         fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
-        clientData = (ObjectNode) fc.getMapper().createObjectNode();
-        // TODO: refactor contract configuration and delete code below
+        // UGLY: refactor contract configuration
         clientData.put("networkURL", networkURL);
         clientData.put("contractAuthorityAddress", contractAuthorityAddress);
         clientData.put("contractFilesAddress", contractFilesAddress);
@@ -147,7 +149,7 @@ public final class Client {
     }
 
     public void changeUser(String userID) {
-        ObjectNode clientData = fc.getMapper().createObjectNode();
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         clientData.put("userID", userID);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         loadUserData(userID);
@@ -355,6 +357,7 @@ public final class Client {
             }
             AccessStructure as = AccessStructure.buildFromPolicy(policy);
             Message m = DCPABE.generateRandomMessage(gp);
+            System.out.println("MESSAGE 358: " + Arrays.toString(m.getM()));
             CiphertextJSON ct = new CiphertextJSON(DCPABE.encrypt(m, as, gp, pks));
             String path = fc.getUserDirectory(user);
             r = new Recording(path, file, ct);
@@ -373,6 +376,7 @@ public final class Client {
         Message m = null;
         try {
             m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
+            System.out.println("MESSAGE 377: " + Arrays.toString(m.getM()));
         } catch (IllegalArgumentException e) {
             String msg = "Client - Could not decrypt the file %s. Attributes not Satisfying Policy Access.";
             System.out.println(String.format(msg, file));
@@ -458,7 +462,7 @@ public final class Client {
                 for (JsonNode node : requests.get(authority)) {
                     RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
                     if (status.equals(rs)) {
-                        System.out.printf("\trequest #%d - timestamp %s - %s", node.get("index").asInt(),
+                        System.out.printf("\trequest #%d - timestamp %s - %s\n", node.get("index").asInt(),
                                 node.get("timestamp").asText(), node.get("attributes").toString());
                     }
                 }
@@ -581,7 +585,7 @@ public final class Client {
                 }
             }
             if (request == null) {
-                System.out.printf("request #%d was either already processed or doesn't exist yet.", requestIndex);
+                System.out.printf("request #%d was either already processed or doesn't exist yet.\n", requestIndex);
                 return;
             }
             BigInteger pendingRequesterIndex = BigInteger.valueOf(requesterData.get("index").asInt());
