@@ -70,17 +70,6 @@ public class CommandLine {
         switch (args[0]) {
             case "-m":
             case "--milestone":
-                FileController fc = FileController.getInstance().configure(Client.getDataPath());
-                contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
-                System.out.println("Utilizando os contratos informados na última execução do programa.");
-                String commandArgs = "--init HTTP://127.0.0.1:7545";
-                commandArgs += " " + contractAddress.get("Authority");
-                commandArgs += " " + contractAddress.get("Files");
-                commandArgs += " " + contractAddress.get("Keys");
-                commandArgs += " " + contractAddress.get("Requests");
-                commandArgs += " " + contractAddress.get("Users");
-                runCommand(commandArgs.split(" "));
-
                 // parsing necessary to navigate through milestone function
                 String[] numberSplit = args[1].split("\\.");
                 int[] choices = new int[numberSplit.length];
@@ -91,7 +80,7 @@ public class CommandLine {
                 sc.close();
                 break;
             default:
-                if (client == null) {
+                if (client == null && !(args[0].equals("--init") || args[0].equals("-i"))) {
                     client = new Client();
                 }
                 runCommand(args);
@@ -104,18 +93,31 @@ public class CommandLine {
         switch (args[0]) {
         case "-i":
         case "--init":
-            String networkURL = args[1];
             String contractAuthorityAddress = null;
             String contractFilesAddress = null;
             String contractKeysAddress = null;
             String contractRequestsAddress = null;
             String contractUsersAddress = null;
+            String networkURL = null;
+            FileController fc = FileController.getInstance().configure(Client.getDataPath());
+            contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
             if (args.length == 7) {
+                networkURL = args[1];
                 contractAuthorityAddress = args[2];
                 contractFilesAddress = args[3];
                 contractKeysAddress = args[4];
                 contractRequestsAddress = args[5];
                 contractUsersAddress = args[6];
+            } else if (contractAddress.size() >= 5) {
+                System.out.println("Utilizando os contratos informados na última execução do programa.");
+                networkURL = "HTTP://127.0.0.1:7545";
+                contractAuthorityAddress = contractAddress.get("Authority");
+                contractFilesAddress = contractAddress.get("Files");
+                contractKeysAddress = contractAddress.get("Keys");
+                contractRequestsAddress = contractAddress.get("Requests");
+                contractUsersAddress = contractAddress.get("Users");
+            } else {
+                throw new RuntimeException("Did not found all contract addresses necessary for code execution");
             }
             client = new Client(networkURL, contractAuthorityAddress, contractFilesAddress,
                     contractKeysAddress, contractRequestsAddress, contractUsersAddress);
@@ -267,7 +269,7 @@ public class CommandLine {
             // certificador recebe requisição de atributo e o concede ao Bob
             runCommand("--load CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
             runCommand("--check-requests pending".split(" "));
-            runCommand("--yield-attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc 0".split(" "));
+            runCommand("--yield-attributes Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 0".split(" "));
             runCommand("--send attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
