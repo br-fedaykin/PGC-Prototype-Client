@@ -239,6 +239,7 @@ public class CommandLine {
             String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
             new File(path).mkdirs();
             getFileFromResources(path, "lorem_ipsum.md");
+            runCommand("--init".split(" "));
 
             // certificador cria perfil e atributo, e os publica
             args = "--create-user CRM crm@email.com ";
@@ -269,7 +270,7 @@ public class CommandLine {
             // certificador recebe requisição de atributo e o concede ao Bob
             runCommand("--load CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
             runCommand("--check-requests pending".split(" "));
-            runCommand("--yield-attributes Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 0".split(" "));
+            runCommand("--yield-attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc 0".split(" "));
             runCommand("--send attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
@@ -297,8 +298,8 @@ public class CommandLine {
             if (choice[1] == 1) {
                 runMilestone(new int[]{1});
                 runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-                runCommand("--get-attributes CRM-04170 atributo2 atributo3".split(" "));
-                String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-04170"};
+                runCommand("--get-attributes CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo2 atributo3".split(" "));
+                String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0"};
                 runCommand(specialArgs);
                 runCommand("--send lorem_ipsum2.md".split(" "));
                 runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
@@ -316,20 +317,21 @@ public class CommandLine {
                 runMilestone(new int[] { 1 });
                 getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
                 runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-                runCommand("--encrypt lorem_ipsum.md atributo1 CRM-04170".split(" "));
+                runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
                 runCommand("--send lorem_ipsum.md".split(" "));
                 runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
                 runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
             if (choice[1] == 3) {
+                runMilestone(new int[] { 1 });
                 runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
         }
 
         if (choice[0] > 2) {
-            System.out.println("Milestones ainda não implementadas");
+            System.out.println("Milestone not recognized.");
             System.exit(-1);
         }
     }
