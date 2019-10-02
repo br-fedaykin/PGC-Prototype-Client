@@ -167,10 +167,10 @@ public final class Client {
     }
 
     public void getAttributes(String authority, String[] attributes) {
-        Map<String, PublicKey> keys = null;
         if (!hasPublicKeyOfAuthority(authority)) {
             publishedAttributes.put(authority, new HashMap<String, PublicKey>());
         }
+        Map<String, PublicKey> keys = null;
         keys = blockchain.getABEPublicKeys(authority, attributes);
         if (keys != null) {
             for (String attr : attributes) {
@@ -181,7 +181,7 @@ public final class Client {
                 }
             }
             String path = getClientDirectory() + "PublicKeys\\";
-            fc.writeToDir(path, authority + ".json", keys);
+            fc.writeToDir(path, authority + ".json", publishedAttributes);
         }
     }
 
@@ -272,7 +272,6 @@ public final class Client {
         if (folder.exists()) {
             for (String json : folder.list()) {
                 attributes = fc.readAsMap(path, json, String.class, PublicKey.class);
-                System.out.println(attributes.get("atributo1").getClass().getSimpleName());
                 String authority = json.split("\\.")[0];
                 publishedAttributes.put(authority, attributes);
             }
@@ -566,7 +565,7 @@ public final class Client {
     public void yieldAttribute(String userID, int requestIndex) {
         String address = userID.split("-")[1];
         String path = fc.getUserDirectory(user);
-        ArrayList<PersonalKey> pks = new ArrayList<PersonalKey>();
+        List<PersonalKey> pks = new ArrayList<PersonalKey>();
         Map<String, SecretKey> skeys = null;
         try {
             skeys = Utility.readSecretKeys(path + "authoritySecretKey");
@@ -591,18 +590,39 @@ public final class Client {
             BigInteger pendingRequesterIndex = BigInteger.valueOf(requesterData.get("index").asInt());
             BigInteger pendingRequestIndex = BigInteger.valueOf(request.get("pendingIndex").asInt());
             Map<String, int[]> changes = null;
+            boolean keysWereGenerated = false;
+            String userName = userID.split("-")[0];
             for (JsonNode attr_ : request.get("attributes")) {
+                boolean alreadyGenerated = false;
                 String attr = attr_.asText();
-                SecretKey sk = skeys.get(attr);
-                if (null == sk) {
-                    System.err.printf("Authority doesn't have the secret key for %s\n", attr);
-                    changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address,
-                            pendingRequesterIndex, pendingRequestIndex, RequestStatus.REJECTED);
-                    return;
+                for (PersonalKey pk : pks) {
+                    if (pk.getAttribute().equals(attr)) {
+                        System.out.printf("Attribute %s already given to user %s. Updating on blockchain.", attr,
+                                userName);
+                        alreadyGenerated = true;
+                        break;
+                    }
                 }
-                pks.add(DCPABE.keyGen(userID, attr, sk, gp));
+                if (!alreadyGenerated) {
+                    keysWereGenerated = true;
+                    SecretKey sk = skeys.get(attr);
+                    if (null == sk) {
+                        System.err.printf("Authority doesn't have the secret key for %s\n", attr);
+                        changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address,
+                                pendingRequesterIndex, pendingRequestIndex, RequestStatus.REJECTED);
+                        return;
+                    }
+                    /*
+                     * HACK: personal key are generated from checksummed wallet address, but are
+                     * stored lowercase in serialization. Partial fix is to lowercase address, but
+                     * ideal fix is to generate and store checksummed wallet
+                     */
+                    pks.add(DCPABE.keyGen(userName + "-" +  address.toLowerCase(), attr, sk, gp));
+                }
             }
-            fc.writeToDir(path, userID + "-pks.json", pks);
+            if (keysWereGenerated) {
+                fc.writeToDir(path, userID + "-pks.json", pks);
+            }
             changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address, pendingRequesterIndex,
                     pendingRequestIndex, RequestStatus.OK);
             updateCertifierCache(pendingRequests, changes, address.toLowerCase());
