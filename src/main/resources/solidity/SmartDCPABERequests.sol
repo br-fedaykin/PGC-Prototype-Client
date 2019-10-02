@@ -65,7 +65,8 @@ contract SmartDCPABERequests is Collection {
         uint64 index = pendingRequests[certifier][requester][pendingIndex];
         requests[certifier][requester][index].status = newStatus;
         if (listSize == 1) {
-            pendingRequests[certifier][requester].pop();
+            // BUG: pop() function leads to error. Workaround is to decrement length of array
+            pendingRequests[certifier][requester].length--;
             address lastRequester = pendingRequesters[certifier][pendingRequesters[certifier].length - 1];
             pendingRequesters[certifier].length--;
             if (requesterIndex != pendingRequesters[certifier].length) {
