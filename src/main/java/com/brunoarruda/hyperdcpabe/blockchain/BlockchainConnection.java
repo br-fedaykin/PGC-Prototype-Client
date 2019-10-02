@@ -281,7 +281,7 @@ public class BlockchainConnection {
                 String recordingFN = fileName.split("\\.")[0];
                 CiphertextJSON ct = getCiphertext(user, fileName);
                 if (ct != null) {
-                    r = new Recording(fileName, ct, domain, serverPath, port, key, recordingFN, timestamp, hash, null);
+                    r = new Recording(fileName, ct, domain, serverPath, port, key, null, recordingFN, timestamp, hash, null);
                 } else {
                     System.out.printf("File %s found but ciphertext is not published.\n", fileName);
                 }
@@ -482,7 +482,7 @@ public class BlockchainConnection {
             if (cachedRequest.get("status").asInt() != status.asInt()) {
                 String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
                 message = String.format(message, cachedRequest.get("timestamp").asInt(),
-                        cachedRequest.get("status").asInt(), status.asInt());
+                        RequestStatus.valueOf(cachedRequest.get("status").asInt()), RequestStatus.valueOf(status.asInt()));
                 System.out.println(message);
                 cachedRequest.replace("status", status);
             }

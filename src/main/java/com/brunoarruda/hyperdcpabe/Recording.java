@@ -44,7 +44,6 @@ public class Recording {
     private String recordingFileName;
     private int BUFFER_SIZE = 1024;
     private long timestamp;
-    private String signature;
     private String hash;
     private String filePath;
     private boolean originalFileChanged = false;
@@ -57,7 +56,6 @@ public class Recording {
         // gets only file name without extension
         this.setRecordingFileName(fileName.split("\\.\\w+?$")[0]);
         this.ct = ct;
-        this.setSignature("Signature to proof ownership of id (EC public key)");
         digestData();
     }
 
@@ -65,8 +63,9 @@ public class Recording {
     public Recording(@JsonProperty("fileName") String fileName, @JsonProperty("ciphertext") CiphertextJSON ct,
             @JsonProperty("domain") String domain, @JsonProperty("serverPath") String serverPath,
             @JsonProperty("port") int port, @JsonProperty("key") String key,
-            @JsonProperty("RecordingFileName") String recordingName, @JsonProperty("timestamp") long timestamp,
-            @JsonProperty("hash") String hash, @JsonProperty("path") String filePath) {
+            @JsonProperty("AESKey") Message AESKey, @JsonProperty("recordingFileName") String recordingName,
+            @JsonProperty("timestamp") long timestamp, @JsonProperty("hash") String hash,
+            @JsonProperty("path") String filePath) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.ct = ct;
@@ -78,6 +77,7 @@ public class Recording {
         this.timestamp = timestamp;
         this.filePath = filePath;
         this.hash = hash;
+        this.AESKey = AESKey;
     }
 
     /**
@@ -95,17 +95,23 @@ public class Recording {
     }
 
     /**
-     * @return the path
+     * @return the path in the server
      */
     public String getServerPath() {
         return serverPath;
     }
 
     /**
-     * @param serverPath the path to set
+     * @param serverPath the path in the server to set
      */
     public void setServerPath(String serverPath) {
         this.serverPath = serverPath;
+    }
+
+    // FIX: clear text storage of ciphertext. Must be encrypted in a release version
+    @JsonProperty("AESKey")
+    public Message getAESKey() {
+        return this.AESKey;
     }
 
     /**
@@ -137,14 +143,6 @@ public class Recording {
 
     public void setHash(String hash) {
         this.hash = hash;
-    }
-
-    public String getSignature() {
-        return signature;
-    }
-
-    public void setSignature(String signature) {
-        this.signature = signature;
     }
 
     public String getRecordingFileName() {
