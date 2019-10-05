@@ -281,7 +281,7 @@ public class BlockchainConnection {
                 String recordingFN = fileName.split("\\.")[0];
                 CiphertextJSON ct = getCiphertext(user, fileName);
                 if (ct != null) {
-                    r = new Recording(fileName, ct, domain, serverPath, port, key, null, recordingFN, timestamp, hash, null);
+                    r = new Recording(fileName, ct, domain, serverPath, port, key, null, recordingFN, timestamp, hash, null, false, false);
                 } else {
                     System.out.printf("File %s found but ciphertext is not published.\n", fileName);
                 }

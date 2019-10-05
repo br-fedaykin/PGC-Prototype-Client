@@ -13,7 +13,6 @@ import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.bouncycastle.crypto.DataLengthException;
@@ -46,8 +45,9 @@ public class Recording {
     private long timestamp;
     private String hash;
     private String filePath;
-    private boolean originalFileChanged = false;
+    private boolean fileChanged = false;
     private int recordingID;
+    private boolean ciphertextChanged = false;
 
     public Recording(String filePath, String fileName, CiphertextJSON ct) {
         this.filePath = filePath;
@@ -65,7 +65,8 @@ public class Recording {
             @JsonProperty("port") int port, @JsonProperty("key") String key,
             @JsonProperty("AESKey") Message AESKey, @JsonProperty("recordingFileName") String recordingName,
             @JsonProperty("timestamp") long timestamp, @JsonProperty("hash") String hash,
-            @JsonProperty("path") String filePath) {
+            @JsonProperty("path") String filePath, @JsonProperty("fileChanged") boolean fileChanged,
+            @JsonProperty("ciphertextChanged") boolean ciphertextChanged) {
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         this.ct = ct;
@@ -78,6 +79,8 @@ public class Recording {
         this.filePath = filePath;
         this.hash = hash;
         this.AESKey = AESKey;
+        this.fileChanged = fileChanged;
+        this.ciphertextChanged = ciphertextChanged;
     }
 
     /**
@@ -128,13 +131,8 @@ public class Recording {
         this.port = port;
     }
 
-    @JsonIgnore
-    public boolean isOriginalFileChanged() {
-        return originalFileChanged;
-    }
-
     public void setOriginalFileChanged(boolean originalFileChanged) {
-        this.originalFileChanged = originalFileChanged;
+        this.fileChanged = originalFileChanged;
     }
 
     public String getHash() {
@@ -211,6 +209,9 @@ public class Recording {
     }
 
     public void encryptFile(Message m) {
+        if (this.AESKey != null) {
+            ciphertextChanged = true;
+        }
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
         File f = new File(filePath + encryptedFileName);
@@ -262,12 +263,22 @@ public class Recording {
         }
     }
 
+    public void resetChangingFlags() {
+        ciphertextChanged = false;
+        fileChanged = false;
+    }
+
+    @JsonProperty("ciphertextChanged")
+    public boolean hasCiphertextChanged() {
+        return ciphertextChanged;
+    }
+
+    @JsonProperty("fileChanged")
     public boolean hasFileChanged() {
         String lastHash = this.hash;
         digestData();
-        boolean isDifferent = !lastHash.equals(this.hash);
-        this.setOriginalFileChanged(isDifferent);
-        return isDifferent;
+        this.fileChanged = !lastHash.equals(this.hash);
+        return fileChanged;
     }
 
     private void digestData() {
