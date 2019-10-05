@@ -493,9 +493,9 @@ public class BlockchainConnection {
     public ArrayNode getPendingAttributeRequests(String authority, String address, List<BigInteger> pendingRequests) {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
-            for (BigInteger i : pendingRequests) {
+            for (int i = 0; i < pendingRequests.size(); i++) {
                 Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
-                requestTuple = contractRequests.getRequest(authority, address, i).send();
+                requestTuple = contractRequests.getRequest(authority, address, pendingRequests.get(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("pendingIndex", i);
                 request.put("status", requestTuple.getValue1().intValue());
