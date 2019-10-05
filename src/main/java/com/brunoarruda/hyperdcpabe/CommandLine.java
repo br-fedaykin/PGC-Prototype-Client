@@ -323,9 +323,21 @@ public class CommandLine {
                 runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
+            /*
+             * Cliente 1 java procura prontuario1 e atualiza: a) atributo1 por atributo1 AND
+             * atributo2 e b) dataEnvio. Cliente 2 java (só com atributo1) tenta mas não
+             * consegue obter o prontuário1 (nem decodificá-lo) pois não tem atributo2.
+             */
             if (choice[1] == 3) {
                 runMilestone(new int[] { 1 });
+                runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
+                runCommand("--get-attributes CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo1".split(" "));
+                String[] encryptArgs = { "--encrypt", "lorem_ipsum.md", "and atributo1 atributo2",
+                        "CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0" };
+                runCommand(encryptArgs);
+                runCommand("--send lorem_ipsum.md".split(" "));
                 runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
+                runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
         }
