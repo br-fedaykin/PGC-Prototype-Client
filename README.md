@@ -54,18 +54,13 @@ Integrar o código dos milestones1 e milestone2 com os contract criados nos mile
 
 1. Download maven, put it on your path.
 
-2. Add spring and bintray to maven settings: <https://bintray.com/repo/buildSettings?repoPath=%2Fethereum%2Fmaven>
+2. Add bintray to maven settings: <https://bintray.com/ethereum/maven/org.ethereum/1.12.0-RELEASE>
 
 ```xml
 <settings>
     <profiles>
         <profile>
             <repositories>
-                <repository>
-                    <id>spring-repo</id>
-                    <name>Spring Repository</name>
-                    <url>https://repo.spring.io/release</url>
-                </repository>
                 <repository>
                     <snapshots>
                         <enabled>false</enabled>
