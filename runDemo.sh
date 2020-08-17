@@ -1,6 +1,11 @@
 #!/bin/bash
+echo "Initalizing Ganache..."
 
-case $1 in
+cmd //c start ganache-cli -a 10 -d -m "pumpkin immense certain snack please patch universe leisure reopen truth eight gown" -p 7545
+
+read -p 'Choose milestone to test: ' milestone
+
+case $milestone in
 1) echo "Um" ;;
 2) echo "dois" ;;
 3) echo "tres" ;;
