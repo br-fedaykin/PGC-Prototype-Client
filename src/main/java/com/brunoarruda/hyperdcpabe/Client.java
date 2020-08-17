@@ -13,7 +13,6 @@ import java.util.StringJoiner;
 import java.util.stream.IntStream;
 
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
-import com.brunoarruda.hyperdcpabe.CiphertextJSON;
 import com.brunoarruda.hyperdcpabe.Recording.FileMode;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -311,26 +310,6 @@ public final class Client {
 
     public Map<String, String> getECKeysAsString() {
         return user.getECKeysAsString();
-    }
-
-    @Deprecated
-    public boolean writeKeyOnFile() {
-        return writeKeyOnFile(fc.getDataDirectory());
-    }
-
-    @Deprecated
-    public boolean writeKeyOnFile(String path) {
-        return false;
-    }
-
-    @Deprecated
-    public void publishECKeys(String name, String email) {
-        System.out.println("Not implemented");
-    }
-
-    @Deprecated
-    public void getABEPublicKeys(String string, String string2) {
-        System.out.println("Not Implemented");
     }
 
     public void loadUserData(String userID) {

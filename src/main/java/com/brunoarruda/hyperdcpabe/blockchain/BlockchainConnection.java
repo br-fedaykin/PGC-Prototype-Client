@@ -116,12 +116,6 @@ public class BlockchainConnection {
         }
         return keys;
     }
-
-    @Deprecated
-    public Transaction createTransaction(ECKey userKeys, ObjectNode content) {
-        return null;
-    }
-
     public Map<String, PublicKey> getABEPublicKeys(String authority, String[] attributes) {
         // TODO: alternar isso para um JSON
         String authName = authority.split("-")[0];
