@@ -10,7 +10,6 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
 
-import com.brunoarruda.hyperdcpabe.Client;
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.io.FileController;
 
@@ -78,6 +77,10 @@ public class CommandLine {
                 }
                 runMilestone(choices);
                 sc.close();
+                break;
+            case "-h":
+            case "--help":
+                System.out.println("Menu de ajuda não implementada.");
                 break;
             default:
                 if (client == null && !(args[0].equals("--init") || args[0].equals("-i"))) {
