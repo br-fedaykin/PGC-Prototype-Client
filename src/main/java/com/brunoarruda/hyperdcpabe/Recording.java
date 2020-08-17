@@ -273,7 +273,15 @@ public class Recording {
         return ciphertextChanged;
     }
 
+    // UGLY: created to not break serialization after receiving recording data from blockchain
     @JsonProperty("fileChanged")
+    public boolean getFileChanged() {
+        return fileChanged;
+    }
+
+    /* BUG: hasFileChanged breaks serialization when receiving recording data, even
+     * with try/catch on methods
+     */
     public boolean hasFileChanged() {
         String lastHash = this.hash;
         digestData();
