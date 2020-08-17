@@ -1,6 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.brunoarruda.hyperdcpabe</groupId>
     <artifactId>hyperdcpabe-client</artifactId>
     <version>0.1-SNAPSHOT</version>
@@ -10,9 +12,9 @@
         <url>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</url>
         <developerConnection>scm:git:git@github.com:brunoarruda/PGC-Prototype-Client.git</developerConnection>
     </scm>
+
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.release>8</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -30,27 +32,13 @@
             <version>1.7.24</version>
             <!-- <scope>test</scope> -->
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.mock-server/mockserver-netty -->
-        <dependency>
-            <groupId>org.mock-server</groupId>
-            <artifactId>mockserver-netty</artifactId>
-            <version>5.5.4</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.28.2</version>
-            <scope>test</scope>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.web3j/core -->
         <dependency>
             <groupId>org.web3j</groupId>
             <artifactId>core</artifactId>
             <version>4.3.1</version>
         </dependency>
-        <!-- TODO: Remove ethereum dependencies. Maybe deploy address used in demo inside resourses -->
+        <!-- BUG: In order to Maven detect ethereum dependencies, all _remote.positories files inside their folders must be deleted -->
         <!-- https://mvnrepository.com/artifact/org.ethereum/ethereumj-core -->
         <dependency>
             <groupId>org.ethereum</groupId>
@@ -101,9 +89,28 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <release>8</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>${project.groupId}.CommandLine</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <!--
                 You can run jacoco in the default profile with:
                 mvn jacoco:prepare-agent test jacoco:report
@@ -113,7 +120,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.1</version>
             </plugin>
-                    <plugin>
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
@@ -125,6 +132,12 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>${project.groupId}.CommandLine</mainClass>
+                        </manifest>
+                    </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
@@ -152,80 +165,4 @@
             </plugin>
         </plugins>
     </reporting>
-
-    <profiles>
-        <!--
-        This profile enables jacoco when unit tests are run.
-        You can run it with mvn -P jacoco test.
-        It also activates itself on Travis.
-        -->
-        <profile>
-            <id>jacoco</id>
-            <activation>
-                <property>
-                    <name>env.TRAVIS</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>prepare-agent</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!--
-        For the Travis profile:
-        - we want to break the build on any checkstyle violation.
-        - we want to be able to publish coverage report to coveralls.
-        -->
-        <profile>
-            <id>travis</id>
-            <activation>
-                <property>
-                    <name>env.TRAVIS</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>checkstyle</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.eluder.coveralls</groupId>
-                        <artifactId>coveralls-maven-plugin</artifactId>
-                        <version>4.3.0</version>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
