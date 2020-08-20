@@ -241,7 +241,7 @@ public class CommandLine {
             // pre-setup to deliver file to be encrypted to user folder
             String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
             new File(path).mkdirs();
-            getFileFromResources(path, "lorem_ipsum.md");
+            getFileFromResources(path, "test\\lorem_ipsum.md");
             runCommand("--init".split(" "));
 
             // certificador cria perfil e atributo, e os publica
@@ -288,7 +288,7 @@ public class CommandLine {
             // pre-setup to deliver file to be encrypted to user folder
             String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
             new File(path).mkdirs();
-            getFileFromResources(path, "lorem_ipsum2.md");
+            getFileFromResources(path, "test\\lorem_ipsum2.md");
 
             /**
              * cenário: novo prontuário
@@ -318,7 +318,7 @@ public class CommandLine {
              */
             if (choice[1] == 2) {
                 runMilestone(new int[] { 1 });
-                getFileFromResources(path, "lorem_ipsum-edit.md", "lorem_ipsum.md");
+                getFileFromResources(path, "test\\lorem_ipsum-edit.md", "test\\lorem_ipsum.md");
                 runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
                 runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
                 runCommand("--send lorem_ipsum.md".split(" "));
