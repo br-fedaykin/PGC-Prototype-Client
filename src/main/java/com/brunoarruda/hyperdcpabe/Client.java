@@ -154,6 +154,7 @@ public final class Client {
         loadUserData(userID);
     }
 
+    // NOTE: createUser generates a pubkey from privateKey. It's only for this that I'm using Ethereum Library. Maybe this class may migrate the data to the Web3j ECKeyPair.
     public void createUser(String name, String email, String privateKey) {
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         user = new User(name, email, keys);
