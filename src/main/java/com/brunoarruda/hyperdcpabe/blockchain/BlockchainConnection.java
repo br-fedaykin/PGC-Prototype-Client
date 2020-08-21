@@ -58,11 +58,14 @@ public class BlockchainConnection {
     private String contractKeysAddress;
     private String contractUsersAddress;
     private String contractRequestsAddress;
+    private String contractRootAddress;
     private SmartDCPABEAuthority contractAuthority;
     private SmartDCPABEFiles contractFiles;
     private SmartDCPABEKeys contractKeys;
     private SmartDCPABERequests contractRequests;
     private SmartDCPABEUsers contractUsers;
+    private SmartDCPABEUtility contractUtility;
+    private SmartDCPABERoot contractRoot;
     private final Web3j web3j;
 
     public String getBlockchainDataPath() {
@@ -89,6 +92,22 @@ public class BlockchainConnection {
     }
 
     public void deployContracts(Credentials credentials) {
+        ContractGasProvider cgp = new DefaultGasProvider();
+        try {
+            contractRoot = SmartDCPABERoot.deploy(web3j, credentials, cgp).send();
+            contractRootAddress = contractRoot.getContractAddress();
+            contractAuthority = SmartDCPABEAuthority.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            contractFiles = SmartDCPABEFiles.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            contractKeys = SmartDCPABEKeys.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            contractRequests = SmartDCPABERequests.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            contractUsers = SmartDCPABEUsers.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            contractUtility = SmartDCPABEUtility.deploy(web3j, credentials, cgp, contractRootAddress).send();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadContracts(Credentials credentials) {
         ContractGasProvider cgp = new DefaultGasProvider();
         if (contractAuthorityAddress != null) {
             contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);

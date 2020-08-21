@@ -204,7 +204,7 @@ public class CommandLine {
     }
 
     public static void deploy(String[] args){
-
+        client.deployContract(args[1]);
     }
 
     // integrated blockchain / server commands
@@ -246,6 +246,10 @@ public class CommandLine {
 
     public static void runCommand(String[] args) {
         switch (args[0]) {
+        case "-o":
+        case "--deploy":
+            deploy(args);
+            break;
         case "-i":
         case "--init":
             init(args);

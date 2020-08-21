@@ -159,6 +159,18 @@ public final class Client {
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         user = new User(name, email, keys);
         fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
+        this.blockchain.loadContracts(user.getCredentials());
+    }
+
+    public void deployContract(String userID) {
+        String path = getClientDirectory() + userID;
+        user = fc.readFromDir(path, "user.json", User.class);
+        certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
+        user.setRecordings(fc.readAsList(path, "recordings.json", Recording.class));
+        PersonalKeysJSON ABEKeys = fc.readFromDir(path, "personalKeys.json", PersonalKeysJSON.class);
+        if (ABEKeys != null) {
+            user.setABEKeys(ABEKeys);
+        }
         this.blockchain.deployContracts(user.getCredentials());
     }
 
@@ -323,7 +335,7 @@ public final class Client {
             user.setABEKeys(ABEKeys);
         }
 
-        this.blockchain.deployContracts(user.getCredentials());
+        this.blockchain.loadContracts(user.getCredentials());
         System.out.println("Client - user data loaded: " + userID);
     }
 
