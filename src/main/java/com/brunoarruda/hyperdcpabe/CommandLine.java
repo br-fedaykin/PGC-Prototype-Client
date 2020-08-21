@@ -69,18 +69,11 @@ public class CommandLine {
         switch (args[0]) {
             case "-m":
             case "--milestone":
-                // parsing necessary to navigate through milestone function
-                String[] numberSplit = args[1].split("\\.");
-                int[] choices = new int[numberSplit.length];
-                for (int i = 0; i < choices.length; i++) {
-                    choices[i] = Integer.parseInt(numberSplit[i]);
-                }
-                runMilestone(choices);
-                sc.close();
+                milestone(args);
                 break;
             case "-h":
             case "--help":
-                System.out.println("Menu de ajuda não implementada.");
+                help(args);
                 break;
             default:
                 if (client == null && !(args[0].equals("--init") || args[0].equals("-i"))) {
@@ -91,136 +84,219 @@ public class CommandLine {
         }
     }
 
-    public static void runCommand(String[] args) {
-        String[] attributes;
-        switch (args[0]) {
-        case "-i":
-        case "--init":
-            String contractAuthorityAddress = null;
-            String contractFilesAddress = null;
-            String contractKeysAddress = null;
-            String contractRequestsAddress = null;
-            String contractUsersAddress = null;
-            String networkURL = null;
-            FileController fc = FileController.getInstance().configure(Client.getDataPath());
-            contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
-            if (args.length == 7) {
-                networkURL = args[1];
-                contractAuthorityAddress = args[2];
-                contractFilesAddress = args[3];
-                contractKeysAddress = args[4];
-                contractRequestsAddress = args[5];
-                contractUsersAddress = args[6];
-            } else if (contractAddress.size() >= 5) {
-                System.out.println("Utilizando os contratos informados na última execução do programa.");
-                networkURL = "HTTP://127.0.0.1:7545";
-                contractAuthorityAddress = contractAddress.get("Authority");
-                contractFilesAddress = contractAddress.get("Files");
-                contractKeysAddress = contractAddress.get("Keys");
-                contractRequestsAddress = contractAddress.get("Requests");
-                contractUsersAddress = contractAddress.get("Users");
-            } else {
-                throw new RuntimeException("Did not found all contract addresses necessary for code execution");
-            }
-            client = new Client(networkURL, contractAuthorityAddress, contractFilesAddress,
-                    contractKeysAddress, contractRequestsAddress, contractUsersAddress);
-            break;
-        case "-l":
-        case "--load":
-            client.changeUser(args[1]);
-            break;
-        case "-u":
-        case "--create-user":
+    // system commands
+    public static void init(String[] args) {
+        String contractAuthorityAddress = null;
+        String contractFilesAddress = null;
+        String contractKeysAddress = null;
+        String contractRequestsAddress = null;
+        String contractUsersAddress = null;
+        String networkURL = null;
+        FileController fc = FileController.getInstance().configure(Client.getDataPath());
+        contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
+        if (args.length == 7) {
+            networkURL = args[1];
+            contractAuthorityAddress = args[2];
+            contractFilesAddress = args[3];
+            contractKeysAddress = args[4];
+            contractRequestsAddress = args[5];
+            contractUsersAddress = args[6];
+        } else if (contractAddress.size() >= 5) {
+            System.out.println("Utilizando os contratos informados na última execução do programa.");
+            networkURL = "HTTP://127.0.0.1:7545";
+            contractAuthorityAddress = contractAddress.get("Authority");
+            contractFilesAddress = contractAddress.get("Files");
+            contractKeysAddress = contractAddress.get("Keys");
+            contractRequestsAddress = contractAddress.get("Requests");
+            contractUsersAddress = contractAddress.get("Users");
+        } else {
+            throw new RuntimeException("Did not found all contract addresses necessary for code execution");
+        }
+        client = new Client(networkURL, contractAuthorityAddress, contractFilesAddress,
+                contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+    }
+
+    // user commands
+    public static void createUser(String[] args){
+        String name = args[1];
+        String email = args[2];
+        String privateKey = null;
+        if (args.length == 4) {
+            privateKey = args[3];
+        }
+        client.createUser(name, email, privateKey);
+    }
+
+    public static void createCertifier(String[] args){
+        if (args.length == 4) {
             String name = args[1];
             String email = args[2];
-            String privateKey = null;
-            if (args.length == 4) {
-                privateKey = args[3];
-            }
-            client.createUser(name, email, privateKey);
-            break;
-        case "-c":
-        case "--create-certifier":
-            if (args.length == 4) {
-                name = args[1];
-                email = args[2];
-                privateKey = args[3];
-                client.createCertifier(name, email, privateKey);
-            } else {
-                client.createCertifier();
-            }
-            break;
-        case "-a":
-        case "--create-attributes":
-            attributes = new String[args.length - 1];
+            String privateKey = args[3];
+            client.createCertifier(name, email, privateKey);
+        } else {
+            client.createCertifier();
+        }
+    }
+
+    public static void load(String[] args){
+        client.changeUser(args[1]);
+    }
+
+    // DCPABE commands
+
+    public static void createAttributes(String[] args){
+        String[] attributes = new String[args.length - 1];
             for (int i = 0; i < attributes.length; i++) {
                 attributes[i] = args[i + 1];
             }
             client.createABEKeys(attributes);
+    }
+
+    public static void yieldAttributes(String[] args){
+        for (int i = 2; i < args.length; i++) {
+            client.yieldAttribute(args[1], Integer.parseInt(args[i]));
+        }
+    }
+
+
+    public static void encrypt(String[] args){
+        String[] authorities = new String[args.length - 3];
+        for (int i = 0; i < authorities.length; i++) {
+            authorities[i] = args[i + 3];
+        }
+        client.encrypt(args[1], args[2], authorities);
+    }
+
+    public static void decrypt(String[] args){
+
+    }
+
+    // blockchain commands
+
+    public static void requestAttributes(String[] args){
+        String[] attributes = new String[args.length - 2];
+        for (int i = 0; i < attributes.length; i++) {
+            attributes[i] = args[i + 2];
+        }
+        client.requestAttribute(args[1], attributes);
+    }
+
+    public static void checkRequests(String[] args){
+        if (args[1].equals("download")) {
+            client.getPersonalKeys();
+        } else {
+            client.checkAttributeRequests(RequestStatus.valueOf(args[1].toUpperCase()));
+        }
+    }
+
+    public static void getAttributes(String[] args){
+        String[] attributes = new String[args.length - 2];
+        for (int i = 0; i < attributes.length; i++) {
+            attributes[i] = args[i + 2];
+        }
+        client.getAttributes(args[1], attributes);
+    }
+
+    public static void publish(String[] args){
+        for (int i = 1; i < args.length; i++) {
+            client.publish(args[i]);
+        }
+    }
+
+    public static void deploy(String[] args){
+
+    }
+
+    // integrated blockchain / server commands
+    public static void send(String[] args){
+        if (args[1].equals("attributes")) {
+            for (int i = 2; i < args.length; i++) {
+                client.sendAttributes(args[i]);
+            }
+        } else {
+            for (int i = 1; i < args.length; i++) {
+                client.send(args[i]);
+            }
+        }
+    }
+
+    public static void getRecordings(String[] args){
+        String[] recordings = new String[args.length - 2];
+        for (int i = 0; i < recordings.length; i++) {
+            recordings[i] = args[i + 2];
+        }
+        client.getRecordings(args[1], recordings);
+    }
+
+    // demonstration command
+    public static void milestone(String[] args){
+        // parsing necessary to navigate through milestone function
+        String[] numberSplit = args[1].split("\\.");
+        int[] choices = new int[numberSplit.length];
+        for (int i = 0; i < choices.length; i++) {
+            choices[i] = Integer.parseInt(numberSplit[i]);
+        }
+        runMilestone(choices);
+        sc.close();
+    }
+
+    public static void help(String[] args){
+        System.out.println("Menu de ajuda não implementada.");
+    }
+
+    public static void runCommand(String[] args) {
+        switch (args[0]) {
+        case "-i":
+        case "--init":
+            init(args);
+            break;
+        case "-l":
+        case "--load":
+            load(args);
+            break;
+        case "-u":
+        case "--create-user":
+            createUser(args);
+            break;
+        case "-c":
+        case "--create-certifier":
+            createCertifier(args);
+            break;
+        case "-a":
+        case "--create-attributes":
+            createAttributes(args);
             break;
         case "-r":
         case "--request-attribute":
-            attributes = new String[args.length - 2];
-            for (int i = 0; i < attributes.length; i++) {
-                attributes[i] = args[i + 2];
-            }
-            client.requestAttribute(args[1], attributes);
+            requestAttributes(args);
             break;
         case "-cr":
         case "--check-requests":
-            if (args[1].equals("download")) {
-                client.getPersonalKeys();
-            } else {
-                client.checkAttributeRequests(RequestStatus.valueOf(args[1].toUpperCase()));
-            }
+            checkRequests(args);
             break;
         case "-p":
         case "--publish":
-            for (int i = 1; i < args.length; i++) {
-                client.publish(args[i]);
-            }
+            publish(args);
             break;
         case "-y":
         case "--yield-attributes":
-            for (int i = 2; i < args.length; i++) {
-                client.yieldAttribute(args[1], Integer.parseInt(args[i]));
-            }
+            yieldAttributes(args);
             break;
         case "-ga":
         case "--get-attributes":
-            attributes = new String[args.length - 2];
-            for (int i = 0; i < attributes.length; i++) {
-                attributes[i] = args[i + 2];
-            }
-            client.getAttributes(args[1], attributes);
+            getAttributes(args);
             break;
         case "-gr":
         case "--get-recordings":
-            String[] recordings = new String[args.length - 2];
-            for (int i = 0; i < recordings.length; i++) {
-                recordings[i] = args[i + 2];
-            }
-            client.getRecordings(args[1], recordings);
+            getRecordings(args);
             break;
         case "-e":
         case "--encrypt":
-            String[] authorities = new String[args.length - 3];
-            for (int i = 0; i < authorities.length; i++) {
-                authorities[i] = args[i + 3];
-            }
-            client.encrypt(args[1], args[2], authorities);
+            encrypt(args);
             break;
         case "-s":
         case "--send":
-            if (args[1].equals("attributes")) {
-                for (int i = 2; i < args.length; i++) {
-                    client.sendAttributes(args[i]);
-                }
-            } else {
-                for (int i = 1; i < args.length; i++) {
-                    client.send(args[i]);
-                }
-            }
+            send(args);
             break;
         case "-d":
         case "--decrypt":
