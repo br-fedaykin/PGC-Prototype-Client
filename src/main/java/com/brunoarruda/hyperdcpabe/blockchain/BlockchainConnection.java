@@ -49,24 +49,17 @@ public class BlockchainConnection {
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
     private final String networkURL;
-    /*
-     * TODO: get contracts addresses together in a Map, or do that with contract
-     * objects, as they have the addresses in them
-     */
-    private String contractAuthorityAddress;
-    private String contractFilesAddress;
-    private String contractKeysAddress;
-    private String contractUsersAddress;
-    private String contractRequestsAddress;
-    private String contractRootAddress;
-    private SmartDCPABEAuthority contractAuthority;
-    private SmartDCPABEFiles contractFiles;
-    private SmartDCPABEKeys contractKeys;
-    private SmartDCPABERequests contractRequests;
-    private SmartDCPABEUsers contractUsers;
-    private SmartDCPABEUtility contractUtility;
-    private SmartDCPABERoot contractRoot;
+
+    private SmartDCPABERoot scRoot;
+    private SmartDCPABEAuthority scAuthority;
+    private SmartDCPABEFiles scFiles;
+    private SmartDCPABEKeys scKeys;
+    private SmartDCPABERequests scRequests;
+    private SmartDCPABEUsers scUsers;
+    private SmartDCPABEUtility scUtility;
+    private Map<String, String> contractAddress;
     private final Web3j web3j;
+    private ContractGasProvider dgp;
 
     public String getBlockchainDataPath() {
         return fc.getDataDirectory() + dataPath + "\\";
@@ -76,54 +69,76 @@ public class BlockchainConnection {
         this.dataPath = dataPath;
     }
 
+    public BlockchainConnection(String networkURL) {
+        this.networkURL = networkURL;
+        contractAddress = new HashMap<String, String>();
+        web3j = Web3j.build(new HttpService(networkURL));
+        fc = FileController.getInstance();
+        dgp = new DefaultGasProvider();
+    }
+
     // TODO: refactor URL as a POM field or command line/file config
     // POM field seems better, as it would allow different value for deploy/test
     // cycles
     public BlockchainConnection(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
             String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
         this.networkURL = networkURL;
-        this.contractAuthorityAddress = contractAuthorityAddress;
-        this.contractFilesAddress = contractFilesAddress;
-        this.contractKeysAddress = contractKeysAddress;
-        this.contractRequestsAddress = contractRequestsAddress;
-        this.contractUsersAddress = contractUsersAddress;
+        contractAddress = new HashMap<String, String>();
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
+        dgp = new DefaultGasProvider();
+
+        contractAddress.put("Authority", contractAuthorityAddress);
+        contractAddress.put("Files", contractFilesAddress);
+        contractAddress.put("Keys", contractKeysAddress);
+        contractAddress.put("Requests", contractRequestsAddress);
+        contractAddress.put("Users", contractUsersAddress);
     }
 
-    public void deployContracts(Credentials credentials) {
-        ContractGasProvider cgp = new DefaultGasProvider();
+
+    public BlockchainConnection deployContracts(Credentials credentials) {
         try {
-            contractRoot = SmartDCPABERoot.deploy(web3j, credentials, cgp).send();
-            contractRootAddress = contractRoot.getContractAddress();
-            contractAuthority = SmartDCPABEAuthority.deploy(web3j, credentials, cgp, contractRootAddress).send();
-            contractFiles = SmartDCPABEFiles.deploy(web3j, credentials, cgp, contractRootAddress).send();
-            contractKeys = SmartDCPABEKeys.deploy(web3j, credentials, cgp, contractRootAddress).send();
-            contractRequests = SmartDCPABERequests.deploy(web3j, credentials, cgp, contractRootAddress).send();
-            contractUsers = SmartDCPABEUsers.deploy(web3j, credentials, cgp, contractRootAddress).send();
-            contractUtility = SmartDCPABEUtility.deploy(web3j, credentials, cgp, contractRootAddress).send();
+            SmartDCPABERoot contractRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
+            String rootAddress = contractRoot.getContractAddress();
+
+            scRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
+            scAuthority = SmartDCPABEAuthority.deploy(web3j, credentials, dgp, rootAddress).send();
+            scFiles = SmartDCPABEFiles.deploy(web3j, credentials, dgp, rootAddress).send();
+            scKeys = SmartDCPABEKeys.deploy(web3j, credentials, dgp, rootAddress).send();
+            scRequests = SmartDCPABERequests.deploy(web3j, credentials, dgp, rootAddress).send();
+            scUsers = SmartDCPABEUsers.deploy(web3j, credentials, dgp, rootAddress).send();
+            scUtility = SmartDCPABEUtility.deploy(web3j, credentials, dgp, rootAddress).send();
+
+            contractAddress.put("Authority", scAuthority.getContractAddress());
+            contractAddress.put("Files", scFiles.getContractAddress());
+            contractAddress.put("Keys", scKeys.getContractAddress());
+            contractAddress.put("Requests", scRequests.getContractAddress());
+            contractAddress.put("Users", scUsers.getContractAddress());
+            contractAddress.put("Utility", scUtility.getContractAddress());
+
+            List<String> contractAddresses = Arrays.asList(contractAddress.values().toArray(new String[0]));
+            List<BigInteger> indexes = new ArrayList<BigInteger>();
+            Arrays.asList(0, 1, 2, 3, 4, 5).forEach(val -> indexes.add(BigInteger.valueOf(val)));
+            scRoot.setAllContracts(indexes, contractAddresses).send();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return this;
     }
 
-    public void loadContracts(Credentials credentials) {
-        ContractGasProvider cgp = new DefaultGasProvider();
-        if (contractAuthorityAddress != null) {
-            contractAuthority = SmartDCPABEAuthority.load(contractAuthorityAddress, web3j, credentials, cgp);
-        }
-        if (contractFilesAddress != null) {
-            contractFiles = SmartDCPABEFiles.load(contractFilesAddress, web3j, credentials, cgp);
-        }
-        if (contractKeysAddress != null) {
-            contractKeys = SmartDCPABEKeys.load(contractKeysAddress, web3j, credentials, cgp);
-        }
-        if (contractRequestsAddress != null) {
-            contractRequests = SmartDCPABERequests.load(contractRequestsAddress, web3j, credentials, cgp);
-        }
-        if (contractUsersAddress != null) {
-            contractUsers = SmartDCPABEUsers.load(contractUsersAddress, web3j, credentials, cgp);
-        }
+    public BlockchainConnection loadContracts(Credentials credentials) {
+        // TODO: check local addresses against the addresses returned by getAddresses() function from scRoot
+        String address = contractAddress.get("Authority");
+        scAuthority = SmartDCPABEAuthority.load(address, web3j, credentials, dgp);
+        address = contractAddress.get("Files");
+        scFiles = SmartDCPABEFiles.load(address, web3j, credentials, dgp);
+        address = contractAddress.get("Keys");
+        scKeys = SmartDCPABEKeys.load(address, web3j, credentials, dgp);
+        address = contractAddress.get("Requests");
+        scRequests = SmartDCPABERequests.load(address, web3j, credentials, dgp);
+        address = contractAddress.get("Users");
+        scUsers = SmartDCPABEUsers.load(address, web3j, credentials, dgp);
+        return this;
     }
 
     public ECKey generateECKeys(String privateKey) {
@@ -140,14 +155,14 @@ public class BlockchainConnection {
         String authName = authority.split("-")[0];
         String address = authority.split("-")[1];
         try {
-            Tuple4<String, String, String, BigInteger> certifier = contractAuthority.getCertifier(address).send();
+            Tuple4<String, String, String, BigInteger> certifier = scAuthority.getCertifier(address).send();
             if (certifier.getValue4().equals(BigInteger.ZERO)) {
                 System.out.println("A autoridade " + authName + " não publicou nenhum atributo.");
                 return null;
             } else {
                 Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
                 for (String attr : attributes) {
-                    Tuple3<String, byte[], byte[]> keyData = contractKeys.getPublicKey(address, attr).send();
+                    Tuple3<String, byte[], byte[]> keyData = scKeys.getPublicKey(address, attr).send();
                     keys.put(attr, new PublicKey(keyData.getValue2(), keyData.getValue3()));
                 }
                 return keys;
@@ -164,10 +179,10 @@ public class BlockchainConnection {
         BigInteger port = obj.get("port").bigIntegerValue();
         BigInteger serverID = null;
         try {
-            serverID = contractFiles.getServerID(domain).send();
+            serverID = scFiles.getServerID(domain).send();
             if (serverID.longValue() == -1) {
-                contractFiles.addServer(domain, serverPath, port).send();
-                serverID = contractFiles.getServerID(domain).send();
+                scFiles.addServer(domain, serverPath, port).send();
+                serverID = scFiles.getServerID(domain).send();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -186,11 +201,11 @@ public class BlockchainConnection {
         byte[] c2 = obj.get("ciphertext").get("c2").toString().getBytes();
         byte[] c3 = obj.get("ciphertext").get("c3").toString().getBytes();
         try {
-            BigInteger numRecording_ = contractFiles.getFileCounting(address).send();
+            BigInteger numRecording_ = scFiles.getFileCounting(address).send();
             byte[] key = obj.get("key").binaryValue();
             byte[] hash = obj.get("hash").binaryValue();
-            contractFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
-            contractFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
+            scFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
+            scFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
             System.out.println("Blockchain - data published: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
@@ -216,7 +231,7 @@ public class BlockchainConnection {
                 throw new RuntimeException("Key error: g1yi does not fit in four sized words");
             }
             try {
-                contractKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+                scKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -229,7 +244,7 @@ public class BlockchainConnection {
             String address = obj.get("address").asText();
             String name = obj.get("name").asText();
             String email = obj.get("email").asText();
-            contractAuthority.addCertifier(address, name, email).send();
+            scAuthority.addCertifier(address, name, email).send();
 
             System.out.println("Blockchain - Authority published: " + name);
         } catch (Exception e) {
@@ -242,9 +257,8 @@ public class BlockchainConnection {
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
         try {
-            contractUsers.addUser(address, name, email).send();
+            scUsers.addUser(address, name, email).send();
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         System.out.println("Blockchain - User published: " + name);
@@ -253,7 +267,7 @@ public class BlockchainConnection {
     private CiphertextJSON getCiphertext(String user, String fileName) throws Exception {
         CiphertextJSON ct = null;
         Tuple5<String, byte[], byte[], byte[], byte[]> ciphertextData;
-        ciphertextData = contractFiles.getCiphertext(user, fileName).send();
+        ciphertextData = scFiles.getCiphertext(user, fileName).send();
         if (!ciphertextData.getValue1().equals("")) {
             AccessStructure as = AccessStructure.buildFromPolicy(ciphertextData.getValue1());
             String c0_ = new String(ciphertextData.getValue2(), "UTF-8");
@@ -282,12 +296,12 @@ public class BlockchainConnection {
         Recording r = null;
         try {
             Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
-            recordingData = contractFiles.getRecording(user, fileName).send();
+            recordingData = scFiles.getRecording(user, fileName).send();
             if (recordingData.getValue5().intValue() != 0) {
                 String key = Base64.getEncoder().encodeToString(recordingData.getValue3());
                 String hash = Base64.getEncoder().encodeToString(recordingData.getValue4());
                 long timestamp = recordingData.getValue5().longValue();
-                Tuple3<String, String, BigInteger> serverData = contractFiles.getServer(recordingData.getValue2()).send();
+                Tuple3<String, String, BigInteger> serverData = scFiles.getServer(recordingData.getValue2()).send();
                 String domain = serverData.getValue1();
                 String serverPath = serverData.getValue2();
                 int port = serverData.getValue3().intValue();
@@ -316,13 +330,13 @@ public class BlockchainConnection {
                  * request on blockchain, which could not be true if the contract is a new one.
                  * Needs more work to stablish a migration model that does not break the client
                  */
-                BigInteger status = contractRequests.getRequestStatus(authority, address, BigInteger.valueOf(i)).send();
+                BigInteger status = scRequests.getRequestStatus(authority, address, BigInteger.valueOf(i)).send();
                 requests.add(status);
             }
-            BigInteger numRequests = contractRequests.getRequestListSize(authority, address).send();
+            BigInteger numRequests = scRequests.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
                 Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
-                requestTuple = contractRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
+                requestTuple = scRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("status", requestTuple.getValue1().intValue());
                 request.put("index", requestTuple.getValue2().intValue());
@@ -356,9 +370,9 @@ public class BlockchainConnection {
         });
         ObjectNode request = null;
         try {
-            BigInteger index = contractRequests.getRequestListSize(authority, address).send();
+            BigInteger index = scRequests.getRequestListSize(authority, address).send();
             long timestamp = System.currentTimeMillis();
-            contractRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
             request = fc.getMapper().createObjectNode();
             request.put("index", index);
             request.put("status", BigInteger.ZERO);
@@ -374,7 +388,7 @@ public class BlockchainConnection {
     public boolean userExists(String address) {
         Tuple3<String, String, String> user = null;
         try {
-            user = contractUsers.getUser(address).send();
+            user = scUsers.getUser(address).send();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -427,7 +441,7 @@ public class BlockchainConnection {
         TransactionReceipt tx = null;
         Map<String, int[]> changedIndexes = new HashMap<>();
         try {
-            tx = contractRequests.processRequest(authority, pendingRequesterIndex,
+            tx = scRequests.processRequest(authority, pendingRequesterIndex,
                     pendingRequestIndex, BigInteger.valueOf(newStatus.getValue())).send();
             System.out.printf("Blockchain - Attribute request processed by %s.... Result: %s\n", authority.substring(0, 6), newStatus);
         } catch (Exception e) {
@@ -436,14 +450,14 @@ public class BlockchainConnection {
         }
         if (tx != null) {
             List<PendingRequesterIndexChangedEventResponse> changedRequesterIndexes;
-            changedRequesterIndexes = contractRequests.getPendingRequesterIndexChangedEvents(tx);
+            changedRequesterIndexes = scRequests.getPendingRequesterIndexChangedEvents(tx);
             if (changedRequesterIndexes.size() > 0) {
                 int[] requesterChanges = { changedRequesterIndexes.get(0).oldIndex.intValue(),
                         changedRequesterIndexes.get(0).newIndex.intValue() };
                 changedIndexes.put("requester", requesterChanges);
             }
             List<PendingRequestIndexChangedEventResponse> changedRequestIndexes;
-            changedRequestIndexes = contractRequests.getPendingRequestIndexChangedEvents(tx);
+            changedRequestIndexes = scRequests.getPendingRequestIndexChangedEvents(tx);
             if (changedRequestIndexes.size() > 0) {
                 int[] requestChanges = {changedRequestIndexes.get(0).oldIndex.intValue(),
                     changedRequestIndexes.get(0).newIndex.intValue()};
@@ -458,17 +472,13 @@ public class BlockchainConnection {
         return networkURL;
     }
 
-    public String getContractAddress() {
-        return contractUsersAddress;
-    }
-
     // NOTE: function not used
     public int getAttributeRequestListSize(ObjectNode msg) {
         String authority = msg.get("authority").asText();
         String address = msg.get("address").asText();
         int numRequests = -1;
         try {
-            BigInteger numRequests_ = contractRequests.getRequestListSize(authority, address).send();
+            BigInteger numRequests_ = scRequests.getRequestListSize(authority, address).send();
             numRequests = numRequests_.intValue();
         } catch (Exception e) {
             e.printStackTrace();
@@ -508,7 +518,7 @@ public class BlockchainConnection {
         try {
             for (int i = 0; i < pendingRequests.size(); i++) {
                 Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
-                requestTuple = contractRequests.getRequest(authority, address, pendingRequests.get(i)).send();
+                requestTuple = scRequests.getRequest(authority, address, pendingRequests.get(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("pendingIndex", i);
                 request.put("status", requestTuple.getValue1().intValue());
@@ -535,10 +545,10 @@ public class BlockchainConnection {
         }
         BigInteger numRequesters;
         try {
-            numRequesters = contractRequests.getPendingRequesterListSize(authority).send();
+            numRequesters = scRequests.getPendingRequesterListSize(authority).send();
             for (int i = 0; i < numRequesters.intValue(); i++) {
                 // FIX: return proper address with valid Checksum. Currently the address is all lowercase
-                String address = contractRequests.getPendingRequesterAddress(authority, BigInteger.valueOf(i)).send();
+                String address = scRequests.getPendingRequesterAddress(authority, BigInteger.valueOf(i)).send();
                 ObjectNode cacheWrapper = requestCache.get(address);
                 if (cacheWrapper == null) {
                     cacheWrapper = fc.getMapper().createObjectNode();
@@ -546,7 +556,7 @@ public class BlockchainConnection {
                     cacheWrapper.put("index", i);
                     cacheWrapper.put("address", address);
                 }
-                List<BigInteger> pendingRequestsIndexes = contractRequests.getPendingList(authority, address).send();
+                List<BigInteger> pendingRequestsIndexes = scRequests.getPendingList(authority, address).send();
                 ArrayNode pendingRequests = getPendingAttributeRequests(authority, address, pendingRequestsIndexes);
                 cacheWrapper.withArray("requests").removeAll().addAll(pendingRequests);
             }
@@ -558,7 +568,7 @@ public class BlockchainConnection {
     private boolean certifierExists(String address) {
         Tuple4<String, String, String, BigInteger> certifier = null;
         try {
-            certifier = contractAuthority.getCertifier(address).send();
+            certifier = scAuthority.getCertifier(address).send();
         } catch (Exception e) {
             e.printStackTrace();
         }
