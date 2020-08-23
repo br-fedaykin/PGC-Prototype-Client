@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.brunoarruda.hyperdcpabe.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -84,7 +85,7 @@ public final class FileController {
 
             ArrayNode json = (ArrayNode) mapper.readTree(f);
             Iterator<JsonNode> nodes = json.elements();
-            while(nodes.hasNext()) {
+            while (nodes.hasNext()) {
                 String value = nodes.next().toString();
                 list.add(mapper.readValue(value, classReference));
             }
@@ -94,12 +95,17 @@ public final class FileController {
         return list;
     }
 
-    public <K extends Object, V extends Object> Map<K, V> readAsMap(String path, String file, Class<K> keyClass,
-            Class<V> valueClass) {
+    public <K extends Object, V extends Object> Map<K, V> readAsMap(String path, String file, String internalPath, Class<K> keyClass,
+    Class<V> valueClass) {
         File f = new File(path, file);
         Map<K, V> map = new HashMap<K, V>();
         try {
             ObjectNode json = (ObjectNode) mapper.readTree(f);
+            if (!internalPath.equals("")) {
+                for (String key : internalPath.split("\\.")) {
+                    json = (ObjectNode) json.get(key);
+                }
+            }
             Iterator<Entry<String, JsonNode>> nodes = json.fields();
             while (nodes.hasNext()) {
                 Entry<String, JsonNode> entry = nodes.next();
@@ -112,15 +118,32 @@ public final class FileController {
         return map;
     }
 
-    public <T> T readFromDir(String path, String fileName, Class<T> typeReference) {
-        File f = new File(path, fileName);
-        T obj = null;
+    public <K extends Object, V extends Object> Map<K, V> readAsMap(String path, String file, Class<K> keyClass,
+            Class<V> valueClass) {
+        return readAsMap(path, file, "", keyClass, valueClass);
+    }
+
+    public <T> T readFromDir(String path, String fileName, String internalPath, Class<T> typeReference) {
+        T result = null;
         try {
-            obj = mapper.readValue(f, typeReference);
+            ObjectNode data = (ObjectNode) mapper.readTree(new File(path, fileName));
+            if (!internalPath.equals("")) {
+                for (String key : internalPath.split("\\.")) {
+                    data = (ObjectNode) data.get(key);
+                }
+            }
+            String partialJSON = mapper.writeValueAsString(data.get(internalPath));
+            result  = mapper.readValue(partialJSON, typeReference);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (IOException e) {
-            // System.out.println("FileController - Could not find " + fileName + " inside " + f.getParent());
+            e.printStackTrace();
         }
-        return obj;
+        return result;
+    }
+
+    public <T> T readFromDir(String path, String fileName, Class<T> typeReference) {
+        return readFromDir(path, fileName, "", typeReference);
     }
 
     public JsonNode loadAsJSON(String path, String file) {
