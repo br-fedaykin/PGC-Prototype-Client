@@ -3,9 +3,19 @@
 trap "exit" INT TERM ERR
 trap "kill 0" EXIT
 
+# command and option to call ganache-cli without blocking the shell in linux environments
+shell=sh
+option=-c
+
+# command and option to call ganache-cli without blocking the shell in Windows environment
+if [[ "$OSTYPE" = "msys" ]]; then
+    shell=cmd
+    option="//c start"
+fi
+
 echo "Initalizing Ganache..."
 
-cmd //c start ganache-cli -a 10 -d -m "pumpkin immense certain snack please patch universe leisure reopen truth eight gown" -p 7545
+$shell $option ganache-cli -a 10 -d -m "pumpkin immense certain snack please patch universe leisure reopen truth eight gown" -p 7545
 
 sleep 3
 read -p 'Choose milestone to test: ' milestone
