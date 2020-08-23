@@ -15,7 +15,10 @@ import java.util.stream.IntStream;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.Recording.FileMode;
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -86,6 +89,23 @@ public final class Client {
     private User user;
     private Certifier certifier;
 
+    private final Map<String, String> contractAddress;
+
+    @JsonProperty("Global Parameters")
+    public GlobalParameters getGlobalParameters() {
+        return gp;
+    }
+
+    @JsonProperty("activeUserID")
+    public String getUserID() {
+        return user.getID();
+    }
+
+    @JsonProperty("ContractAddress")
+    public Map<String, String> getContractAddresses() {
+        return contractAddress;
+    }
+
     private BlockchainConnection blockchain;
     private ServerConnection server;
     private static final String DATA_PATH = "data";
@@ -94,62 +114,41 @@ public final class Client {
 
     public Client() {
         fc = FileController.getInstance().configure(DATA_PATH);
+        this.server = new ServerConnection(SERVER_PORT);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
+            gp = fc.readFromDir(fc.getDataDirectory(), "clientData.json", "globalParameters", GlobalParameters.class);
+            contractAddress = fc.readAsMap(fc.getDataDirectory(), "clientData.json", "contractAddress", String.class, String.class);
+            loadUserData(clientData.get("currentUserID").asText());
+            this.blockchain.loadContracts(user.getCredentials());
             String networkURL = clientData.get("networkURL").asText();
-            if (networkURL.equals("null")) {
-                throw new RuntimeException(
-                    "Execute o comando --init informando o endereço de rede" + " para conexão com a blockchain");
-            }
-            String contractAuthorityAddress = clientData.get("contractAuthorityAddress").asText();
-            String contractFilesAddress = clientData.get("contractFilesAddress").asText();
-            String contractKeysAddress = clientData.get("contractKeysAddress").asText();
-            String contractRequestsAddress = clientData.get("contractRequestsAddress").asText();
-            String contractUsersAddress = clientData.get("contractUsersAddress").asText();
-            this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
-            contractKeysAddress, contractRequestsAddress, contractUsersAddress);
-            loadUserData(clientData.get("userID").asText());
+            this.blockchain = new BlockchainConnection(networkURL, contractAddress);
+
             fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         } else {
             throw new RuntimeException(
-                    "Execute o comando --init informando o endereço de rede para conexão com a blockchain");
+                    "Execute o comando --init com o endereço para a Blockchain e o endereço do contrato Root.");
         }
+    }
+
+    public Client(String networkURL, String adminName, String adminEmail, String adminPrivateKey) {
+        fc = FileController.getInstance().configure(DATA_PATH);
         this.server = new ServerConnection(SERVER_PORT);
-        gp = fc.readFromDir(fc.getDataDirectory(), "globalParameters.json", GlobalParameters.class);
-    }
-
-    public Client(String url) {
-        this(url, null, null, null, null, null);
-    }
-
-    public Client(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
-            String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
-        fc = FileController.getInstance();
-        this.blockchain = new BlockchainConnection(networkURL, contractAuthorityAddress, contractFilesAddress,
-        contractKeysAddress, contractRequestsAddress, contractUsersAddress);
-        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
-        if (clientData != null && clientData.get("userID") != null) {
-            loadUserData(clientData.get("userID").asText());
-        } else if (clientData == null) {
-            clientData = (ObjectNode) fc.getMapper().createObjectNode();
-        }
-        loadAttributes();
+        this.blockchain = new BlockchainConnection(networkURL);
         gp = DCPABE.globalSetup(160);
-        fc.writeToDir(fc.getDataDirectory(), "globalParameters.json", gp);
-        // UGLY: refactor contract configuration
-        clientData.put("networkURL", networkURL);
-        clientData.put("contractAuthorityAddress", contractAuthorityAddress);
-        clientData.put("contractFilesAddress", contractFilesAddress);
-        clientData.put("contractKeysAddress", contractKeysAddress);
-        clientData.put("contractRequestsAddress", contractRequestsAddress);
-        clientData.put("contractUsersAddress", contractUsersAddress);
+        contractAddress = deployContracts(adminName, adminEmail, adminPrivateKey);
+        ObjectNode gpJSON = fc.getMapper().convertValue(gp, ObjectNode.class);
+        ObjectNode addressJSON = fc.getMapper().convertValue(contractAddress, ObjectNode.class);
+        ObjectNode clientData = fc.getMapper().createObjectNode();
+        clientData.put("currentUserID", "");
+        clientData.set("globalParameters", gpJSON);
+        clientData.set("contractAddress", addressJSON);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
-        this.server = new ServerConnection(SERVER_PORT);
     }
 
     public void changeUser(String userID) {
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
-        clientData.put("userID", userID);
+        clientData.put("currentUserID", userID);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
         loadUserData(userID);
     }
@@ -162,16 +161,10 @@ public final class Client {
         this.blockchain.loadContracts(user.getCredentials());
     }
 
-    public void deployContract(String userID) {
-        String path = getClientDirectory() + userID;
-        user = fc.readFromDir(path, "user.json", User.class);
-        certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
-        user.setRecordings(fc.readAsList(path, "recordings.json", Recording.class));
-        PersonalKeysJSON ABEKeys = fc.readFromDir(path, "personalKeys.json", PersonalKeysJSON.class);
-        if (ABEKeys != null) {
-            user.setABEKeys(ABEKeys);
-        }
-        this.blockchain.deployContracts(user.getCredentials());
+    public Map<String, String> deployContracts(String name, String email, String privateKey) {
+        ECKey keys = this.blockchain.generateECKeys(privateKey);
+        user = new User(name, email, keys);
+        return this.blockchain.deployContracts(user.getCredentials());
     }
 
     private String getClientDirectory() {
@@ -335,7 +328,6 @@ public final class Client {
             user.setABEKeys(ABEKeys);
         }
 
-        this.blockchain.loadContracts(user.getCredentials());
         System.out.println("Client - user data loaded: " + userID);
     }
 

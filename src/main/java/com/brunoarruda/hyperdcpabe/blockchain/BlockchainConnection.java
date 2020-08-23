@@ -70,33 +70,22 @@ public class BlockchainConnection {
     }
 
     public BlockchainConnection(String networkURL) {
-        this.networkURL = networkURL;
-        contractAddress = new HashMap<String, String>();
-        web3j = Web3j.build(new HttpService(networkURL));
-        fc = FileController.getInstance();
-        dgp = new DefaultGasProvider();
+        this(networkURL, null);
     }
 
     // TODO: refactor URL as a POM field or command line/file config
     // POM field seems better, as it would allow different value for deploy/test
     // cycles
-    public BlockchainConnection(String networkURL, String contractAuthorityAddress, String contractFilesAddress,
-            String contractKeysAddress, String contractRequestsAddress, String contractUsersAddress) {
+    public BlockchainConnection(String networkURL, Map<String, String> contractAddress) {
         this.networkURL = networkURL;
         contractAddress = new HashMap<String, String>();
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
         dgp = new DefaultGasProvider();
+        this.contractAddress = contractAddress;
+	}
 
-        contractAddress.put("Authority", contractAuthorityAddress);
-        contractAddress.put("Files", contractFilesAddress);
-        contractAddress.put("Keys", contractKeysAddress);
-        contractAddress.put("Requests", contractRequestsAddress);
-        contractAddress.put("Users", contractUsersAddress);
-    }
-
-
-    public BlockchainConnection deployContracts(Credentials credentials) {
+	public Map<String, String> deployContracts(Credentials credentials) {
         try {
             SmartDCPABERoot contractRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
             String rootAddress = contractRoot.getContractAddress();
@@ -116,14 +105,14 @@ public class BlockchainConnection {
             contractAddress.put("Users", scUsers.getContractAddress());
             contractAddress.put("Utility", scUtility.getContractAddress());
 
-            List<String> contractAddresses = Arrays.asList(contractAddress.values().toArray(new String[0]));
+            List<String> addressList = Arrays.asList(contractAddress.values().toArray(new String[0]));
             List<BigInteger> indexes = new ArrayList<BigInteger>();
             Arrays.asList(0, 1, 2, 3, 4, 5).forEach(val -> indexes.add(BigInteger.valueOf(val)));
-            scRoot.setAllContracts(indexes, contractAddresses).send();
+            scRoot.setAllContracts(indexes, addressList).send();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return this;
+        return contractAddress;
     }
 
     public BlockchainConnection loadContracts(Credentials credentials) {

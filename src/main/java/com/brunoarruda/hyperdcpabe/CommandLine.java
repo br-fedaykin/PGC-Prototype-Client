@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Scanner;
 
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
-import com.brunoarruda.hyperdcpabe.io.FileController;
 
 /**
  * CommandLine
@@ -22,7 +21,6 @@ public class CommandLine {
     private static final int BUFFER_SIZE = 1024;
     private static Client client;
     private static Scanner sc;
-    private static Map<String, String> contractAddress = new Hashtable<>();
 
     static {
         populateCommands();
@@ -50,7 +48,6 @@ public class CommandLine {
         COMMAND_ALIAS.put("-ga", "--get-attributes");
         COMMAND_ALIAS.put("-gr", "--get-recordings");
         COMMAND_ALIAS.put("-p", "--publish");
-        COMMAND_ALIAS.put("-o", "--deploy");
 
         // integrated blockchain / server commands
         COMMAND_ALIAS.put("-s", "--send");
@@ -62,58 +59,31 @@ public class CommandLine {
 
     public static void main(String[] args) {
         // TODO: allow multi input on main, if no args provided
+
         if (args.length == 0) {
             System.out.println("Nenhum comando executado");
             return;
         }
-        switch (args[0]) {
-            case "-m":
-            case "--milestone":
-                milestone(args);
-                break;
-            case "-h":
-            case "--help":
-                help(args);
-                break;
-            default:
-                if (client == null && !(args[0].equals("--init") || args[0].equals("-i"))) {
-                    client = new Client();
-                }
-                runCommand(args);
-                break;
+        if (args[0].equals("-m") || args[0].equals("--milestone")) {
+            milestone(args);
+        } else if ((args[0].equals("-i") || args[0].equals("--init"))){
+            init(args);
+        } else {
+            runCommand(args);
         }
     }
 
-    // system commands
     public static void init(String[] args) {
-        String contractAuthorityAddress = null;
-        String contractFilesAddress = null;
-        String contractKeysAddress = null;
-        String contractRequestsAddress = null;
-        String contractUsersAddress = null;
-        String networkURL = null;
-        FileController fc = FileController.getInstance().configure(Client.getDataPath());
-        contractAddress = fc.readAsMap(fc.getDataDirectory(), "contractAddresses.json", String.class, String.class);
-        if (args.length == 7) {
-            networkURL = args[1];
-            contractAuthorityAddress = args[2];
-            contractFilesAddress = args[3];
-            contractKeysAddress = args[4];
-            contractRequestsAddress = args[5];
-            contractUsersAddress = args[6];
-        } else if (contractAddress.size() >= 5) {
-            System.out.println("Utilizando os contratos informados na última execução do programa.");
-            networkURL = "HTTP://127.0.0.1:7545";
-            contractAuthorityAddress = contractAddress.get("Authority");
-            contractFilesAddress = contractAddress.get("Files");
-            contractKeysAddress = contractAddress.get("Keys");
-            contractRequestsAddress = contractAddress.get("Requests");
-            contractUsersAddress = contractAddress.get("Users");
-        } else {
-            throw new RuntimeException("Did not found all contract addresses necessary for code execution");
+        String networkURL = "http://127.0.0.1:7545";
+        int index = 1;
+        if (args.length == 5) {
+            networkURL = args[index];
+            index = 2;
         }
-        client = new Client(networkURL, contractAuthorityAddress, contractFilesAddress,
-                contractKeysAddress, contractRequestsAddress, contractUsersAddress);
+        String adminName = args[index];
+        String adminEmail = args[index + 1];
+        String adminPrivateKey = args[index + 2];
+        client = new Client(networkURL, adminName, adminEmail, adminPrivateKey);
     }
 
     // user commands
@@ -203,10 +173,6 @@ public class CommandLine {
         }
     }
 
-    public static void deploy(String[] args){
-        client.deployContract(args[1]);
-    }
-
     // integrated blockchain / server commands
     public static void send(String[] args){
         if (args[1].equals("attributes")) {
@@ -245,14 +211,11 @@ public class CommandLine {
     }
 
     public static void runCommand(String[] args) {
+        client = new Client();
         switch (args[0]) {
-        case "-o":
-        case "--deploy":
-            deploy(args);
-            break;
-        case "-i":
-        case "--init":
-            init(args);
+        case "-h":
+        case "--help":
+            help(args);
             break;
         case "-l":
         case "--load":
@@ -306,6 +269,8 @@ public class CommandLine {
         case "--decrypt":
             client.decrypt(args[1]);
             break;
+        default:
+            System.out.println("Comando não reconhecido: " + String.join(" ", args));
         }
     }
 
@@ -322,7 +287,11 @@ public class CommandLine {
             String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
             new File(path).mkdirs();
             getFileFromResources(path, "test\\lorem_ipsum.md");
-            runCommand("--init".split(" "));
+
+            // admin inicia o sistema e cria os contratos
+            args = "--init http://127.0.0.1:7545 admin admin@email.com ";
+            args = args + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
+            init(args.split(" "));
 
             // certificador cria perfil e atributo, e os publica
             args = "--create-user CRM crm@email.com ";
