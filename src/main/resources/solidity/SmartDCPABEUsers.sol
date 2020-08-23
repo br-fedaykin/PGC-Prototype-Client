@@ -1,6 +1,5 @@
 pragma solidity ^0.5.1;
 import "./SmartDCPABEUtility.sol";
-import "./SmartDCPABEFiles.sol";
 import "./Collection.sol";
 
 contract SmartDCPABEUsers is Collection {
