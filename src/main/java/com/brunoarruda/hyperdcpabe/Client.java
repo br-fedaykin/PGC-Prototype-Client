@@ -117,8 +117,8 @@ public final class Client {
         this.server = new ServerConnection(SERVER_PORT);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
-            gp = fc.readFromDir(fc.getDataDirectory(), "clientData.json", "globalParameters", GlobalParameters.class);
-            contractAddress = fc.readAsMap(fc.getDataDirectory(), "clientData.json", "contractAddress", String.class, String.class);
+            gp = fc.readFromDir(getClientDirectory(), "clientData.json", "globalParameters", GlobalParameters.class);
+            contractAddress = fc.readAsMap(getClientDirectory(), "clientData.json", "contractAddress", String.class, String.class);
             loadUserData(clientData.get("currentUserID").asText());
             this.blockchain.loadContracts(user.getCredentials());
             String networkURL = clientData.get("networkURL").asText();
