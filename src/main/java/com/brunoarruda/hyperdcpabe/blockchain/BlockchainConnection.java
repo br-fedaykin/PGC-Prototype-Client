@@ -87,10 +87,9 @@ public class BlockchainConnection {
 
 	public Map<String, String> deployContracts(Credentials credentials) {
         try {
-            SmartDCPABERoot contractRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
-            String rootAddress = contractRoot.getContractAddress();
-
             scRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
+            String rootAddress = scRoot.getContractAddress();
+
             scAuthority = SmartDCPABEAuthority.deploy(web3j, credentials, dgp, rootAddress).send();
             scFiles = SmartDCPABEFiles.deploy(web3j, credentials, dgp, rootAddress).send();
             scKeys = SmartDCPABEKeys.deploy(web3j, credentials, dgp, rootAddress).send();
@@ -98,6 +97,7 @@ public class BlockchainConnection {
             scUsers = SmartDCPABEUsers.deploy(web3j, credentials, dgp, rootAddress).send();
             scUtility = SmartDCPABEUtility.deploy(web3j, credentials, dgp, rootAddress).send();
 
+            contractAddress.put("Root", rootAddress);
             contractAddress.put("Authority", scAuthority.getContractAddress());
             contractAddress.put("Files", scFiles.getContractAddress());
             contractAddress.put("Keys", scKeys.getContractAddress());
@@ -105,9 +105,13 @@ public class BlockchainConnection {
             contractAddress.put("Users", scUsers.getContractAddress());
             contractAddress.put("Utility", scUtility.getContractAddress());
 
-            List<String> addressList = Arrays.asList(contractAddress.values().toArray(new String[0]));
+            List<String> addressList = new ArrayList<String>();
             List<BigInteger> indexes = new ArrayList<BigInteger>();
-            Arrays.asList(0, 1, 2, 3, 4, 5).forEach(val -> indexes.add(BigInteger.valueOf(val)));
+            String[] keys = {"Authority", "Files", "Keys", "Requests", "Users", "Utility"};
+            for (int i = 0; i < keys.length; i++) {
+                addressList.add(contractAddress.get(keys[i]));
+                indexes.add(BigInteger.valueOf(i));
+            }
             scRoot.setAllContracts(indexes, addressList).send();
         } catch (Exception e) {
             e.printStackTrace();
