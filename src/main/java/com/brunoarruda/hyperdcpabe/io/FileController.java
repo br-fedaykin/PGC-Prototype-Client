@@ -132,8 +132,7 @@ public final class FileController {
                     data = (ObjectNode) data.get(key);
                 }
             }
-            String partialJSON = mapper.writeValueAsString(data.get(internalPath));
-            result  = mapper.readValue(partialJSON, typeReference);
+            result  = mapper.readValue(mapper.writeValueAsString(data), typeReference);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         } catch (IOException e) {
