@@ -90,7 +90,7 @@ public final class FileController {
                 list.add(mapper.readValue(value, classReference));
             }
         } catch (Exception e) {
-            // System.out.println("FileController - Couldnt parse json: " + file);
+            e.printStackTrace();
         }
         return list;
     }
@@ -113,7 +113,7 @@ public final class FileController {
                 map.put((K) entry.getKey(), mapper.readValue(value, valueClass));
             }
         } catch (Exception e) {
-            // System.out.println("FileController - Couldn't parse json: " + file);
+            e.printStackTrace();
         }
         return map;
     }
