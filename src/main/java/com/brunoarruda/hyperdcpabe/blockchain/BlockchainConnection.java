@@ -78,11 +78,14 @@ public class BlockchainConnection {
     // cycles
     public BlockchainConnection(String networkURL, Map<String, String> contractAddress) {
         this.networkURL = networkURL;
-        contractAddress = new HashMap<String, String>();
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
         dgp = new DefaultGasProvider();
-        this.contractAddress = contractAddress;
+        if (contractAddress == null) {
+            this.contractAddress = new HashMap<String, String>();
+        } else {
+            this.contractAddress = contractAddress;
+        }
 	}
 
 	public Map<String, String> deployContracts(Credentials credentials) {

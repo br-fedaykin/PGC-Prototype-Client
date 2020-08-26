@@ -15,10 +15,7 @@ import java.util.stream.IntStream;
 import com.brunoarruda.hyperdcpabe.blockchain.BlockchainConnection;
 import com.brunoarruda.hyperdcpabe.Recording.FileMode;
 import com.brunoarruda.hyperdcpabe.io.FileController;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -91,21 +88,6 @@ public final class Client {
 
     private final Map<String, String> contractAddress;
 
-    @JsonProperty("Global Parameters")
-    public GlobalParameters getGlobalParameters() {
-        return gp;
-    }
-
-    @JsonProperty("activeUserID")
-    public String getUserID() {
-        return user.getID();
-    }
-
-    @JsonProperty("ContractAddress")
-    public Map<String, String> getContractAddresses() {
-        return contractAddress;
-    }
-
     private BlockchainConnection blockchain;
     private ServerConnection server;
     private static final String DATA_PATH = "data";
@@ -119,15 +101,16 @@ public final class Client {
         if (clientData != null) {
             gp = fc.readFromDir(getClientDirectory(), "clientData.json", "globalParameters", GlobalParameters.class);
             contractAddress = fc.readAsMap(getClientDirectory(), "clientData.json", "contractAddress", String.class, String.class);
-            loadUserData(clientData.get("currentUserID").asText());
-            this.blockchain.loadContracts(user.getCredentials());
             String networkURL = clientData.get("networkURL").asText();
             this.blockchain = new BlockchainConnection(networkURL, contractAddress);
-
-            fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
+            if (!clientData.get("currentUserID").asText().equals("")) {
+                loadUserData(clientData.get("currentUserID").asText());
+                this.blockchain.loadContracts(user.getCredentials());
+            }
+            loadAttributes();
         } else {
             throw new RuntimeException(
-                    "Execute o comando --init com o endereço para a Blockchain e o endereço do contrato Root.");
+                    "Execute o comando --init informando o endereço de rede para a Blockchain e o endereço do contrato Root.");
         }
     }
 
@@ -137,20 +120,21 @@ public final class Client {
         this.blockchain = new BlockchainConnection(networkURL);
         gp = DCPABE.globalSetup(160);
         contractAddress = deployContracts(adminName, adminEmail, adminPrivateKey);
+        ObjectNode address = fc.getMapper().createObjectNode();
+        contractAddress.forEach((key, val) -> address.put(key, val));
         ObjectNode gpJSON = fc.getMapper().convertValue(gp, ObjectNode.class);
-        ObjectNode addressJSON = fc.getMapper().convertValue(contractAddress, ObjectNode.class);
         ObjectNode clientData = fc.getMapper().createObjectNode();
         clientData.put("currentUserID", "");
+        clientData.put("networkURL", networkURL);
         clientData.set("globalParameters", gpJSON);
-        clientData.set("contractAddress", addressJSON);
+        clientData.set("contractAddress", address);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
     }
 
-    public void changeUser(String userID) {
+    public void setActiveUser(String userID) {
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         clientData.put("currentUserID", userID);
         fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
-        loadUserData(userID);
     }
 
     // NOTE: createUser generates a pubkey from privateKey. It's only for this that I'm using Ethereum Library. Maybe this class may migrate the data to the Web3j ECKeyPair.
@@ -158,6 +142,7 @@ public final class Client {
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         user = new User(name, email, keys);
         fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
+        setActiveUser(user.getID());
         this.blockchain.loadContracts(user.getCredentials());
     }
 
@@ -208,10 +193,12 @@ public final class Client {
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         certifier = new Certifier(name, email, keys);
         fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
+        setActiveUser(user.getID());
     }
 
     public void createCertifier() {
         if (user != null) {
+            setActiveUser(user.getID());
             certifier = new Certifier(user);
         } else {
             System.out.println("Crie um usuário ou informe nome e e-mail");
@@ -276,7 +263,8 @@ public final class Client {
         Map<String, PublicKey> attributes = new HashMap<String, PublicKey>();
         if (folder.exists()) {
             for (String json : folder.list()) {
-                attributes = fc.readAsMap(path, json, String.class, PublicKey.class);
+                // UGLY: repeated json parameter here. That file should be included inside client config. data.
+                attributes = fc.readAsMap(path, json, json.split("\\.")[0], String.class, PublicKey.class);
                 String authority = json.split("\\.")[0];
                 publishedAttributes.put(authority, attributes);
             }
@@ -327,7 +315,6 @@ public final class Client {
         if (ABEKeys != null) {
             user.setABEKeys(ABEKeys);
         }
-
         System.out.println("Client - user data loaded: " + userID);
     }
 

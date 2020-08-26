@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 
@@ -20,7 +19,6 @@ public class CommandLine {
     private static final Map<String, String> COMMAND_ALIAS = new Hashtable<>();
     private static final int BUFFER_SIZE = 1024;
     private static Client client;
-    private static Scanner sc;
 
     static {
         populateCommands();
@@ -109,7 +107,7 @@ public class CommandLine {
     }
 
     public static void load(String[] args){
-        client.changeUser(args[1]);
+        client.setActiveUser(args[1]);
     }
 
     // DCPABE commands
@@ -203,7 +201,6 @@ public class CommandLine {
             choices[i] = Integer.parseInt(numberSplit[i]);
         }
         runMilestone(choices);
-        sc.close();
     }
 
     public static void help(String[] args){
@@ -284,9 +281,9 @@ public class CommandLine {
         String args;
         if (choice[0] == 1) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
+            String path = "data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/";
             new File(path).mkdirs();
-            getFileFromResources(path, "test\\lorem_ipsum.md");
+            getFileFromResources(path, "test/lorem_ipsum.md", "lorem_ipsum.md");
 
             // admin inicia o sistema e cria os contratos
             args = "--init http://127.0.0.1:7545 admin admin@email.com ";
@@ -335,9 +332,9 @@ public class CommandLine {
 
         if (choice[0] == 2) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data\\client\\Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47\\";
+            String path = "data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/";
             new File(path).mkdirs();
-            getFileFromResources(path, "test\\lorem_ipsum2.md");
+            getFileFromResources(path, "test/lorem_ipsum2.md", "lorem_ipsum2.md");
 
             /**
              * cenário: novo prontuário
@@ -367,7 +364,7 @@ public class CommandLine {
              */
             if (choice[1] == 2) {
                 runMilestone(new int[] { 1 });
-                getFileFromResources(path, "test\\lorem_ipsum-edit.md", "test\\lorem_ipsum.md");
+                getFileFromResources(path, "test/lorem_ipsum-edit.md", "lorem_ipsum.md");
                 runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
                 runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
                 runCommand("--send lorem_ipsum.md".split(" "));
@@ -398,10 +395,6 @@ public class CommandLine {
             System.out.println("Milestone not recognized.");
             System.exit(-1);
         }
-    }
-
-    private static void getFileFromResources(String path, String fileName) {
-        getFileFromResources(path, fileName, fileName);
     }
 
     private static void getFileFromResources(String path, String inputFileName, String outputFileName) {
