@@ -84,7 +84,10 @@ public class CommandLine {
         client = new Client(networkURL, adminName, adminEmail, adminPrivateKey);
     }
 
-    // user commands
+    /*
+     * USER MANAGEMENT USERS COMMANDS
+     */
+
     public static void createUser(String[] args){
         String name = args[1];
         String email = args[2];
@@ -110,7 +113,9 @@ public class CommandLine {
         client.setActiveUser(args[1]);
     }
 
-    // DCPABE commands
+    /*
+     * DCPABE COMMANDS
+     */
 
     public static void createAttributes(String[] args){
         String[] attributes = new String[args.length - 1];
@@ -139,7 +144,9 @@ public class CommandLine {
 
     }
 
-    // blockchain commands
+    /*
+     * BLOCKCHAIN COMMANDS
+     */
 
     public static void requestAttributes(String[] args){
         String[] attributes = new String[args.length - 2];
@@ -171,7 +178,9 @@ public class CommandLine {
         }
     }
 
-    // integrated blockchain / server commands
+    /*
+     * NETWORK (BLOCKCHAIN / FILE SERVER) COMMANDS
+     */
     public static void send(String[] args){
         if (args[1].equals("attributes")) {
             for (int i = 2; i < args.length; i++) {
@@ -192,15 +201,14 @@ public class CommandLine {
         client.getRecordings(args[1], recordings);
     }
 
-    // demonstration command
+    /*
+     * DEMONSTRATION OF USE CASES
+     */
     public static void milestone(String[] args){
-        // parsing necessary to navigate through milestone function
-        String[] numberSplit = args[1].split("\\.");
-        int[] choices = new int[numberSplit.length];
-        for (int i = 0; i < choices.length; i++) {
-            choices[i] = Integer.parseInt(numberSplit[i]);
-        }
-        runMilestone(choices);
+        String[] choice = args[1].split("\\.");
+        int scenario = Integer.parseInt(choice[0]);
+        int subScenario = (choice.length == 2 ? Integer.parseInt(choice[0]) : 0);
+        runMilestone(scenario, subScenario);
     }
 
     public static void help(String[] args){
@@ -267,11 +275,40 @@ public class CommandLine {
             client.decrypt(args[1]);
             break;
         default:
-            System.out.println("Comando não reconhecido: " + String.join(" ", args));
+            System.out.println("Command is not valid: " + String.join(" ", args));
         }
     }
 
-    public static void runMilestone(int[] choice) {
+    public static void runMilestone(int scenario, int subScenario) {
+        if ((scenario > 2) ||
+            (scenario == 1 && subScenario != 0) ||
+            (scenario == 2 && (subScenario < 1 || subScenario > 3))) {
+            String subScenario_ = (subScenario == 0 ? "" : "." + subScenario);
+            System.out.println(String.format("Milestone invalid: %s%s", scenario, subScenario_));
+            System.exit(-1);
+        }
+
+        PersonData admin = new PersonData(
+            "admin",
+            "0xFae373E0BFfaE794fA818D749D6da38D4f7cA986",
+            "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241"
+        );
+        PersonData crm = new PersonData(
+            "crm",
+            "0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0",
+            "e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc"
+        );
+        PersonData alice = new PersonData(
+            "Alice",
+            "0xb038476875480BCE0D0FCf0991B4BB108A3FCB47",
+            "4237a475aa6579f2a0fc85d90cbcda1fad3db70391315a6c37b51de3a8cb503a"
+        );
+        PersonData bob = new PersonData(
+            "Bob",
+            "0xF7908374b1a445cCf65F729887dbB695c918BEfc",
+            "ab0439882857ffb5859c1a3a6bf40a6848daeaab6605c873c3e425de53c2c4ab"
+        );
+
         /**
          * Milestone 1 cenário: novo prontuário Cliente 1 java usa o código do ABE (cria
          * usuário, obtém atributo1, envia prontuário1 - i.e., pdf1 encriptado) Cliente
@@ -279,63 +316,55 @@ public class CommandLine {
          * codificado e o decodifica)
          */
         String args;
-        if (choice[0] == 1) {
+        if (scenario == 1) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/";
+            String path = String.format("data/client/%s/", alice.gid);
             new File(path).mkdirs();
-            getFileFromResources(path, "test/lorem_ipsum.md", "lorem_ipsum.md");
+            getFileFromResources(path, "demo/lorem_ipsum.md", "lorem_ipsum.md");
 
             // admin inicia o sistema e cria os contratos
-            args = "--init http://127.0.0.1:7545 admin admin@email.com ";
-            args = args + "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241";
+            args = String.format("--init http://127.0.0.1:7545 %s %s %s", admin.name, admin.email, admin.pKey);
             init(args.split(" "));
 
             // certificador cria perfil e atributo, e os publica
-            args = "--create-user CRM crm@email.com ";
-            args = args + "e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc";
-            runCommand(args.split(" "));
+            runCommand(String.format("--create-user %s %s %s ", crm.name, crm.email, crm.pKey).split(" "));
             runCommand("--create-certifier".split(" "));
             runCommand("--create-attributes atributo1 atributo2 atributo3".split(" "));
             runCommand("--publish user certifier attributes".split(" "));
 
             // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-            args = "--create-user Bob bob@email.com ";
-            args = args + "ab0439882857ffb5859c1a3a6bf40a6848daeaab6605c873c3e425de53c2c4ab";
-            runCommand(args.split(" "));
+            runCommand(String.format("--create-user %s %s %s ", bob.name, bob.email, bob.pKey).split(" "));
             runCommand("--publish user".split(" "));
-            runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
-            runCommand("--request-attribute CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo1".split(" "));
+            runCommand(String.format("--request-attribute %s atributo1", crm.gid).split(" "));
 
             // usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-            args = "--create-user Alice alice@email.com ";
-            args = args + "4237a475aa6579f2a0fc85d90cbcda1fad3db70391315a6c37b51de3a8cb503a";
-            runCommand(args.split(" "));
+            runCommand(String.format("--create-user %s %s %s ", alice.name, alice.email, alice.pKey).split(" "));
             runCommand("--publish user".split(" "));
-            runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-            runCommand("--get-attributes CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo1".split(" "));
-            runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
+            runCommand(String.format("--get-attributes %s atributo1", crm.gid).split(" "));
+            runCommand(String.format("--encrypt lorem_ipsum.md atributo1 %s", crm.gid).split(" "));
             runCommand("--send lorem_ipsum.md".split(" "));
 
             // certificador recebe requisição de atributo e o concede ao Bob
-            runCommand("--load CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
+            runCommand(String.format("--load %s", crm.gid).split(" "));
             runCommand("--check-requests pending".split(" "));
-            runCommand("--yield-attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc 0".split(" "));
-            runCommand("--send attributes Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
+            runCommand(String.format("--yield-attributes %s 0", bob.gid).split(" "));
+            runCommand(String.format("--send attributes %s", bob.gid).split(" "));
 
             // usuário 1 - Bob, de posse do atributo, o descriptografa
-            runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
+            runCommand(String.format("--load %s", bob.gid).split(" "));
             runCommand("--check-requests ok".split(" "));
             runCommand("--check-requests download".split(" "));
-            runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
+            runCommand(String.format("--get-recordings %s lorem_ipsum.md", alice.gid).split(" "));
             runCommand("--decrypt lorem_ipsum.md".split(" "));
         }
 
-        if (choice[0] == 2) {
+        if (scenario == 2) {
             // pre-setup to deliver file to be encrypted to user folder
-            String path = "data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/";
+            String path = String.format("data/client/%s/", alice.gid);
             new File(path).mkdirs();
-            getFileFromResources(path, "test/lorem_ipsum2.md", "lorem_ipsum2.md");
+            getFileFromResources(path, "demo/lorem_ipsum2.md", "lorem_ipsum2.md");
 
+            runMilestone(1, 0);
             /**
              * cenário: novo prontuário
              * Cliente 1 java (usuário já criado) obtém novos atributos: atributo2 e
@@ -344,15 +373,13 @@ public class CommandLine {
              * java (só com atributo1) tenta mas não consegue obter o prontuário2 (nem
              * decodificá-lo) pois não tem atributos.
              */
-            if (choice[1] == 1) {
-                runMilestone(new int[]{1});
-                runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-                runCommand("--get-attributes CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo2 atributo3".split(" "));
-                String[] specialArgs = {"--encrypt", "lorem_ipsum2.md", "and atributo2 atributo3", "CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0"};
-                runCommand(specialArgs);
+            if (subScenario == 1) {
+                runCommand(String.format("--load %s", alice.gid).split(" "));
+                runCommand(String.format("--get-attributes %s atributo2 atributo3", crm.gid).split(" "));
+                runCommand(String.format("--encrypt lorem_ipsum2.md \"and atributo2 atributo3\" %s", crm.gid).split(" "));
                 runCommand("--send lorem_ipsum2.md".split(" "));
-                runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
-                runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum2.md".split(" "));
+                runCommand(String.format("--load %s", bob.gid).split(" "));
+                runCommand(String.format("--get-recordings %s lorem_ipsum2.md", alice.gid).split(" "));
                 runCommand("--decrypt lorem_ipsum2.md".split(" "));
             }
             /**
@@ -362,14 +389,13 @@ public class CommandLine {
              * Cliente 2 java obtém prontuário1 codificado e o decodifica (pois possui
              * atributo1 do milestone1).
              */
-            if (choice[1] == 2) {
-                runMilestone(new int[] { 1 });
-                getFileFromResources(path, "test/lorem_ipsum-edit.md", "lorem_ipsum.md");
-                runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-                runCommand("--encrypt lorem_ipsum.md atributo1 CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0".split(" "));
+            if (subScenario == 2) {
+                getFileFromResources(path, "demo/lorem_ipsum-edit.md", "lorem_ipsum.md");
+                runCommand(String.format("--load %s", alice.gid).split(" "));
+                runCommand(String.format("--encrypt lorem_ipsum.md atributo1 %s", crm.gid).split(" "));
                 runCommand("--send lorem_ipsum.md".split(" "));
-                runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
-                runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
+                runCommand(String.format("--load %s", bob.gid).split(" "));
+                runCommand(String.format("--get-recordings %s lorem_ipsum.md", alice.gid).split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
             /*
@@ -377,23 +403,15 @@ public class CommandLine {
              * atributo2 e b) dataEnvio. Cliente 2 java (só com atributo1) tenta mas não
              * consegue obter o prontuário1 (nem decodificá-lo) pois não tem atributo2.
              */
-            if (choice[1] == 3) {
-                runMilestone(new int[] { 1 });
-                runCommand("--load Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47".split(" "));
-                runCommand("--get-attributes CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0 atributo1".split(" "));
-                String[] encryptArgs = { "--encrypt", "lorem_ipsum.md", "and atributo1 atributo2",
-                        "CRM-0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0" };
-                runCommand(encryptArgs);
+            if (subScenario == 3) {
+                runCommand(String.format("--load %s", alice.gid).split(" "));
+                runCommand(String.format("--get-attributes %s atributo1", crm.gid).split(" "));
+                runCommand(String.format("--encrypt lorem_ipsum \"and atributo1 atributo2\" %s", crm.gid).split(" "));
                 runCommand("--send lorem_ipsum.md".split(" "));
-                runCommand("--load Bob-0xF7908374b1a445cCf65F729887dbB695c918BEfc".split(" "));
-                runCommand("--get-recordings Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47 lorem_ipsum.md".split(" "));
+                runCommand(String.format("--load %s", bob.gid).split(" "));
+                runCommand(String.format("--get-recordings %s lorem_ipsum.md", alice.gid).split(" "));
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
-        }
-
-        if (choice[0] > 2) {
-            System.out.println("Milestone not recognized.");
-            System.exit(-1);
         }
     }
 
@@ -416,6 +434,17 @@ public class CommandLine {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    private static class PersonData {
+        public String name, email, address, gid, pKey;
+
+        public PersonData(String name, String address, String privateKey) {
+            this.name = name;
+            this.email = name.toLowerCase() + "@email.com";
+            this.address = address;
+            this.gid = name + "-" + this.address;
+            this.pKey = privateKey;
         }
     }
 }
