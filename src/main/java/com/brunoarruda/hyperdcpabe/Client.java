@@ -95,7 +95,7 @@ public final class Client {
     private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public Client() {
-        fc = FileController.getInstance().configure(DATA_PATH);
+        fc = FileController.getInstance().configure(DATA_PATH, false);
         this.server = new ServerConnection(SERVER_PORT);
         ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
         if (clientData != null) {
@@ -115,7 +115,7 @@ public final class Client {
     }
 
     public Client(String networkURL, String adminName, String adminEmail, String adminPrivateKey) {
-        fc = FileController.getInstance().configure(DATA_PATH);
+        fc = FileController.getInstance().configure(DATA_PATH, false);
         this.server = new ServerConnection(SERVER_PORT);
         this.blockchain = new BlockchainConnection(networkURL);
         gp = DCPABE.globalSetup(160);
@@ -327,7 +327,6 @@ public final class Client {
             }
             AccessStructure as = AccessStructure.buildFromPolicy(policy);
             Message m = DCPABE.generateRandomMessage(gp);
-            System.out.println("MESSAGE 358: " + Arrays.toString(m.getM()));
             CiphertextJSON ct = new CiphertextJSON(DCPABE.encrypt(m, as, gp, pks));
             String path = fc.getUserDirectory(user);
             r = new Recording(path, file, ct);
@@ -346,7 +345,6 @@ public final class Client {
         Message m = null;
         try {
             m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
-            System.out.println("MESSAGE 377: " + Arrays.toString(m.getM()));
         } catch (IllegalArgumentException e) {
             String msg = "Client - Could not decrypt the file %s. Attributes not Satisfying Policy Access.";
             System.out.println(String.format(msg, file));

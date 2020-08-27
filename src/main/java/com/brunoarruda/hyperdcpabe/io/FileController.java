@@ -26,6 +26,7 @@ public final class FileController {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private String dataFolder;
+    private boolean printErrorsFlag;
 
     private FileController() {
     }
@@ -34,8 +35,9 @@ public final class FileController {
         return INSTANCE;
     }
 
-    public FileController configure(String path) {
+    public FileController configure(String path, boolean printErrorsFlag) {
         this.dataFolder = path;
+        this.printErrorsFlag = printErrorsFlag;
         File dirFile = new File(path);
         if (!dirFile.exists() || !dirFile.isDirectory()) {
             dirFile.mkdirs();
@@ -74,7 +76,9 @@ public final class FileController {
         try {
             mapper.writeValue(new File(path), obj);
         } catch (IOException e) {
-            // e.printStackTrace();
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -90,7 +94,9 @@ public final class FileController {
                 list.add(mapper.readValue(value, classReference));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         }
         return list;
     }
@@ -113,7 +119,9 @@ public final class FileController {
                 map.put((K) entry.getKey(), mapper.readValue(value, valueClass));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         }
         return map;
     }
@@ -134,9 +142,13 @@ public final class FileController {
             }
             result  = mapper.readValue(mapper.writeValueAsString(data), typeReference);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         }
         return result;
     }
@@ -150,7 +162,9 @@ public final class FileController {
         try {
             obj = mapper.readTree(new File(path, file));
         } catch (IOException e) {
-            // System.out.println("FileController - Could not load " + file + " inside " + path + "as a JSON object.");
+            if (printErrorsFlag) {
+                e.printStackTrace();
+            }
         }
         return obj;
     }
