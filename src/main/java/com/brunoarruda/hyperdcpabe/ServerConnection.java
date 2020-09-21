@@ -25,12 +25,17 @@ import com.brunoarruda.hyperdcpabe.io.FileController;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 
 /**
  * ServerConnection
  */
 public class ServerConnection {
+
+    private static final Logger log = LoggerFactory.getLogger(ServerConnection.class);
 
     /**
      *
@@ -80,9 +85,9 @@ public class ServerConnection {
             serverSender = new PrintWriter(os, true);
             serverReceiver = new BufferedReader(new InputStreamReader(serverConnection.getInputStream()));
         } catch (UnknownHostException e) {
-            e.printStackTrace();
+            log.error("Erro desconhecido no host", e);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Houve um erro na conexão com servidor", e);
         }
     }
 
@@ -97,9 +102,9 @@ public class ServerConnection {
             serverKeys.put(userID, code.replace("/", "-"));
             return code;
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            log.error("Houve um problema em calcular o SHA-256.", e);
         }
-        System.out.println("Server Connection - Reserved path inside server to " + userID);
+        log.info("Endereço único no servidor reservado para {}.",userID);
         return code;
     }
 
@@ -127,9 +132,9 @@ public class ServerConnection {
                 }
             // after allocating space, key must be preserved
             fc.writeToDir(getServerDataPath(), "serverKeys.json", serverKeys);
-            System.out.println("Server Connection - " + userID + " sent file " + fileName);
+            log.info("Arquivo {} enviado com sucesso pelo usuário {}.", fileName, userID);
         } catch (IOException | IllegalStateException e) {
-            e.printStackTrace();
+            log.error("Houve um erro durante o envio do arquivo {} para o usuário {}.", userID, fileName, e);
         }
 	}
 
@@ -149,9 +154,9 @@ public class ServerConnection {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Houve um erro ao receber o arquivo {} sob o endereço único {}.", fileName, key, e);
         }
-        System.out.println("Server Connection - delivered following file: " + fileName);
+        log.info("Arquivo enviado: {}.", fileName);
         return data;
     }
 
@@ -169,7 +174,7 @@ public class ServerConnection {
         File f = new File(path);
         f.mkdirs();
         fc.writeToDir(path, userID + "-pks.json", personalKeys);
-        System.out.println("Server Connection - Storing temporary the personal keys of " + userID + ".");
+        log.info("Armazenando temporariamente a chave de atributo pessoal do usuário {}.", userID);
 	}
 
 	public List<PersonalKey> getPersonalKeys(String userID) {
@@ -181,9 +186,9 @@ public class ServerConnection {
         try {
             f.delete();
         } catch (Exception e) {
-            System.out.println("ServerConnection: file " + file + " not found." );
+            log.error("Não foi possível deletar a chave pessoal do usuário {}.", userID, e);
         }
-        System.out.println("Server Connection - user " + userID + " redeemed his personal keys.");
+        log.info("O usuário {} resgatou sua chave pessoal de atributo.", userID);
         return pks;
 	}
 

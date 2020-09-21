@@ -18,6 +18,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
 import sg.edu.ntu.sce.sands.crypto.utility.Utility;
@@ -26,6 +28,8 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
  * Recording
  */
 public class Recording {
+
+    private static final Logger log = LoggerFactory.getLogger(Recording.class);
 
     public enum FileMode {
         OriginalFile,
@@ -205,7 +209,7 @@ public class Recording {
         File f = new File(filePath + originalFileName);
         f.delete();
         processDataWithBlockCipher(aes, filePath, encryptedFileName, originalFileName);
-        System.out.println("Client - File decrypted: " + originalFileName);
+        log.info("Arquivo descriptografado: {}", originalFileName);
     }
 
     public void encryptFile(Message m) {
@@ -217,7 +221,7 @@ public class Recording {
         File f = new File(filePath + encryptedFileName);
         f.delete();
         processDataWithBlockCipher(aes, filePath, originalFileName, encryptedFileName);
-        System.out.println("Client - File encrypted: " + originalFileName);
+        log.info("Arquivo criptografado: {}", originalFileName);
     }
 
     private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName,
@@ -236,7 +240,7 @@ public class Recording {
             nbytes = aes.doFinal(outBuff, 0);
             fos.write(outBuff, 0, nbytes);
         } catch (IOException | DataLengthException | InvalidCipherTextException | IllegalStateException e) {
-            e.printStackTrace();
+            log.error("Erro durante descriptografia do arquivo {}.", inputFileName, e);
         }
     }
 
@@ -259,7 +263,7 @@ public class Recording {
                 fos.write(buff);
             }
         } catch (IOException | IllegalStateException e) {
-            e.printStackTrace();
+            log.error("Não foi possível gravar o arquivo em disco: {}.", file, e);
         }
     }
 
@@ -309,7 +313,7 @@ public class Recording {
             byte[] hash = sha256.digest(data);
             this.hash = Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            log.error("Não foi possível calcular o hash SHA-256 do arquivo: {}.", originalFileName, e);
         }
     }
 
@@ -340,7 +344,7 @@ public class Recording {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Não foi possível ler o arquivo: {}", file, e);
         }
         return data;
     }

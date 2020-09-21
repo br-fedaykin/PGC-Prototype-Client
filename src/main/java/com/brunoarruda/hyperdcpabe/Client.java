@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -21,6 +20,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.ethereum.crypto.ECKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
@@ -34,6 +35,8 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
+
+    private static final Logger log = LoggerFactory.getLogger(Client.class);
 
     public enum RequestStatus {
         PENDING("pending", 0), OK("ok", 1), REJECTED("rejected", 2);
@@ -185,7 +188,7 @@ public final class Client {
         try {
             Utility.writeSecretKeys(path + "authoritySecretKey", ak.getSecretKeys());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Não foi salver em disco as chaves secretas dos atributos", e);
         }
     }
 
@@ -201,7 +204,7 @@ public final class Client {
             setActiveUser(user.getID());
             certifier = new Certifier(user);
         } else {
-            System.out.println("Crie um usuário ou informe nome e e-mail");
+            log.error("Crie um usuário ou informe nome e e-mail.");
         }
         fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
     }
@@ -210,7 +213,7 @@ public final class Client {
         // TODO: create Message factory to build json objects
         String path = fc.getUserDirectory(user);
         ObjectNode obj;
-        System.out.println("Client - publishing content: " + content);
+        log.info("Publicando conteúdo." + content);
         if (content.equals("user")) {
             obj = (ObjectNode) fc.loadAsJSON(path, "User.json");
             obj = removeFieldFromJSON(obj, "ECKeys.private", "personalABEKeys");
@@ -237,7 +240,7 @@ public final class Client {
                 r.setRecordingIndex(resultIndex);
                 send(r.getFileName());
             } else {
-                System.out.printf("Publishing of file %s failed.\n", content);
+                log.error("Publicação do arquivo {} falhou.", content);
             }
         }
     }
@@ -315,7 +318,7 @@ public final class Client {
         if (ABEKeys != null) {
             user.setABEKeys(ABEKeys);
         }
-        System.out.println("Client - user data loaded: " + userID);
+        log.info("Usuário logado: " + userID);
     }
 
     public void encrypt(String file, String policy, String[] authorities) {
@@ -335,7 +338,7 @@ public final class Client {
             user.addRecording(r);
             fc.writeToDir(path, "recordings.json", user.getRecordings());
         } else {
-            System.out.println("Client - Info: " + file + " - File already encrypted");
+            log.error("Arquivo já criptografado: " + file);
         }
     }
 
@@ -346,8 +349,8 @@ public final class Client {
         try {
             m = DCPABE.decrypt(r.getCiphertext(), user.getABEKeys(), gp);
         } catch (IllegalArgumentException e) {
-            String msg = "Client - Could not decrypt the file %s. Attributes not Satisfying Policy Access.";
-            System.out.println(String.format(msg, file));
+            String msg = "Não foi possível descriptografar {}. Atributos não satisfazem a política de acesso.";
+            log.error(msg, file, e);
             return;
         }
         r.decrypt(m);
@@ -356,7 +359,7 @@ public final class Client {
     public void send(String content) {
         Recording r = user.getRecordingByFile(content);
         if (r == null) {
-            System.out.println("Unencrypted content. Aborting");
+            log.error("Conteúdo não criptografado. Upload cancelado.");
         } else if (r.getKey() == null || r.hasFileChanged()) {
             ObjectNode message = fc.getMapper().createObjectNode();
             message.put("name", user.getName());
@@ -371,7 +374,7 @@ public final class Client {
             String userID = user.getID();
             List<byte[]> data = r.readData(FileMode.EncryptedFile);
             if (data != null) {
-                System.out.println("Client - uploading file to server: " + content);
+                log.info("Enviando arquivo {} ao servidor", content);
                 server.sendFile(userID, content, data);
                 String path = fc.getUserDirectory(user);
                 fc.writeToDir(path, "recordings.json", user.getRecordings());            }
@@ -390,9 +393,9 @@ public final class Client {
                 oneRecord.writeData(data, FileMode.EncryptedFile);
                 r.add(oneRecord);
                 user.removeRecordByFileName(fileName);
-                System.out.println("Client - encrypted file received: " + fileName);
+                log.info("Arquivo criptografado recebido: " + fileName);
             } else {
-                System.out.println(fileName + " not found in blockchain");
+                log.error("Aquivo não encontrado na Blockchain: " + fileName);
             }
         }
         user.addAllRecordings(r);
@@ -401,21 +404,24 @@ public final class Client {
 
     public void checkAttributeRequests(RequestStatus status) {
         if (certifier == null && user == null) {
-            System.out.println("No user/certifier loaded in client");
+            log.error("Nenhum usuário carregado no sistema.");
             return;
         }
         if (certifier != null) {
             Map<String, ObjectNode> requests = null;
-            System.out.println("Certifier - Attributes Requests with status: " + status);
+            log.info("Requisições de atributo com o status: " + status + "\n");
             requests = syncPendingAttributeRequestsCache(certifier.getAddress(), requests);
             for (String user : requests.keySet()) {
-                System.out.printf("User %s...:\n", user.substring(0, 6));
+                StringBuilder output = new StringBuilder(5);
+                output.append(String.format("User %s:\n", user.substring(0, 6)));
                 for (JsonNode node : requests.get(user).withArray("requests")) {
                     RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
+                    String base_str = "\trequisição #%d - timestamp %s - %s";
                     if (status.equals(rs)) {
-                        System.out.printf("\trequest #%d - timestamp %s - %s\n", node.get("index").asInt(),
-                                node.get("timestamp").asText(), node.get("attributes").toString());
+                        output.append(String.format(base_str, node.get("index").asInt(),
+                        node.get("timestamp").asText(), node.get("attributes").toString()));
                     }
+                    log.info(output.toString());
                 }
             }
         } else if (user != null) {
@@ -423,16 +429,19 @@ public final class Client {
             /* FIX: this disjunction avoids an authority to check for attributes asked to
              * another authorities
              */
-            System.out.println("Client - Attributes Requests with status: " + status);
+            StringBuilder output = new StringBuilder(6);
+            output.append("Attributes Requests with status: " + status + "\n");
             for (String authority : requests.keySet()) {
                 syncAttributeRequestsCache(authority, user.getAddress(), requests);
-                System.out.printf("Authority %s:\n", authority.substring(0, 6));
+                output.append("Authority " + authority.substring(0, 6) + ":\n");
                 for (JsonNode node : requests.get(authority)) {
                     RequestStatus rs = RequestStatus.valueOf(node.get("status").asInt());
+                    String base_str = "\trequisição #%d - timestamp %s - %s";
                     if (status.equals(rs)) {
-                        System.out.printf("\trequest #%d - timestamp %s - %s\n", node.get("index").asInt(),
-                                node.get("timestamp").asText(), node.get("attributes").toString());
+                        output.append(String.format(base_str, node.get("index").asInt(),
+                        node.get("timestamp").asText(), node.get("attributes").toString()));
                     }
+                    log.info(output.toString());
                 }
             }
         }
@@ -504,7 +513,7 @@ public final class Client {
             if (alreadyAsked.size() > 0) {
                 StringJoiner message = new StringJoiner(", ");
                 alreadyAsked.forEach(i -> message.add(attributes[i]));
-                System.out.println("Already asked attributes: " + message.toString() + ".");
+                log.info("Already asked attributes: " + message.toString() + ".");
             }
         }
         return alreadyAsked;
@@ -519,7 +528,7 @@ public final class Client {
         if (alreadyOwned.size() > 0) {
             StringJoiner message = new StringJoiner(", ");
             alreadyOwned.forEach(i -> message.add(attributes[i]));
-            System.out.println("Already owned attributes: " + message.toString() + ".");
+            log.info("Already owned attributes: " + message.toString() + ".");
         }
         List<Integer> alreadyAsked = hasRequestForAttributes(authority, user.getAddress(), attributes);
         List<String> requests = new ArrayList<String>();
@@ -542,7 +551,7 @@ public final class Client {
             // UGLY: applying lowercase to address because it was recorded that way as a key
             ObjectNode requesterData = pendingRequests.get(address.toLowerCase());
             if (requesterData == null) {
-                System.out.printf("\trequester %s... did not ask any attribute\n.", address.substring(0, 6));
+                log.error("Ainda não houver requisições de atributos feitas pelo usuário {}.", address.substring(0, 6));
                 return;
             }
             JsonNode request = null;
@@ -553,7 +562,7 @@ public final class Client {
                 }
             }
             if (request == null) {
-                System.out.printf("request #%d was either already processed or doesn't exist yet.\n", requestIndex);
+                log.error("A requisição {} já foi processada ou não existe.", requestIndex);
                 return;
             }
             BigInteger pendingRequesterIndex = BigInteger.valueOf(requesterData.get("index").asInt());
@@ -564,10 +573,10 @@ public final class Client {
             for (JsonNode attr_ : request.get("attributes")) {
                 boolean alreadyGenerated = false;
                 String attr = attr_.asText();
+                // FIX: apparently pks is always empty. This behavior indicates some logic flaw
                 for (PersonalKey pk : pks) {
                     if (pk.getAttribute().equals(attr)) {
-                        System.out.printf("Attribute %s already given to user %s. Updating on blockchain.", attr,
-                                userName);
+                        log.info("Atributo {} já foi concedido ao usuário {}.", attr, userName);
                         alreadyGenerated = true;
                         break;
                     }
@@ -576,7 +585,7 @@ public final class Client {
                     keysWereGenerated = true;
                     SecretKey sk = skeys.get(attr);
                     if (null == sk) {
-                        System.err.printf("Authority doesn't have the secret key for %s\n", attr);
+                        log.info("O certificador não possui a chave privada referente ao atributo {}. Rejeitando o pedido.", attr);
                         changes = blockchain.publishAttributeRequestUpdate(certifier.getAddress(), address,
                                 pendingRequesterIndex, pendingRequestIndex, RequestStatus.REJECTED);
                         return;
@@ -596,7 +605,8 @@ public final class Client {
                     pendingRequestIndex, RequestStatus.OK);
             updateCertifierCache(pendingRequests, changes, address.toLowerCase());
         } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
+            String base_str = "Houve um problema durante o processamento da requisição {} feita pelo usuário {} à autoridade {}.";
+            log.error(base_str, requestIndex, address.substring(0, 6), certifier.getAddress(), e);
         }
     }
 
@@ -660,10 +670,10 @@ public final class Client {
             if (size != newSize) {
                 fc.writeToDir(fc.getUserDirectory(user), "personalKeys.json", user.getABEKeys());
             } else {
-                System.out.println("All keys found in server already had local copies.");
+                log.info("All keys found in server already had local copies.");
             }
         } else {
-            System.out.println("No personal ABE Keys available for download.");
+            log.warn("No personal ABE Keys available for download.");
         }
     }
 }

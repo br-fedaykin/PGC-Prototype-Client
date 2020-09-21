@@ -11,10 +11,15 @@ import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * CommandLine
  */
 public class CommandLine {
+
+    private static final Logger log = LoggerFactory.getLogger(CommandLine.class);
 
     private static final Map<String, String> COMMAND_ALIAS = new Hashtable<>();
     private static final int BUFFER_SIZE = 1024;
@@ -59,7 +64,7 @@ public class CommandLine {
         // TODO: allow multi input on main, if no args provided
 
         if (args.length == 0) {
-            System.out.println("Nenhum comando executado");
+            log.error("Nenhum comando executado");
             return;
         }
         if (args[0].equals("-m") || args[0].equals("--milestone")) {
@@ -212,7 +217,7 @@ public class CommandLine {
     }
 
     public static void help(String[] args){
-        System.out.println("Menu de ajuda não implementada.");
+        log.error("Menu de ajuda não implementada.");
     }
 
     public static void runCommand(String[] args) {
@@ -275,7 +280,7 @@ public class CommandLine {
             client.decrypt(args[1]);
             break;
         default:
-            System.out.println("Command is not valid: " + String.join(" ", args));
+            log.error("Command is not valid: " + String.join(" ", args));
         }
     }
 
@@ -284,7 +289,7 @@ public class CommandLine {
             (scenario == 1 && subScenario != 0) ||
             (scenario == 2 && (subScenario < 1 || subScenario > 3))) {
             String subScenario_ = (subScenario == 0 ? "" : "." + subScenario);
-            System.out.println(String.format("Milestone invalid: %s%s", scenario, subScenario_));
+            log.error("Milestone invalid: {}{}", scenario, subScenario_);
             System.exit(-1);
         }
 

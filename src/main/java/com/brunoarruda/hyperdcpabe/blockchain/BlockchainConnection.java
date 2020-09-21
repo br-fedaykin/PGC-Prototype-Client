@@ -117,7 +117,7 @@ public class BlockchainConnection {
             }
             scRoot.setAllContracts(indexes, addressList).send();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível publicar os Smart Contracts na Blockchain.", e);
         }
         return contractAddress;
     }
@@ -153,7 +153,7 @@ public class BlockchainConnection {
         try {
             Tuple4<String, String, String, BigInteger> certifier = scAuthority.getCertifier(address).send();
             if (certifier.getValue4().equals(BigInteger.ZERO)) {
-                System.out.println("A autoridade " + authName + " não publicou nenhum atributo.");
+                log.info("A autoridade {} não publicou nenhum atributo.", authName);
                 return null;
             } else {
                 Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
@@ -181,7 +181,7 @@ public class BlockchainConnection {
                 serverID = scFiles.getServerID(domain).send();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível adicionar {} à lista de servidores na Blockchain", domain, e);
         }
         String address = obj.get("address").asText();
         BigInteger timestamp = obj.get("timestamp").bigIntegerValue();
@@ -202,10 +202,10 @@ public class BlockchainConnection {
             byte[] hash = obj.get("hash").binaryValue();
             scFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
             scFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
-            System.out.println("Blockchain - data published: " + fileName);
+            log.info("Arquivo publicado: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível publicar o arquivo {}", fileName, e);
         }
         return numRecording;
     }
@@ -220,31 +220,30 @@ public class BlockchainConnection {
             JsonNode attrNode = obj.get(attrName);
             byte[] eg1g1ai = Base64.getDecoder().decode(attrNode.get("eg1g1ai").asText());
             byte[] g1yi = Base64.getDecoder().decode(attrNode.get("g1yi").asText());
-            if (eg1g1ai.length < 97 || eg1g1ai.length > 127) {
-                throw new RuntimeException("Key error: eg1g1ai does not fit in four sized words");
-            }
-            if (g1yi.length < 97 || g1yi.length > 127) {
-                throw new RuntimeException("Key error: g1yi does not fit in four sized words");
-            }
             try {
+                if (eg1g1ai.length < 97 || eg1g1ai.length > 127) {
+                   throw new RuntimeException("Key error: eg1g1ai does not fit in four sized words");
+                }
+                if (g1yi.length < 97 || g1yi.length > 127) {
+                    throw new RuntimeException("Key error: g1yi does not fit in four sized words");
+                }
                 scKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+                log.info("Chave pública do atributo {} publicado: ", attrName);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("erro durante publicação de chave ABE", e);
             }
-            System.out.println("Blockchain - Public Keys of attribute " + attrName + " published");
         }
     }
 
     public void publishAuthority(ObjectNode obj) {
+        String address = obj.get("address").asText();
+        String name = obj.get("name").asText();
+        String email = obj.get("email").asText();
         try {
-            String address = obj.get("address").asText();
-            String name = obj.get("name").asText();
-            String email = obj.get("email").asText();
             scAuthority.addCertifier(address, name, email).send();
-
-            System.out.println("Blockchain - Authority published: " + name);
+            log.info("Autoridade publicada: {}.", name);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível publicar o certificador {} na Blockchain.", name, e);
         }
     }
 
@@ -254,10 +253,10 @@ public class BlockchainConnection {
         String email = obj.get("email").asText();
         try {
             scUsers.addUser(address, name, email).send();
+            log.info("Usuário publicado: {}.", name);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível publicar o usuário {} na Blockchain.", name, e);
         }
-        System.out.println("Blockchain - User published: " + name);
     }
 
     private CiphertextJSON getCiphertext(String user, String fileName) throws Exception {
@@ -306,13 +305,13 @@ public class BlockchainConnection {
                 if (ct != null) {
                     r = new Recording(fileName, ct, domain, serverPath, port, key, null, recordingFN, timestamp, hash, null, false, false);
                 } else {
-                    System.out.printf("File %s found but ciphertext is not published.\n", fileName);
+                    log.error("File {} found but ciphertext is not published.", fileName);
                 }
             } else {
-                System.out.printf("File %s not found.\n", fileName);
+                log.error("File {} not found.\n", fileName);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Houve um problema ao tentar obter os metadados do arquivo {}.", fileName, e);
         }
         return r;
     }
@@ -345,7 +344,7 @@ public class BlockchainConnection {
                 requests.add(request);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Houve um erro ao tentar obter requisições de atributos feitas pelo usuário {} à autoridade {}. ", authority, address, e);
         }
         return requests;
     }
@@ -361,7 +360,7 @@ public class BlockchainConnection {
             try {
                 attributes_.add(Arrays.copyOf(s.getBytes("UTF-8"), 32));
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                log.error("Não foi possível transformar o nome dos atributos em uma lista de bytes", e);
             }
         });
         ObjectNode request = null;
@@ -376,7 +375,7 @@ public class BlockchainConnection {
             ArrayNode attributesNode = request.putArray("attributes");
             attributes.forEach(s -> attributesNode.add(s));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível publicar a requisição de atributos feita pelo usuário {} à autoridade {}", address, authority, e);
         }
         return request;
     }
@@ -386,7 +385,7 @@ public class BlockchainConnection {
         try {
             user = scUsers.getUser(address).send();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível averiguar se o usuário {} exite. ", address, e);
         }
         return user != null && !user.getValue1().equals("");
     }
@@ -439,10 +438,9 @@ public class BlockchainConnection {
         try {
             tx = scRequests.processRequest(authority, pendingRequesterIndex,
                     pendingRequestIndex, BigInteger.valueOf(newStatus.getValue())).send();
-            System.out.printf("Blockchain - Attribute request processed by %s.... Result: %s\n", authority.substring(0, 6), newStatus);
+            log.info("Requisição de atributo feita a {}. Resultado: {}.", authority.substring(0, 6), newStatus);
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.printf("Blockchain - Attribute request not processed by %s....", authority.substring(0, 6));
+            log.error("Não foi possível alterar o status da publicação feita a {}", authority.substring(0, 6), e);
         }
         if (tx != null) {
             List<PendingRequesterIndexChangedEventResponse> changedRequesterIndexes;
@@ -477,14 +475,15 @@ public class BlockchainConnection {
             BigInteger numRequests_ = scRequests.getRequestListSize(authority, address).send();
             numRequests = numRequests_.intValue();
         } catch (Exception e) {
-            e.printStackTrace();
+            String base_str = "Houve um erro ao tentar verificar o tamanho da lista de requisições de atributos feitas pelo usuário {} ao certificador {}.";
+            log.error(base_str, authority, address, e);
         }
         return numRequests;
     }
 
     public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
         if (!userExists(address)) {
-            System.out.println("Blockchain - User does not exist in blockchain");
+            log.error("Usuário {} não existe na Blockchain", address);
             return;
         }
         ArrayNode cache = requestCache.get(authority);
@@ -498,11 +497,10 @@ public class BlockchainConnection {
         for (int i = 0; i < listSizeLocal; i++) {
             ObjectNode cachedRequest = (ObjectNode) cache.get(i);
             JsonNode status = requests.remove(0);
+            String base_str = "Requisição com timestamp {} mudou de {} para {}.";
             if (cachedRequest.get("status").asInt() != status.asInt()) {
-                String message = "Blockchain - request with timestamp %s changed status from: %s to %s.";
-                message = String.format(message, cachedRequest.get("timestamp").asInt(),
-                        RequestStatus.valueOf(cachedRequest.get("status").asInt()), RequestStatus.valueOf(status.asInt()));
-                System.out.println(message);
+                log.info(base_str, cachedRequest.get("timestamp").asInt(),
+                RequestStatus.valueOf(cachedRequest.get("status").asInt()), RequestStatus.valueOf(status.asInt()));
                 cachedRequest.replace("status", status);
             }
         }
@@ -528,7 +526,8 @@ public class BlockchainConnection {
                 requests.add(request);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            String base_str = "Houve um erro ao verificar por requisições atributos feitas pelo usuário {} ao certificador {}.";
+            log.error(base_str, authority, address, e);
         }
         return requests;
     }
@@ -536,7 +535,7 @@ public class BlockchainConnection {
     @SuppressWarnings("unchecked")
     public void syncPendingAttributeRequests(String authority, Map<String, ObjectNode> requestCache) {
         if (!certifierExists(authority)) {
-            System.out.println("Blockchain - Certifier does not exist in blockchain");
+            log.error("Certificador não existe na Blockchain: ", authority);
             return;
         }
         BigInteger numRequesters;
@@ -557,7 +556,7 @@ public class BlockchainConnection {
                 cacheWrapper.withArray("requests").removeAll().addAll(pendingRequests);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Houve um erro.", e);
         }
     }
 
@@ -566,7 +565,7 @@ public class BlockchainConnection {
         try {
             certifier = scAuthority.getCertifier(address).send();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Não foi possível verificar se o certificador {} existe.", address, e);
         }
         return certifier != null && !certifier.getValue1().equals("");
     }
