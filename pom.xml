@@ -19,12 +19,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12 -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -44,10 +38,21 @@
             <groupId>org.ethereum</groupId>
             <artifactId>ethereumj-core</artifactId>
             <version>1.12.0-RELEASE</version>
+            <!-- BUG: logback continues being included in classpath file generating when debuging
+                Beyond putting exclusion here, the package needs to be deleted too from .m2 repository.
+             -->
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-parent</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
