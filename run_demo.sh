@@ -18,9 +18,23 @@ if [[ "$OSTYPE" = "msys" ]]; then
     shell=cmd
     option="//c start"
 fi
-
-echo "Initalizing Ganache..."
+echo -e "SmartDCPABE DEMONSTRATION:\n"
+echo -e "Initalizing Ganache...\n"
 $shell $option ganache-cli -a 10 -d -m "pumpkin immense certain snack please patch universe leisure reopen truth eight gown" -p 7545
+
+# cleaning data of previous runnings
+if [ -d "data" ]; then
+    echo "Data must be cleaned for a new demonstration."
+    read -p "Proceed with exclusion of data folder inside ${PWD##*/}? [y/n]: " should_delete
+    if [[ "$should_delete" = "y" ]]; then
+        rm -R data
+    else
+        echo "The current build isn't able to deal with inconsistent data."
+        echo "Please delte data folder to run demonstration again."
+        echo
+        exit
+    fi
+fi
 
 sleep 3
 read -p 'Choose milestone to test: ' milestone
