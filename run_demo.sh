@@ -11,7 +11,7 @@ shell=sh
 option=-c
 
 # this is necessary until DCPABE library updates org.bouncycastle version
-java_command="java --add-opens java.base/sun.security.provider=ALL-UNNAMED -jar"
+java_args="--add-opens java.base/sun.security.provider=ALL-UNNAMED -jar"
 
 # command and option to call ganache-cli without blocking the shell in Windows environment
 if [[ "$OSTYPE" = "msys" ]]; then
@@ -40,48 +40,46 @@ sleep 3
 read -p 'Choose milestone to test: ' milestone
 
 source $data
-
 case $milestone in
     1) echo "milestone 1"
 
     # admin inicia o sistema e cria os contratos
-    $java_command $1 --init http://127.0.0.1:7545 ${admin[name]} ${admin[email]} ${admin[privateKey]}
+    java $java_args $1 --init http://127.0.0.1:7545 ${admin[name]} ${admin[email]} ${admin[privateKey]}
 
     # certificador cria perfil e atributo, e publica ambos
-    $java_command $1 --create-user ${crm[name]} ${crm[email]} ${crm[privateKey]}
-    $java_command $1 --create-certifier
-    $java_command $1 --create-attributes atributo1 atributo2 atributo3
-    $java_command $1 --publish user certifier attributes
+    java $java_args $1 --create-user ${crm[name]} ${crm[email]} ${crm[privateKey]}
+    java $java_args $1 --create-certifier
+    java $java_args $1 --create-attributes atributo1 atributo2 atributo3
+    java $java_args $1 --publish user certifier attributes
 
     # usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-    $java_command $1 --create-user ${bob[name]} ${bob[email]} ${bob[privateKey]}
-    $java_command $1 --publish user
-    $java_command $1 --request-attribute ${crm[gid]} atributo1
+    java $java_args $1 --create-user ${bob[name]} ${bob[email]} ${bob[privateKey]}
+    java $java_args $1 --publish user
+    java $java_args $1 --request-attribute ${crm[gid]} atributo1
 
     # usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-    $java_command $1 --create-user ${alice[name]} ${alice[email]} ${alice[privateKey]}
-    $java_command $1 --publish user
-    $java_command $1 --get-attributes ${crm[gid]} atributo1
+    java $java_args $1 --create-user ${alice[name]} ${alice[email]} ${alice[privateKey]}
+    java $java_args $1 --publish user
+    java $java_args $1 --get-attributes ${crm[gid]} atributo1
 
-    echo "put a file inside Alice folder for encryption"
-    sleep 5
+    echo "File created for demonstration. Alice will share it in the system." > data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/message.txt
+    echo "file \"message.txt\" created in Alice folder For demonstration."
 
-    read -p "write file name in Alice folder for encryption: " filename
-    $java_command $1 --encrypt $filename atributo1 ${crm[gid]}
-    $java_command $1 --send $filename
+    java $java_args $1 --encrypt message.txt atributo1 ${crm[gid]}
+    java $java_args $1 --send $filename
 
     # certificador recebe requisição de atributo e o concede ao Bob
-    $java_command $1 --load ${crm[gid]}
-    $java_command $1 --check-requests pending
-    $java_command $1 --yield-attributes ${bob[gid]} 0
-    $java_command $1 --send attributes ${bob[gid]}
+    java $java_args $1 --load ${crm[gid]}
+    java $java_args $1 --check-requests pending
+    java $java_args $1 --yield-attributes ${bob[gid]} 0
+    java $java_args $1 --send attributes ${bob[gid]}
 
     # usuário 1 - Bob, de posse do atributo, o descriptografa
-    $java_command $1 --load ${bob[gid]}
-    $java_command $1 --check-requests ok
-    $java_command $1 --check-requests download
-    $java_command $1 --get-recordings ${alice[gid]} $filename
-    $java_command $1 --decrypt $filename ;;
+    java $java_args $1 --load ${bob[gid]}
+    java $java_args $1 --check-requests ok
+    java $java_args $1 --check-requests download
+    java $java_args $1 --get-recordings ${alice[gid]} $filename
+    java $java_args $1 --decrypt $filename ;;
     2) echo "dois" ;;
     3) echo "três" ;;
     4) echo "quatro" ;;
