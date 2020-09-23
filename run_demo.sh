@@ -1,4 +1,4 @@
-data=./demo_data.sh
+data=./demo_data.dat
 
 #!/bin/bash
 
