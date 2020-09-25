@@ -17,6 +17,7 @@ import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequestIndexChangedEventResponse;
 import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequesterIndexChangedEventResponse;
 import com.brunoarruda.hyperdcpabe.io.FileController;
+import com.brunoarruda.hyperdcpabe.monitor.ExecutionProfiler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -42,6 +43,7 @@ public class BlockchainConnection {
 
     // TODO: send message to logger instead of System.out
     private static final Logger log = LoggerFactory.getLogger(BlockchainConnection.class);
+    private static final ExecutionProfiler profiler = ExecutionProfiler.getInstance();
 
     private String dataPath = "blockchain";
     private FileController fc;
@@ -77,6 +79,7 @@ public class BlockchainConnection {
     // POM field seems better, as it would allow different value for deploy/test
     // cycles
     public BlockchainConnection(String networkURL, Map<String, String> contractAddress) {
+        profiler.start(this.getClass(), "constructor");
         this.networkURL = networkURL;
         web3j = Web3j.build(new HttpService(networkURL));
         fc = FileController.getInstance();
@@ -86,9 +89,11 @@ public class BlockchainConnection {
         } else {
             this.contractAddress = contractAddress;
         }
+        profiler.end();
 	}
 
 	public Map<String, String> deployContracts(Credentials credentials) {
+        profiler.start(this.getClass(), "deployContracts");
         try {
             scRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
             String rootAddress = scRoot.getContractAddress();
@@ -119,11 +124,13 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Não foi possível publicar os Smart Contracts na Blockchain.", e);
         }
+        profiler.end();
         return contractAddress;
     }
 
     public BlockchainConnection loadContracts(Credentials credentials) {
         // TODO: check local addresses against the addresses returned by getAddresses() function from scRoot
+        profiler.start(this.getClass(), "loadContracts");
         String address = contractAddress.get("Authority");
         scAuthority = SmartDCPABEAuthority.load(address, web3j, credentials, dgp);
         address = contractAddress.get("Files");
@@ -134,20 +141,24 @@ public class BlockchainConnection {
         scRequests = SmartDCPABERequests.load(address, web3j, credentials, dgp);
         address = contractAddress.get("Users");
         scUsers = SmartDCPABEUsers.load(address, web3j, credentials, dgp);
+        profiler.end();
         return this;
     }
 
     public ECKey generateECKeys(String privateKey) {
+        profiler.start(this.getClass(), "generateECKeys");
         ECKey keys = null;
         if (privateKey != null) {
             keys = ECKey.fromPrivate(new BigInteger(privateKey, 16));
         } else {
             keys = new ECKey(random);
         }
+        profiler.end();
         return keys;
     }
     public Map<String, PublicKey> getABEPublicKeys(String authority, String[] attributes) {
         // TODO: alternar isso para um JSON
+        profiler.start(this.getClass(), "getABEPublicKeys");
         String authName = authority.split("-")[0];
         String address = authority.split("-")[1];
         try {
@@ -166,10 +177,12 @@ public class BlockchainConnection {
         } catch (Exception e1) {
             e1.printStackTrace();
         }
+        profiler.end();
         return null;
     }
 
     public int publishData(String userID, ObjectNode obj) {
+        profiler.start(this.getClass(), "publishData");
         String domain = obj.get("domain").asText();
         String serverPath = obj.get("serverPath").asText();
         BigInteger port = obj.get("port").bigIntegerValue();
@@ -207,12 +220,14 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Não foi possível publicar o arquivo {}", fileName, e);
         }
+        profiler.end();
         return numRecording;
     }
 
     public void publishABEKeys(ObjectNode obj) {
         // TODO: criar transação ao invés de salvar arquivo
         // TODO: checar existência de certificador com o endereço fornecido
+        profiler.start(this.getClass(), "publishABEKeys");
         String address = obj.remove("address").asText();
         Iterator<String> it = obj.fieldNames();
         while (it.hasNext()) {
@@ -233,9 +248,11 @@ public class BlockchainConnection {
                 log.error("erro durante publicação de chave ABE", e);
             }
         }
+        profiler.end();
     }
 
     public void publishAuthority(ObjectNode obj) {
+        profiler.start(this.getClass(), "publishAuthority");
         String address = obj.get("address").asText();
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
@@ -245,9 +262,11 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Não foi possível publicar o certificador {} na Blockchain.", name, e);
         }
+        profiler.end();
     }
 
     public void publishUser(ObjectNode obj) {
+        profiler.start(this.getClass(), "publishUser");
         String address = obj.get("address").asText();
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
@@ -257,9 +276,11 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Não foi possível publicar o usuário {} na Blockchain.", name, e);
         }
+        profiler.end();
     }
 
     private CiphertextJSON getCiphertext(String user, String fileName) throws Exception {
+        profiler.start(this.getClass(), "getCiphertext");
         CiphertextJSON ct = null;
         Tuple5<String, byte[], byte[], byte[], byte[]> ciphertextData;
         ciphertextData = scFiles.getCiphertext(user, fileName).send();
@@ -284,10 +305,12 @@ public class BlockchainConnection {
             }
             ct = new CiphertextJSON(c0, c1x, c2x, c3x, as);
         }
+        profiler.end();
         return ct;
     }
 
     public Recording getRecording(String user, String fileName) {
+        profiler.start(this.getClass(), "getRecording");
         Recording r = null;
         try {
             Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
@@ -313,10 +336,12 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Houve um problema ao tentar obter os metadados do arquivo {}.", fileName, e);
         }
+        profiler.end();
         return r;
     }
 
     public ArrayNode getAttributeRequests(String authority, String address, int listSizeLocal) {
+        profiler.start(this.getClass(), "getAttributeRequests");
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < listSizeLocal; i++) {
@@ -346,6 +371,7 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Houve um erro ao tentar obter requisições de atributos feitas pelo usuário {} à autoridade {}. ", authority, address, e);
         }
+        profiler.end();
         return requests;
     }
 
@@ -355,6 +381,7 @@ public class BlockchainConnection {
     }
 
     public ObjectNode publishAttributeRequest(String authority, String address, List<String> attributes) {
+        profiler.start(this.getClass(), "publishAttributeRequest");
         List<byte[]> attributes_ = new ArrayList<byte[]>();
         attributes.forEach(s -> {
             try {
@@ -377,23 +404,26 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Não foi possível publicar a requisição de atributos feita pelo usuário {} à autoridade {}", address, authority, e);
         }
+        profiler.end();
         return request;
     }
 
     public boolean userExists(String address) {
+        profiler.start(this.getClass(), "userExists");
         Tuple3<String, String, String> user = null;
         try {
             user = scUsers.getUser(address).send();
         } catch (Exception e) {
             log.error("Não foi possível averiguar se o usuário {} exite. ", address, e);
         }
+        profiler.end();
         return user != null && !user.getValue1().equals("");
     }
 
     public ArrayNode getAttributeRequestsForUser(String userID, String status) {
         // TODO: store last timestamp of checking to allow early exit of loop in smart
         // contract
-
+        profiler.start(this.getClass(), "getAttributeRequestsForUser");
         String path = getBlockchainDataPath() + "AttributeRequest\\";
         String[] authorities = new File(path).list();
         ArrayNode allRequests = fc.getMapper().createArrayNode();
@@ -410,10 +440,12 @@ public class BlockchainConnection {
             }
             allRequests.addAll(userRequests);
         }
+        profiler.end();
         return allRequests;
     }
 
     public ArrayNode getAttributeRequestsForCertifier(String authority, String status) {
+        profiler.start(this.getClass(), "getAttributeRequestsForCertifier");
         String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
         ArrayNode allRequests = fc.getMapper().createArrayNode();
         File f = new File(path);
@@ -428,11 +460,13 @@ public class BlockchainConnection {
             }
             allRequests.addAll(userRequests);
         }
+        profiler.end();
         return allRequests;
     }
 
     public Map<String, int[]> publishAttributeRequestUpdate(String authority, String user, BigInteger pendingRequesterIndex,
             BigInteger pendingRequestIndex, RequestStatus newStatus) {
+        profiler.start(this.getClass(), "publishAttributeRequestUpdate");
         TransactionReceipt tx = null;
         Map<String, int[]> changedIndexes = new HashMap<>();
         try {
@@ -458,6 +492,7 @@ public class BlockchainConnection {
                 changedIndexes.put("request", requestChanges);
             }
         }
+        profiler.end();
         return changedIndexes;
     }
 
@@ -468,6 +503,7 @@ public class BlockchainConnection {
 
     // NOTE: function not used
     public int getAttributeRequestListSize(ObjectNode msg) {
+        profiler.start(this.getClass(), "getAttributeRequestListSize");
         String authority = msg.get("authority").asText();
         String address = msg.get("address").asText();
         int numRequests = -1;
@@ -478,12 +514,15 @@ public class BlockchainConnection {
             String base_str = "Houve um erro ao tentar verificar o tamanho da lista de requisições de atributos feitas pelo usuário {} ao certificador {}.";
             log.error(base_str, authority, address, e);
         }
+        profiler.end();
         return numRequests;
     }
 
     public void syncAttributeRequestCache(String address, Map<String, ArrayNode> requestCache, String authority) {
+        profiler.start(this.getClass(), "syncAttributeRequestCache");
         if (!userExists(address)) {
             log.error("Usuário {} não existe na Blockchain", address);
+            profiler.end();
             return;
         }
         ArrayNode cache = requestCache.get(authority);
@@ -505,9 +544,11 @@ public class BlockchainConnection {
             }
         }
         cache.addAll(requests);
+        profiler.end();
     }
 
     public ArrayNode getPendingAttributeRequests(String authority, String address, List<BigInteger> pendingRequests) {
+        profiler.start(this.getClass(), "getPendingAttributeRequests");
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < pendingRequests.size(); i++) {
@@ -529,13 +570,16 @@ public class BlockchainConnection {
             String base_str = "Houve um erro ao verificar por requisições atributos feitas pelo usuário {} ao certificador {}.";
             log.error(base_str, authority, address, e);
         }
+        profiler.end();
         return requests;
     }
 
     @SuppressWarnings("unchecked")
     public void syncPendingAttributeRequests(String authority, Map<String, ObjectNode> requestCache) {
+        profiler.start(this.getClass(), "syncPendingAttributeRequests");
         if (!certifierExists(authority)) {
             log.error("Certificador não existe na Blockchain: ", authority);
+            profiler.end();
             return;
         }
         BigInteger numRequesters;
@@ -558,15 +602,18 @@ public class BlockchainConnection {
         } catch (Exception e) {
             log.error("Houve um erro.", e);
         }
+        profiler.end();
     }
 
     private boolean certifierExists(String address) {
+        profiler.start(this.getClass(), "certifierExists");
         Tuple4<String, String, String, BigInteger> certifier = null;
         try {
             certifier = scAuthority.getCertifier(address).send();
         } catch (Exception e) {
             log.error("Não foi possível verificar se o certificador {} existe.", address, e);
         }
+        profiler.end();
         return certifier != null && !certifier.getValue1().equals("");
     }
 }

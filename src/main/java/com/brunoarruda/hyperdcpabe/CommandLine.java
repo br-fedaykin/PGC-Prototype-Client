@@ -10,6 +10,7 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
+import com.brunoarruda.hyperdcpabe.monitor.ExecutionProfiler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class CommandLine {
 
     private static final Logger log = LoggerFactory.getLogger(CommandLine.class);
+    private static final ExecutionProfiler profiler = ExecutionProfiler.getInstance();
 
     private static final Map<String, String> COMMAND_ALIAS = new Hashtable<>();
     private static final int BUFFER_SIZE = 1024;
@@ -58,11 +60,10 @@ public class CommandLine {
         // testing command
         COMMAND_ALIAS.put("-m", "--milestone");
         COMMAND_ALIAS.put("-h", "--help");
+        //
     }
 
     public static void main(String[] args) {
-        // TODO: allow multi input on main, if no args provided
-
         if (args.length == 0) {
             log.error("Nenhum comando executado");
             return;
@@ -70,7 +71,9 @@ public class CommandLine {
         if (args[0].equals("-m") || args[0].equals("--milestone")) {
             milestone(args);
         } else if ((args[0].equals("-i") || args[0].equals("--init"))){
+            profiler.start(Client.class, "init");
             init(args);
+            profiler.end();
         } else {
             runCommand(args);
         }
@@ -221,6 +224,7 @@ public class CommandLine {
     }
 
     public static void runCommand(String[] args) {
+        profiler.start(CommandLine.class, args[0]);
         client = new Client();
         switch (args[0]) {
         case "-h":
@@ -282,6 +286,7 @@ public class CommandLine {
         default:
             log.error("Command is not valid: " + String.join(" ", args));
         }
+        profiler.end();
     }
 
     public static void runMilestone(int scenario, int subScenario) {
@@ -329,8 +334,7 @@ public class CommandLine {
 
             // admin inicia o sistema e cria os contratos
             args = String.format("--init http://127.0.0.1:7545 %s %s %s", admin.name, admin.email, admin.pKey);
-            init(args.split(" "));
-
+            main(args.split(" "));
             // certificador cria perfil e atributo, e os publica
             runCommand(String.format("--create-user %s %s %s ", crm.name, crm.email, crm.pKey).split(" "));
             runCommand("--create-certifier".split(" "));
@@ -418,6 +422,7 @@ public class CommandLine {
                 runCommand("--decrypt lorem_ipsum.md".split(" "));
             }
         }
+        log.info("profiling data: {}", profiler.toString());
     }
 
     private static void getFileFromResources(String path, String inputFileName, String outputFileName) {
