@@ -2,10 +2,10 @@ package com.brunoarruda.hyperdcpabe.monitor;
 
 import java.time.Instant;
 
-public class MethodExecutionData {
+class MethodExecutionData {
     private final String className, method;
     private final int parentMethod;
-    private long start, end, execTime;
+    private long start, end, execTime, execTimeLiquid;
 
     public MethodExecutionData(String className, String method, int parentMethod) {
         this.className = className;
@@ -48,6 +48,7 @@ public class MethodExecutionData {
     public void end() {
         setEnd(Instant.now().toEpochMilli());
         execTime = end - start;
+        execTimeLiquid += execTime;
     }
 
     public long getExecTime() {
@@ -56,7 +57,11 @@ public class MethodExecutionData {
 
     @Override
     public String toString() {
-        String base_str = "{method: %s.%s, execTime: %d}";
-        return String.format(base_str, className, method, execTime);
+        String base_str = "{(liquid) execTime: %d, method: %s.%s}";
+        return String.format(base_str, execTimeLiquid, className, method);
     }
+
+	public void subtractTime(long execTime) {
+        execTimeLiquid -= execTime;
+	}
 }
