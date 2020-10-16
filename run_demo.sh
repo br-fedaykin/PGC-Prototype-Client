@@ -1,6 +1,6 @@
-data=./demo_data.dat
-
 #!/bin/bash
+
+data=./demo_data.dat
 
 # this should kill ganache-cli after calling exit, but it didn't work and Idk why
 # trap "exit" INT TERM ERR
@@ -20,7 +20,9 @@ if [[ "$OSTYPE" = "msys" ]]; then
 fi
 echo -e "SmartDCPABE DEMONSTRATION:\n"
 echo -e "Initalizing Ganache...\n"
-$shell $option ganache-cli -a 10 -d -m "pumpkin immense certain snack please patch universe leisure reopen truth eight gown" -p 7545
+
+mnemonic="pumpkin immense certain snack please patch universe leisure reopen truth eight gown"
+$shell $option ganache-cli -a 10 -d -m "$mnemonic" -p 7545 -k petersburg
 
 # cleaning data of previous runnings
 if [ -d "data" ]; then
@@ -30,7 +32,7 @@ if [ -d "data" ]; then
         rm -R data
     else
         echo "The current build isn't able to deal with inconsistent data."
-        echo "Please delte data folder to run demonstration again."
+        echo "Please delete data folder to run demonstration again."
         echo
         exit
     fi
