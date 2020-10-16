@@ -5,7 +5,7 @@ import java.time.Instant;
 class MethodExecutionData {
     private final String className, method;
     private final int parentMethod;
-    private long start, end, execTime, execTimeLiquid;
+    private long start, end, execTime, execTimeLiquid, gasCost;
 
     public MethodExecutionData(String className, String method, int parentMethod) {
         this.className = className;
@@ -55,13 +55,17 @@ class MethodExecutionData {
         return execTime;
     }
 
-    @Override
-    public String toString() {
-        String base_str = "{(liquid) execTime: %d, method: %s.%s}";
-        return String.format(base_str, execTimeLiquid, className, method);
-    }
-
 	public void subtractTime(long execTime) {
         execTimeLiquid -= execTime;
 	}
+
+	public void addGasCost(long gas) {
+        gasCost += gas;
+    }
+
+    @Override
+    public String toString() {
+        String base_str = "{(liquid) execTime: %d, gasCost: %d, method: %s.%s}";
+        return String.format(base_str, execTimeLiquid, gasCost, className, method);
+    }
 }

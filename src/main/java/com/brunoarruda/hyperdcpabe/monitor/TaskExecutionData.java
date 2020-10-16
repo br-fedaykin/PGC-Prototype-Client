@@ -10,38 +10,46 @@ class TaskExecutionData {
     private final String label;
     private final List<MethodExecutionData> methodStack;
     private long execTime;
-    int currentMethod;
+    private long gasCost;
+    int currentMethodID;
+    MethodExecutionData currentMethod;
 
     public TaskExecutionData (int taskID, String label) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = new ArrayList<MethodExecutionData>(20);
         this.timestamp = Instant.now().toEpochMilli();
-        currentMethod = -1;
+        currentMethodID = -1;
     }
 
     public void start(String className, String task) {
-        MethodExecutionData m = new MethodExecutionData(className, task, currentMethod);
-        m.start();
-        methodStack.add(m);
-        currentMethod = methodStack.size() - 1;
+        currentMethod = new MethodExecutionData(className, task, currentMethodID);
+        currentMethod.start();
+        methodStack.add(currentMethod);
+        currentMethodID = methodStack.size() - 1;
     }
 
     public void end() {
-        MethodExecutionData m = methodStack.get(currentMethod);
-        m.end();
-        currentMethod = m.getParentMethod();
+        currentMethod.end();
+        currentMethodID = currentMethod.getParentMethod();
 
         if (finished()) {
             long last_end = methodStack.get(methodStack.size() - 1).getEnd();
             execTime = last_end - methodStack.get(0).getStart();
         } else {
-            methodStack.get(currentMethod).subtractTime(m.getExecTime());
+            long execTime = currentMethod.getExecTime();
+            currentMethod = methodStack.get(currentMethodID);
+            currentMethod.subtractTime(execTime);
         }
     }
 
+    public void addGasCost(long gas) {
+        currentMethod.addGasCost(gas);
+        gasCost += gas;
+    }
+
     public boolean finished() {
-        return currentMethod < 0;
+        return currentMethodID < 0;
     }
 
     public boolean isRunning() {
@@ -50,9 +58,9 @@ class TaskExecutionData {
 
     @Override
     public String toString() {
-        String base_str = "{\n#: %d, task: %s, execTime: %d, methodCalling: [\n\t%s\n\t]\n}";
+        String base_str = "{\n#: %d, task: %s, execTime: %d, gasCost: %d, methodCalling: [\n\t%s\n\t]\n}";
         List<String> methodCalling_str = new ArrayList<String>(methodStack.size());
         methodStack.forEach((m) -> methodCalling_str.add(m.toString()));
-        return String.format(base_str, taskID, label, execTime, String.join(",\n\t", methodCalling_str));
+        return String.format(base_str, taskID, label, execTime, gasCost, String.join(",\n\t", methodCalling_str));
     }
 }

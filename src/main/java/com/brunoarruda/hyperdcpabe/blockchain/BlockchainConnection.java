@@ -97,7 +97,6 @@ public class BlockchainConnection {
         try {
             scRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
             String rootAddress = scRoot.getContractAddress();
-
             scAuthority = SmartDCPABEAuthority.deploy(web3j, credentials, dgp, rootAddress).send();
             scFiles = SmartDCPABEFiles.deploy(web3j, credentials, dgp, rootAddress).send();
             scKeys = SmartDCPABEKeys.deploy(web3j, credentials, dgp, rootAddress).send();
@@ -120,7 +119,8 @@ public class BlockchainConnection {
                 addressList.add(contractAddress.get(keys[i]));
                 indexes.add(BigInteger.valueOf(i));
             }
-            scRoot.setAllContracts(indexes, addressList).send();
+            TransactionReceipt tr = scRoot.setAllContracts(indexes, addressList).send();
+            profiler.addGasCost(tr.getGasUsed());
         } catch (Exception e) {
             log.error("Não foi possível publicar os Smart Contracts na Blockchain.", e);
         }
@@ -187,10 +187,14 @@ public class BlockchainConnection {
         String serverPath = obj.get("serverPath").asText();
         BigInteger port = obj.get("port").bigIntegerValue();
         BigInteger serverID = null;
+        TransactionReceipt tr = null;
         try {
             serverID = scFiles.getServerID(domain).send();
             if (serverID.longValue() == -1) {
-                scFiles.addServer(domain, serverPath, port).send();
+                profiler.start(this.getClass(), "addServer");
+                tr = scFiles.addServer(domain, serverPath, port).send();
+                profiler.addGasCost(tr.getGasUsed());
+                profiler.end();
                 serverID = scFiles.getServerID(domain).send();
             }
         } catch (Exception e) {
@@ -213,8 +217,14 @@ public class BlockchainConnection {
             BigInteger numRecording_ = scFiles.getFileCounting(address).send();
             byte[] key = obj.get("key").binaryValue();
             byte[] hash = obj.get("hash").binaryValue();
-            scFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
+            profiler.start(this.getClass(), "addRecording");
+            tr = scFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
+            profiler.addGasCost(tr.getGasUsed());
+            profiler.end();
+            profiler.start(this.getClass(), "addCiphertext");
             scFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
+            profiler.addGasCost(tr.getGasUsed());
+            profiler.end();
             log.info("Arquivo publicado: " + fileName);
             numRecording = numRecording_.intValue();
         } catch (Exception e) {
@@ -242,7 +252,8 @@ public class BlockchainConnection {
                 if (g1yi.length < 97 || g1yi.length > 127) {
                     throw new RuntimeException("Key error: g1yi does not fit in four sized words");
                 }
-                scKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+                TransactionReceipt tr = scKeys.addPublicKey(address, attrName, eg1g1ai, g1yi).send();
+                profiler.addGasCost(tr.getGasUsed());
                 log.info("Chave pública do atributo {} publicado: ", attrName);
             } catch (Exception e) {
                 log.error("erro durante publicação de chave ABE", e);
@@ -257,7 +268,8 @@ public class BlockchainConnection {
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
         try {
-            scAuthority.addCertifier(address, name, email).send();
+            TransactionReceipt tr = scAuthority.addCertifier(address, name, email).send();
+            profiler.addGasCost(tr.getGasUsed());
             log.info("Autoridade publicada: {}.", name);
         } catch (Exception e) {
             log.error("Não foi possível publicar o certificador {} na Blockchain.", name, e);
@@ -271,7 +283,8 @@ public class BlockchainConnection {
         String name = obj.get("name").asText();
         String email = obj.get("email").asText();
         try {
-            scUsers.addUser(address, name, email).send();
+            TransactionReceipt tr = scUsers.addUser(address, name, email).send();
+            profiler.addGasCost(tr.getGasUsed());
             log.info("Usuário publicado: {}.", name);
         } catch (Exception e) {
             log.error("Não foi possível publicar o usuário {} na Blockchain.", name, e);
@@ -394,7 +407,8 @@ public class BlockchainConnection {
         try {
             BigInteger index = scRequests.getRequestListSize(authority, address).send();
             long timestamp = System.currentTimeMillis();
-            scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            TransactionReceipt tr = scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            profiler.addGasCost(tr.getGasUsed());
             request = fc.getMapper().createObjectNode();
             request.put("index", index);
             request.put("status", BigInteger.ZERO);
@@ -472,6 +486,7 @@ public class BlockchainConnection {
         try {
             tx = scRequests.processRequest(authority, pendingRequesterIndex,
                     pendingRequestIndex, BigInteger.valueOf(newStatus.getValue())).send();
+            profiler.addGasCost(tx.getGasUsed());
             log.info("Requisição de atributo feita a {}. Resultado: {}.", authority.substring(0, 6), newStatus);
         } catch (Exception e) {
             log.error("Não foi possível alterar o status da publicação feita a {}", authority.substring(0, 6), e);
