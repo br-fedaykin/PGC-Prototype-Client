@@ -69,6 +69,7 @@ public class CommandLine {
             return;
         }
         if (args[0].equals("-m") || args[0].equals("--milestone")) {
+            deleteDirectory(new File( "data"));
             milestone(args);
         } else if ((args[0].equals("-i") || args[0].equals("--init"))){
             profiler.start(Client.class, "init");
@@ -445,6 +446,16 @@ public class CommandLine {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static boolean deleteDirectory(File directoryToBeDeleted) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        return directoryToBeDeleted.delete();
     }
     private static class PersonData {
         public String name, email, address, gid, pKey;
