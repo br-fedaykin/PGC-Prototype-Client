@@ -23,6 +23,7 @@ import picocli.CommandLine.Parameters;
     CommandLine.Help.class,
     CommandLine.Init.class,
     CommandLine.Load.class,
+    CommandLine.Demonstration.class,
     CommandLine.Publish.class,
     CommandLine.RequestAttributes.class,
     CommandLine.Send.class,
@@ -378,6 +379,42 @@ public class CommandLine implements Runnable {
         @Override
         public void commandBody() {
             client.getRecordings(userID, recordings);
+        }
+    }
+    @Command(name = "demonstration", aliases = {"demo"})
+    static class Demonstration extends BasicCommand {
+        @Parameters(index = "0", description = "desired scenario")
+        int scenario;
+
+        @Parameters(index = "1", defaultValue = "0", description = "(optional) subscenario")
+        int subscenario;
+
+        @Override
+        public String getCommandName() {
+            return Demonstration.class.getSimpleName();
+        }
+
+        @Override
+        public void commandBody() {
+            validate();
+            SmartDCPABEDemonstration.runMilestone(scenario, subscenario);
+            System.out.println(profiler);
+        }
+
+        private void validate() {
+            boolean invalid;
+            switch (scenario) {
+                case 1:
+                    invalid = subscenario != 0;
+                    break;
+                case 2:
+                    invalid = subscenario < 1 || subscenario > 3;
+                default:
+                    invalid = false;
+            }
+            if (invalid) {
+                throw new ParameterException(cmd.getSubcommands().get("demonstration"), "Invalid scenario");
+            }
         }
     }
 
