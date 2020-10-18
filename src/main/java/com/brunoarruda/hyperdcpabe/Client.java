@@ -1,6 +1,5 @@
 package com.brunoarruda.hyperdcpabe;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -97,7 +96,6 @@ public final class Client {
     private BlockchainConnection blockchain;
     private ServerConnection server;
     private static final String DATA_PATH = "data";
-
     private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public Client() {
@@ -192,8 +190,10 @@ public final class Client {
                     publishedAttributes.get(authority).put(attr, keys.get(attr));
                 }
             }
-            String path = getClientDirectory() + "PublicKeys\\";
-            fc.writeToDir(path, authority + ".json", publishedAttributes);
+            ObjectNode keysJSON = fc.getMapper().createObjectNode();
+            keysJSON.set("certifiers", fc.getMapper().convertValue(publishedAttributes.keySet(), ArrayNode.class));
+            keysJSON.set("publicKeys", fc.getMapper().convertValue(publishedAttributes, ObjectNode.class));
+            fc.writeToDir(getClientDirectory(), "publicKeys.json", keysJSON);
         }
         profiler.end();
     }
@@ -292,17 +292,9 @@ public final class Client {
     public void loadAttributes() {
         profiler.start(this.getClass(), "loadAttributes");
         publishedAttributes = new Hashtable<String, Map<String, PublicKey>>();
-        String path = getClientDirectory() + "PublicKeys";
-        File folder = new File(path);
-
-        Map<String, PublicKey> attributes = new HashMap<String, PublicKey>();
-        if (folder.exists()) {
-            for (String json : folder.list()) {
-                // UGLY: repeated json parameter here. That file should be included inside client config. data.
-                attributes = fc.readAsMap(path, json, json.split("\\.")[0], String.class, PublicKey.class);
-                String authority = json.split("\\.")[0];
-                publishedAttributes.put(authority, attributes);
-            }
+        List<String> certifiers = fc.readAsList(getClientDirectory(), "publicKeys.json", "certifiers", String.class);
+        for (String gid : certifiers) {
+            publishedAttributes.put(gid, fc.readAsMap(getClientDirectory(), "publicKeys.json", "publicKeys." + gid, String.class, PublicKey.class));
         }
         profiler.end();
     }
