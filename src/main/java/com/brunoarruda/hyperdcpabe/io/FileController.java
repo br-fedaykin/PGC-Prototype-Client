@@ -14,7 +14,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -83,11 +82,19 @@ public final class FileController {
     }
 
     public <T extends Object> List<T> readAsList(String path, String file, Class<T> classReference) {
+        return readAsList(path, file,"", classReference);
+    }
+
+    public <T extends Object> List<T> readAsList(String path, String file, String internalPath, Class<T> classReference) {
         File f = new File(path, file);
         List<T> list = new ArrayList<T>();
         try {
-
-            ArrayNode json = (ArrayNode) mapper.readTree(f);
+            JsonNode json = mapper.readTree(f);
+            if (!internalPath.equals("")) {
+                for (String key : internalPath.split("\\.")) {
+                    json = json.get(key);
+                }
+            }
             Iterator<JsonNode> nodes = json.elements();
             while (nodes.hasNext()) {
                 String value = nodes.next().toString();
