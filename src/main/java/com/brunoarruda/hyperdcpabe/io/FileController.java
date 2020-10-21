@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.brunoarruda.hyperdcpabe.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,18 +23,15 @@ public final class FileController {
     private static final FileController INSTANCE = new FileController();
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private String dataFolder;
     private boolean printErrorsFlag;
 
-    private FileController() {
-    }
+    private FileController() {}
 
     public static FileController getInstance() {
         return INSTANCE;
     }
 
     public FileController configure(String path, boolean printErrorsFlag) {
-        this.dataFolder = path;
         this.printErrorsFlag = printErrorsFlag;
         File dirFile = new File(path);
         if (!dirFile.exists() || !dirFile.isDirectory()) {
@@ -52,26 +48,9 @@ public final class FileController {
         return mapper;
     }
 
-    public String getDataDirectory() {
-        return dataFolder + "\\";
-    }
-
-    public String getUserDirectory(User user) {
-        return getUserDirectory(user, "");
-    }
-
-    public String getUserDirectory(User user, String subDirectory) {
-        String postfix = "";
-        if (!subDirectory.equals("")) {
-            postfix = subDirectory + "\\";
-        }
-        return getDataDirectory() + "client\\" + user.getID() + "\\" + postfix;
-    }
-
     public <T> void writeToDir(String path, String fileName, T obj) {
         File folder = new File(path);
         folder.mkdirs();
-        path = path + fileName;
         try {
             mapper.writeValue(new File(path, fileName), obj);
         } catch (IOException e) {

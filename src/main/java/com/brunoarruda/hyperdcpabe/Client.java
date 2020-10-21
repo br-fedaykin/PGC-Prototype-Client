@@ -37,8 +37,22 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public final class Client {
 
-    private static final Logger log = LoggerFactory.getLogger(Client.class);
-    private static final ExecutionProfiler profiler = ExecutionProfiler.getInstance();
+    private static final String DATA_PATH = "data\\";
+    private static final String CLIENT_PATH = DATA_PATH + "client\\";
+
+    private final Logger log = LoggerFactory.getLogger(Client.class);
+    private final FileController fc = FileController.getInstance().configure(DATA_PATH, false);
+    private final ExecutionProfiler profiler = ExecutionProfiler.getInstance();
+
+    private final int SERVER_PORT = 8080;
+    private final Map<String, String> contractAddress;
+
+    private GlobalParameters gp;
+    private User user;
+    private Certifier certifier;
+    private BlockchainConnection blockchain;
+    private ServerConnection server;
+    private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public enum RequestStatus {
         PENDING("pending", 0), OK("ok", 1), REJECTED("rejected", 2);
@@ -80,32 +94,15 @@ public final class Client {
         public String toString() {
             return label.toUpperCase();
         }
-
     }
-
-    private static final int SERVER_PORT = 8080;
-
-    private final FileController fc;
-
-    private GlobalParameters gp;
-    private User user;
-    private Certifier certifier;
-
-    private final Map<String, String> contractAddress;
-
-    private BlockchainConnection blockchain;
-    private ServerConnection server;
-    private static final String DATA_PATH = "data";
-    private Map<String, Map<String, PublicKey>> publishedAttributes;
 
     public Client() {
         profiler.start(this.getClass(), "constructor");
-        fc = FileController.getInstance().configure(DATA_PATH, false);
         this.server = new ServerConnection(SERVER_PORT);
-        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(CLIENT_PATH, "clientData.json");
         if (clientData != null) {
-            gp = fc.readFromDir(getClientDirectory(), "clientData.json", "globalParameters", GlobalParameters.class);
-            contractAddress = fc.readAsMap(getClientDirectory(), "clientData.json", "contractAddress", String.class, String.class);
+            gp = fc.readFromDir(CLIENT_PATH, "clientData.json", "globalParameters", GlobalParameters.class);
+            contractAddress = fc.readAsMap(CLIENT_PATH, "clientData.json", "contractAddress", String.class, String.class);
             String networkURL = clientData.get("networkURL").asText();
             this.blockchain = new BlockchainConnection(networkURL, contractAddress);
             if (!clientData.get("currentUserID").asText().equals("")) {
@@ -122,8 +119,8 @@ public final class Client {
     }
 
     public Client(String networkURL, String adminName, String adminEmail, String adminPrivateKey) {
+        ExecutionProfiler.getInstance();
         profiler.start(this.getClass(), "constructor");
-        fc = FileController.getInstance().configure(DATA_PATH, false);
         this.server = new ServerConnection(SERVER_PORT);
         this.blockchain = new BlockchainConnection(networkURL);
         profiler.start(DCPABE.class, "globalSetup");
@@ -138,16 +135,16 @@ public final class Client {
         clientData.put("networkURL", networkURL);
         clientData.set("globalParameters", gpJSON);
         clientData.set("contractAddress", address);
-        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
+        fc.writeToDir(CLIENT_PATH, "clientData.json", clientData);
         log.debug("Módulo cliente configurado.");
         profiler.end();
     }
 
     public void setActiveUser(String userID) {
         profiler.start(this.getClass(), "setActiveUser");
-        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(getClientDirectory(), "clientData.json");
+        ObjectNode clientData = (ObjectNode) fc.loadAsJSON(CLIENT_PATH, "clientData.json");
         clientData.put("currentUserID", userID);
-        fc.writeToDir(getClientDirectory(), "clientData.json", clientData);
+        fc.writeToDir(CLIENT_PATH, "clientData.json", clientData);
         profiler.end();
     }
 
@@ -156,7 +153,7 @@ public final class Client {
         profiler.start(this.getClass(), "createUser");
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         user = new User(name, email, keys);
-        fc.writeToDir(fc.getUserDirectory(user), "user.json", user);
+        fc.writeToDir(CLIENT_PATH + user.getID(), "user.json", user);
         setActiveUser(user.getID());
         this.blockchain.loadContracts(user.getCredentials());
         profiler.end();
@@ -171,8 +168,8 @@ public final class Client {
         return contractAddress;
     }
 
-    private String getClientDirectory() {
-        return fc.getDataDirectory() + "client\\";
+    public static String getClientPath() {
+        return CLIENT_PATH;
     }
 
     public void getAttributes(String authority, String[] attributes) {
@@ -193,7 +190,7 @@ public final class Client {
             ObjectNode keysJSON = fc.getMapper().createObjectNode();
             keysJSON.set("certifiers", fc.getMapper().convertValue(publishedAttributes.keySet(), ArrayNode.class));
             keysJSON.set("publicKeys", fc.getMapper().convertValue(publishedAttributes, ObjectNode.class));
-            fc.writeToDir(getClientDirectory(), "publicKeys.json", keysJSON);
+            fc.writeToDir(CLIENT_PATH, "publicKeys.json", keysJSON);
         }
         profiler.end();
     }
@@ -205,11 +202,10 @@ public final class Client {
         AuthorityKeys ak = DCPABE.authoritySetup(name, gp, attributes);
         profiler.end();
         certifier.setAuthorityABEKeys(ak);
-        String path = fc.getUserDirectory(certifier);
-        fc.writeToDir(path, "authorityPublicKeys.json", ak.getPublicKeys());
-        fc.writeToDir(path, "Certifier.json", certifier);
+        fc.writeToDir(CLIENT_PATH + certifier.getID(), "authorityPublicKeys.json", ak.getPublicKeys());
+        fc.writeToDir(CLIENT_PATH + certifier.getID(), "Certifier.json", certifier);
         try {
-            Utility.writeSecretKeys(path + "authoritySecretKey", ak.getSecretKeys());
+            Utility.writeSecretKeys(CLIENT_PATH + certifier.getID() + "\\authoritySecretKeys", ak.getSecretKeys());
         } catch (IOException e) {
             log.error("Não foi salver em disco as chaves secretas dos atributos", e);
         }
@@ -220,7 +216,7 @@ public final class Client {
         profiler.start(this.getClass(), "createCertifier");
         ECKey keys = this.blockchain.generateECKeys(privateKey);
         certifier = new Certifier(name, email, keys);
-        fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
+        fc.writeToDir(CLIENT_PATH + user.getID(), "Certifier.json", certifier);
         setActiveUser(user.getID());
         profiler.end();
     }
@@ -233,14 +229,14 @@ public final class Client {
         } else {
             log.error("Crie um usuário ou informe nome e e-mail.");
         }
-        fc.writeToDir(fc.getUserDirectory(user), "Certifier.json", certifier);
+        fc.writeToDir(CLIENT_PATH + user.getID(), "Certifier.json", certifier);
         profiler.end();
     }
 
     public void publish(String content) {
         // TODO: create Message factory to build json objects
         profiler.start(this.getClass(), "publish");
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         ObjectNode obj;
         log.info("Publicando conteúdo." + content);
         if (content.equals("user")) {
@@ -292,9 +288,9 @@ public final class Client {
     public void loadAttributes() {
         profiler.start(this.getClass(), "loadAttributes");
         publishedAttributes = new Hashtable<String, Map<String, PublicKey>>();
-        List<String> certifiers = fc.readAsList(getClientDirectory(), "publicKeys.json", "certifiers", String.class);
+        List<String> certifiers = fc.readAsList(CLIENT_PATH, "publicKeys.json", "certifiers", String.class);
         for (String gid : certifiers) {
-            publishedAttributes.put(gid, fc.readAsMap(getClientDirectory(), "publicKeys.json", "publicKeys." + gid, String.class, PublicKey.class));
+            publishedAttributes.put(gid, fc.readAsMap(CLIENT_PATH, "publicKeys.json", "publicKeys." + gid, String.class, PublicKey.class));
         }
         profiler.end();
     }
@@ -336,7 +332,7 @@ public final class Client {
 
     public void loadUserData(String userID) {
         profiler.start(this.getClass(), "loadUserData");
-        String path = getClientDirectory() + userID;
+        String path = CLIENT_PATH + userID;
         user = fc.readFromDir(path, "user.json", User.class);
         certifier = fc.readFromDir(path, "Certifier.json", Certifier.class);
         user.setRecordings(fc.readAsList(path, "recordings.json", Recording.class));
@@ -364,9 +360,9 @@ public final class Client {
             Ciphertext ct_ = DCPABE.encrypt(m, as, gp, pks);
             profiler.end();
             CiphertextJSON ct = new CiphertextJSON(ct_);
-            String path = fc.getUserDirectory(user);
+            String path = CLIENT_PATH + user.getID();
             r = new Recording(path, file, ct);
-            r.encryptFile(m);
+            r.encrypt(m);
             user.removeRecordByFileName(file);
             user.addRecording(r);
             fc.writeToDir(path, "recordings.json", user.getRecordings());
@@ -416,7 +412,7 @@ public final class Client {
             if (data != null) {
                 log.info("Enviando arquivo {} ao servidor", content);
                 server.sendFile(userID, content, data);
-                String path = fc.getUserDirectory(user);
+                String path = CLIENT_PATH + user.getID();
                 fc.writeToDir(path, "recordings.json", user.getRecordings());            }
         }
         profiler.end();
@@ -430,7 +426,7 @@ public final class Client {
         for (String fileName : recordings) {
             oneRecord = blockchain.getRecording(address, fileName);
             if (oneRecord != null) {
-                oneRecord.setFilePath(fc.getUserDirectory(user));
+                oneRecord.setFilePath(CLIENT_PATH + user.getID());
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
                 oneRecord.writeData(data, FileMode.EncryptedFile);
                 r.add(oneRecord);
@@ -441,7 +437,7 @@ public final class Client {
             }
         }
         user.addAllRecordings(r);
-        fc.writeToDir(fc.getUserDirectory(user), "recordings.json", user.getRecordings());
+        fc.writeToDir(CLIENT_PATH + user.getID(), "recordings.json", user.getRecordings());
         profiler.end();
     }
 
@@ -495,7 +491,7 @@ public final class Client {
 
     private Map<String, ArrayNode> loadAttributeRequestsCache() {
         profiler.start(this.getClass(), "loadAttributeRequestsCache");
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
                 ArrayNode.class);
         profiler.end();
@@ -508,7 +504,7 @@ public final class Client {
         if (requestCache == null) {
             requestCache = loadAttributeRequestsCache();
         }
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         this.blockchain.syncAttributeRequestCache(address, requestCache, authority);
         fc.writeToDir(path, "attributeRequests.json", requestCache);
         profiler.end();
@@ -517,7 +513,7 @@ public final class Client {
 
     private Map<String, ObjectNode> loadPendingAttributeRequestsCache() {
         profiler.start(this.getClass(), "loadPendingAttributeRequestsCache");
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         Map<String, ObjectNode> requestCache = fc.readAsMap(path, "pendingAttributeRequests.json", String.class,
                 ObjectNode.class);
         profiler.end();
@@ -530,7 +526,7 @@ public final class Client {
         if (pendingRequestCache == null) {
             pendingRequestCache = loadPendingAttributeRequestsCache();
         }
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         this.blockchain.syncPendingAttributeRequests(authority, pendingRequestCache);
         fc.writeToDir(path, "pendingAttributeRequests.json", pendingRequestCache);
         profiler.end();
@@ -539,7 +535,7 @@ public final class Client {
 
     private void saveAttributeRequestInCache(String authority, String address, ObjectNode request) {
         profiler.start(this.getClass(), "saveAttributeRequestInCache");
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         Map<String, ArrayNode> requestCache = fc.readAsMap(path, "attributeRequests.json", String.class,
                 ArrayNode.class);
         requestCache.get(authority).add(request);
@@ -601,11 +597,11 @@ public final class Client {
     public void yieldAttribute(String userID, int requestIndex) {
         profiler.start(this.getClass(), "yieldAttribute");
         String address = userID.split("-")[1];
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         List<PersonalKey> pks = new ArrayList<PersonalKey>();
         Map<String, SecretKey> skeys = null;
         try {
-            skeys = Utility.readSecretKeys(path + "authoritySecretKey");
+            skeys = Utility.readSecretKeys(path + "\\authoritySecretKeys");
             Map<String, ObjectNode> pendingRequests = loadPendingAttributeRequestsCache();
             // UGLY: applying lowercase to address because it was recorded that way as a key
             ObjectNode requesterData = pendingRequests.get(address.toLowerCase());
@@ -711,7 +707,7 @@ public final class Client {
             */
             cache.remove(address);
         }
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
         fc.writeToDir(path, "pendingAttributeRequests.json", cache);
         profiler.end();
     }
@@ -722,7 +718,7 @@ public final class Client {
          * key curve) see: http://bit.ly/2RWWes1 (Java) ,http://bit.ly/2RK0zyk (C#, but
          * may be util)
          */
-        String path = fc.getUserDirectory(user);
+        String path = CLIENT_PATH + user.getID();
 
         ArrayNode pks = (ArrayNode) fc.loadAsJSON(path, userID + "-pks.json");
         server.sendKeys(userID, pks);
@@ -739,7 +735,7 @@ public final class Client {
                 .forEach(pk -> user.getABEKeys().addKey(pk));
             int newSize = user.getABEKeys().size();
             if (size != newSize) {
-                fc.writeToDir(fc.getUserDirectory(user), "personalKeys.json", user.getABEKeys());
+                fc.writeToDir(CLIENT_PATH + user.getID(), "personalKeys.json", user.getABEKeys());
             } else {
                 log.info("All keys found in server already had local copies.");
             }

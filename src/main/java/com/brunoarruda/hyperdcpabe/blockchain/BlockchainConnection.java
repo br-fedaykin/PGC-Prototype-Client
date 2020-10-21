@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.brunoarruda.hyperdcpabe.CiphertextJSON;
+import com.brunoarruda.hyperdcpabe.Client;
 import com.brunoarruda.hyperdcpabe.Recording;
 import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.blockchain.SmartDCPABERequests.PendingRequestIndexChangedEventResponse;
@@ -45,11 +46,11 @@ public class BlockchainConnection {
     private static final Logger log = LoggerFactory.getLogger(BlockchainConnection.class);
     private static final ExecutionProfiler profiler = ExecutionProfiler.getInstance();
 
-    private String dataPath = "blockchain";
     private FileController fc;
 
     static private final byte[] seed = "Honk Honk".getBytes();
     static private final SecureRandom random = new SecureRandom(seed);
+    static private final String BLOCKCHAIN_PATH = Client.getDataPath() + "blockchain\\";
     private final String networkURL;
 
     private SmartDCPABERoot scRoot;
@@ -62,14 +63,6 @@ public class BlockchainConnection {
     private Map<String, String> contractAddress;
     private final Web3j web3j;
     private ContractGasProvider dgp;
-
-    public String getBlockchainDataPath() {
-        return fc.getDataDirectory() + dataPath + "\\";
-    }
-
-    public void setDataPath(String dataPath) {
-        this.dataPath = dataPath;
-    }
 
     public BlockchainConnection(String networkURL) {
         this(networkURL, null);
@@ -440,7 +433,7 @@ public class BlockchainConnection {
         // TODO: store last timestamp of checking to allow early exit of loop in smart
         // contract
         profiler.start(this.getClass(), "getAttributeRequestsForUser");
-        String path = getBlockchainDataPath() + "AttributeRequest\\";
+        String path = BLOCKCHAIN_PATH + "AttributeRequest\\";
         String[] authorities = new File(path).list();
         ArrayNode allRequests = fc.getMapper().createArrayNode();
         for (String auth : authorities) {
@@ -462,7 +455,7 @@ public class BlockchainConnection {
 
     public ArrayNode getAttributeRequestsForCertifier(String authority, String status) {
         profiler.start(this.getClass(), "getAttributeRequestsForCertifier");
-        String path = getBlockchainDataPath() + "AttributeRequest\\" + authority + "\\";
+        String path = BLOCKCHAIN_PATH + "AttributeRequest\\" + authority + "\\";
         ArrayNode allRequests = fc.getMapper().createArrayNode();
         File f = new File(path);
         for (String user : f.list()) {

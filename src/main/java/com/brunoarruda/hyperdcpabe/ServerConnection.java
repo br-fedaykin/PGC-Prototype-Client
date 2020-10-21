@@ -42,7 +42,7 @@ public class ServerConnection {
      */
 
     private static final String HOST = "127.0.0.1";
-    private static final String dataPath = "server";
+    private static final String SERVER_PATH = Client.getDataPath() + "server//";
     private static final int port = 8081;
     private final int SERVER_PORT;
     private final FileController fc;
@@ -67,8 +67,7 @@ public class ServerConnection {
     }
 
     private Map<String, String> loadKeys() {
-        String path = getServerDataPath();
-        return fc.readAsMap(path, "serverKeys.json", String.class, String.class);
+        return fc.readAsMap(SERVER_PATH, "serverKeys.json", String.class, String.class);
     }
 
     /**
@@ -118,12 +117,8 @@ public class ServerConnection {
         return serverKeys.get(userID).replace("-", "/");
     }
 
-    public String getServerDataPath() {
-        return fc.getDataDirectory() + dataPath + "\\";
-    }
-
 	public void sendFile(String userID, String fileName, List<byte[]> data) {
-        String path = getServerDataPath() + serverKeys.get(userID);
+        String path = SERVER_PATH + serverKeys.get(userID);
         File f = new File(path);
         f.mkdirs();
         try (FileOutputStream fos = new FileOutputStream(new File(path, fileName).getPath())) {
@@ -131,7 +126,7 @@ public class ServerConnection {
                     fos.write(buff);
                 }
             // after allocating space, key must be preserved
-            fc.writeToDir(getServerDataPath(), "serverKeys.json", serverKeys);
+            fc.writeToDir(SERVER_PATH, "serverKeys.json", serverKeys);
             log.info("Arquivo {} enviado com sucesso pelo usuário {}.", fileName, userID);
         } catch (IOException | IllegalStateException e) {
             log.error("Houve um erro durante o envio do arquivo {} para o usuário {}.", userID, fileName, e);
@@ -140,7 +135,7 @@ public class ServerConnection {
 
 	public List<byte[]> getFile(String key, String fileName) {
         List<byte[]> data = new ArrayList<byte[]>();
-        String path = getServerDataPath() + key.replace("/", "-");
+        String path = SERVER_PATH + key.replace("/", "-");
         try (FileInputStream fis = new FileInputStream(new File(path, fileName).getPath());
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             byte[] buff = new byte[BUFFER_SIZE];
@@ -163,14 +158,14 @@ public class ServerConnection {
 	public boolean hasContent(String userID, String content) {
         boolean isOnServer = false;
         if (serverKeys.get(userID) != null) {
-            String path = getServerDataPath() + serverKeys.get(userID) + "\\";
+            String path = SERVER_PATH + serverKeys.get(userID) + "\\";
             isOnServer = new File(path + content).exists();
         }
 		return isOnServer;
 	}
 
 	public void sendKeys(String userID, ArrayNode personalKeys) {
-        String path = getServerDataPath() + "Temporary Key Storage\\";
+        String path = SERVER_PATH + "Temporary Key Storage\\";
         File f = new File(path);
         f.mkdirs();
         fc.writeToDir(path, userID + "-pks.json", personalKeys);
@@ -179,7 +174,7 @@ public class ServerConnection {
 
 	public List<PersonalKey> getPersonalKeys(String userID) {
         List<PersonalKey> pks;
-        String path = getServerDataPath() + "Temporary Key Storage\\";
+        String path = SERVER_PATH + "Temporary Key Storage\\";
         String file = userID + "-pks.json";
         pks = fc.readAsList(path, file, PersonalKey.class);
         File f = new File(path, file);
