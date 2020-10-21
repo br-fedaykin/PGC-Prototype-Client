@@ -54,19 +54,23 @@ public class CommandLine implements Runnable {
         @Option(names = "--help", usageHelp = true, description = "display this help and exit")
         boolean help;
 
-        @Option(names = "--profile", description = "generate a log of time and gas consumption")
-        boolean profile;
+        @Option(names = {"--enable-profile", "--profile"}, description = "activate profiling of time and gas consumption")
+        boolean enableProfile;
+
+        @Option(names = {"--disable-profile", "--no-profile"}, description = "deactivate profiling of time and gas consumption")
+        boolean disableProfile;
 
         @Override
         public void run() {
-            if (profile) {
-                profiler.start(Client.class, getCommandName());
+            if (enableProfile) {
+                profiler.enablePersistentProfiling();
+            } else if (disableProfile) {
+                profiler.disablePersistentProfiling();
             }
+            profiler.start(command, command.getSimpleName());
             client = new Client();
             commandBody();
-            if (profile) {
-                profiler.end();
-            }
+            profiler.end();
         }
 
         abstract public String getCommandName();
