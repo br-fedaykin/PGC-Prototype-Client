@@ -15,17 +15,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ExecutionProfiler implements Serializable {
     private static final long serialVersionUID = 1L;
+    private final String PROFILER_DATA_PATH = Client.getClientPath();
     private List<CommandExecutionData> commands;
     private CommandExecutionData activeCommand;
     private long timestamp;
     private boolean enabled;
+    private boolean finishProfiling;
 
     private static final FileController fc = FileController.getInstance();
     private static final ExecutionProfiler INSTANCE = new ExecutionProfiler();
 
     private ExecutionProfiler() {
         timestamp = Instant.now().toEpochMilli();
-        commands = new ArrayList<CommandExecutionData>(50);
+        commands = fc.readAsList(PROFILER_DATA_PATH, "profiling.json", "active task commands", CommandExecutionData.class);
         Map<String,Object> options = fc.readAsMap(Client.getClientPath(), "profiling.json", String.class, Object.class);
         if (options.get("persistent profiling") != null) {
             enabled = (boolean) options.get("persistent profiling");
@@ -70,23 +72,38 @@ public class ExecutionProfiler implements Serializable {
     }
 
     public void writeToFile() {
-        String filename = "execData-" + timestamp + ".json";
-        fc.writeToDir("logs", filename, this);
+        if (finishProfiling) {
+            fc.writeToDir("logs", "execData-" + timestamp + ".json", this);
+            disablePersistentProfiling();
+        } else {
+            Map<String,Object> file = fc.readAsMap(PROFILER_DATA_PATH, "profiling.json", String.class, Object.class);
+            file.put("active task commands", commands);
+            fc.writeToDir(PROFILER_DATA_PATH, "profiling.json", file);
+        }
     }
 
 	public void enablePersistentProfiling() {
         enabled = true;
-        Map<String, Object> config = new HashMap<>();
-        config.put("persistent profiling", true);
-        fc.writeToDir(Client.getClientPath(), "profiling.json", config);
+        Map<String, Object> profileData = new HashMap<>();
+        profileData.put("persistent profiling", true);
+        fc.writeToDir(PROFILER_DATA_PATH, "profiling.json", profileData);
 	}
 
 	public void disablePersistentProfiling() {
         enabled = false;
-        Map<String, Boolean> config = new HashMap<>();
-        config.put("persistent profiling", false);
-        fc.writeToDir(Client.getClientPath(), "profiling.json", config);
+        Map<String, Boolean> profileData = new HashMap<>();
+        profileData.put("persistent profiling", false);
+        fc.writeToDir(PROFILER_DATA_PATH, "profiling.json", profileData);
     }
+
+	public boolean isEnabled() {
+		return enabled;
+    }
+
+
+	public void setIsLastCommand(boolean finishProfile) {
+        this.finishProfiling = finishProfile;
+	}
 
     /**
      * GETTERS

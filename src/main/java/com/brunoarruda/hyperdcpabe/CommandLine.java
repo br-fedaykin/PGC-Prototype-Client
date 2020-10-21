@@ -39,7 +39,7 @@ public class CommandLine implements Runnable {
     public static void main(String[] args) {
         cmd = new picocli.CommandLine(new com.brunoarruda.hyperdcpabe.CommandLine());
         cmd.execute(args);
-        System.out.println(profiler);
+        profiler.writeToFile();
     }
 
     @Override
@@ -54,15 +54,19 @@ public class CommandLine implements Runnable {
         @Option(names = "--help", usageHelp = true, description = "display this help and exit")
         boolean help;
 
-        @Option(names = {"--enable-profile", "--profile"}, description = "activate profiling of time and gas consumption")
+        @Option(names = {"--enable-profile", "--profile"}, description = "activate profiling of time and gas consumption.")
         boolean enableProfile;
 
-        @Option(names = {"--disable-profile", "--no-profile"}, description = "deactivate profiling of time and gas consumption")
+        @Option(names = {"--finish-profile"}, description = "keep profiling active on this command and deactivate it after finishing.")
+        boolean finishProfile;
+
+        @Option(names = {"--disable-profile", "--no-profile"}, description = "deactivate profiling")
         boolean disableProfile;
 
         @Override
         public void run() {
             Class<?> command = getCommandClass();
+            profiler.setIsLastCommand(finishProfile);
             if (enableProfile) {
                 profiler.enablePersistentProfiling();
             } else if (disableProfile) {
@@ -313,19 +317,13 @@ public class CommandLine implements Runnable {
         int subscenario;
         @Override
         public void run() {
-            Class<?> command = getCommandClass();
-            if (enableProfile) {
-                profiler.enablePersistentProfiling();
-            } else if (disableProfile) {
-                profiler.disablePersistentProfiling();
-            }
             commandBody();
         }
 
         @Override
         public void commandBody() {
             validate();
-            SmartDCPABEDemonstration.runMilestone(scenario, subscenario);
+            SmartDCPABEDemonstration.runMilestone(scenario, subscenario, enableProfile);
         }
 
         private void validate() {

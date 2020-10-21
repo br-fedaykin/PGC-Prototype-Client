@@ -46,18 +46,18 @@ public class SmartDCPABEDemonstration {
         "0xF7908374b1a445cCf65F729887dbB695c918BEfc",
         "ab0439882857ffb5859c1a3a6bf40a6848daeaab6605c873c3e425de53c2c4ab"
     );
-    public static void runMilestone(int scenario, int subcenario) {
+    public static void runMilestone(int scenario, int subcenario, boolean profileEnabled) {
         switch (scenario) {
             case 1:
-                runMilestone1();
+                runMilestone1(profileEnabled);
                 break;
             default:
-                runMilestone2(subcenario);
+                runMilestone2(subcenario, profileEnabled);
                 break;
         }
     }
 
-    public static void runMilestone1() {
+    public static void runMilestone1(boolean profileEnabled) {
         /*
          * Milestone 1 cenário: novo prontuário Cliente 1 java usa o código do ABE (cria
          * usuário, obtém atributo1, envia prontuário1 - i.e., pdf1 encriptado) Cliente
@@ -72,7 +72,11 @@ public class SmartDCPABEDemonstration {
         getFileFromResources(path, "demo/lorem_ipsum.md", "lorem_ipsum.md");
 
         // admin inicia o sistema e cria os contratos
-        cmd.execute("init", ADMIN.NAME, ADMIN.EMAIL, ADMIN.PRIV_KEY);
+        if (profileEnabled) {
+            cmd.execute("init", ADMIN.NAME, ADMIN.EMAIL, ADMIN.PRIV_KEY, "--profile");
+        } else {
+            cmd.execute("init", ADMIN.NAME, ADMIN.EMAIL, ADMIN.PRIV_KEY);
+        }
 
         // certificador cria perfil e atributo, e os publica
         cmd.execute("create-user", CRM.NAME, CRM.EMAIL, CRM.PRIV_KEY);
@@ -103,11 +107,11 @@ public class SmartDCPABEDemonstration {
         cmd.execute("check-requests", "ok");
         cmd.execute("get-personal-keys");
         cmd.execute("get-recordings", ALICE.GID, "lorem_ipsum.md");
-        cmd.execute("decrypt", "lorem_ipsum.md");
+        cmd.execute("decrypt", "lorem_ipsum.md", "--finish-profile");
     }
 
-    public static void runMilestone2(int subcenario) {
-        runMilestone1();
+    public static void runMilestone2(int subcenario, boolean profileEnabled) {
+        runMilestone1(profileEnabled);
         String path = String.format("data/client/%s/", ALICE.GID);
         if (subcenario == 1) {
             /*
