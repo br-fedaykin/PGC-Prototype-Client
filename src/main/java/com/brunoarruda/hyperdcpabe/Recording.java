@@ -195,6 +195,14 @@ public class Recording {
         this.domain = domain;
     }
 
+    public String getFolderPath(){
+        return folderPath;
+    }
+
+    public void setFolderPath(String filePath) {
+        this.folderPath = filePath;
+    }
+
     public void decrypt(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);

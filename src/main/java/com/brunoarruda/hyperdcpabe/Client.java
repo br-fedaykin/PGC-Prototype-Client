@@ -426,7 +426,7 @@ public final class Client {
         for (String fileName : recordings) {
             oneRecord = blockchain.getRecording(address, fileName);
             if (oneRecord != null) {
-                oneRecord.setFilePath(CLIENT_PATH + user.getID());
+                oneRecord.setFolderPath(CLIENT_PATH + user.getID());
                 List<byte[]> data = server.getFile(oneRecord.getKey(), fileName);
                 oneRecord.writeData(data, FileMode.EncryptedFile);
                 r.add(oneRecord);
