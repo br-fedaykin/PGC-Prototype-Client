@@ -38,7 +38,7 @@ if [ -d "data" ]; then
     fi
 fi
 
-sleep 3
+sleep 2
 read -p 'Choose milestone to test: ' milestone
 
 source $data
@@ -46,42 +46,46 @@ case $milestone in
     1) echo "milestone 1"
 
     # admin inicia o sistema e cria os contratos
-    java $java_args $1 --init http://127.0.0.1:7545 ${admin[name]} ${admin[email]} ${admin[privateKey]}
+    java $java_args $1 init --network http://127.0.0.1:7545 ${admin[name]} ${admin[email]} ${admin[privateKey]} --profile
 
     # certificador cria perfil e atributo, e publica ambos
-    java $java_args $1 --create-user ${crm[name]} ${crm[email]} ${crm[privateKey]}
-    java $java_args $1 --create-certifier
-    java $java_args $1 --create-attributes atributo1 atributo2 atributo3
-    java $java_args $1 --publish user certifier attributes
+    java $java_args $1 create-user ${crm[name]} ${crm[email]} ${crm[privateKey]}
+    java $java_args $1 create-certifier
+    java $java_args $1 create-attributes atributo1 atributo2 atributo3
+    java $java_args $1 publish user certifier attributes
 
     # usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)
-    java $java_args $1 --create-user ${bob[name]} ${bob[email]} ${bob[privateKey]}
-    java $java_args $1 --publish user
-    java $java_args $1 --request-attribute ${crm[gid]} atributo1
+    java $java_args $1 create-user ${bob[name]} ${bob[email]} ${bob[privateKey]}
+    java $java_args $1 publish user
+    java $java_args $1 request-attributes ${crm[gid]} atributo1
 
     # usuário 2 - Alice, cria perfil, recebe chaves públicas e criptografa um documento
-    java $java_args $1 --create-user ${alice[name]} ${alice[email]} ${alice[privateKey]}
-    java $java_args $1 --publish user
-    java $java_args $1 --get-attributes ${crm[gid]} atributo1
+    java $java_args $1 create-user ${alice[name]} ${alice[email]} ${alice[privateKey]}
+    java $java_args $1 publish user
+    java $java_args $1 get-attributes ${crm[gid]} atributo1
 
-    echo "File created for demonstration. Alice will share it in the system." > data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/message.txt
-    echo "file \"message.txt\" created in Alice folder For demonstration."
+    sleep 2
+    filename=message.txt
+    file_content ="File created for demonstration. Alice will configure access to this file with police \"atributo1\"."
+    echo;echo $file_content > data/client/Alice-0xb038476875480BCE0D0FCf0991B4BB108A3FCB47/${filename}
+    echo "*** FILE \"${filename}\" CREATED IN ALICE USER FOLDER TO PROCEED WITH DEMONSTRATION."; echo
+    sleep 2
 
-    java $java_args $1 --encrypt message.txt atributo1 ${crm[gid]}
-    java $java_args $1 --send $filename
+    java $java_args $1 encrypt message.txt atributo1 ${crm[gid]}
+    java $java_args $1 send $filename
 
     # certificador recebe requisição de atributo e o concede ao Bob
-    java $java_args $1 --load ${crm[gid]}
-    java $java_args $1 --check-requests pending
-    java $java_args $1 --yield-attributes ${bob[gid]} 0
-    java $java_args $1 --send attributes ${bob[gid]}
+    java $java_args $1 load ${crm[gid]}
+    java $java_args $1 check-requests pending
+    java $java_args $1 yield-attributes ${bob[gid]} 0
+    java $java_args $1 send attributes ${bob[gid]}
 
     # usuário 1 - Bob, de posse do atributo, o descriptografa
-    java $java_args $1 --load ${bob[gid]}
-    java $java_args $1 --check-requests ok
-    java $java_args $1 --check-requests download
-    java $java_args $1 --get-recordings ${alice[gid]} $filename
-    java $java_args $1 --decrypt $filename ;;
+    java $java_args $1 load ${bob[gid]}
+    java $java_args $1 check-requests ok
+    java $java_args $1 get-personal-keys
+    java $java_args $1 get-recordings ${alice[gid]} $filename
+    java $java_args $1 decrypt $filename ;;
     2) echo "dois" ;;
     3) echo "três" ;;
     4) echo "quatro" ;;
