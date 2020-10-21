@@ -1,59 +1,86 @@
 package com.brunoarruda.hyperdcpabe.monitor;
 
-import java.time.Instant;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-class TaskExecutionData {
-    private final long timestamp;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+class TaskExecutionData implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final int taskID;
     private final String label;
     private final List<MethodExecutionData> methodStack;
     private long execTime;
     private long gasCost;
-    int currentMethodID;
     MethodExecutionData currentMethod;
+
+    @JsonCreator
+    public TaskExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost) {
+        this.taskID = taskID;
+        this.label = label;
+        this.methodStack = methodStack;
+        this.execTime = execTime;
+        this.gasCost = gasCost;
+    }
 
     public TaskExecutionData (int taskID, String label) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = new ArrayList<MethodExecutionData>(20);
-        this.timestamp = Instant.now().toEpochMilli();
-        currentMethodID = -1;
     }
 
     public void start(String className, String task) {
-        currentMethod = new MethodExecutionData(className, task, currentMethodID);
+        currentMethod = new MethodExecutionData(className, task, currentMethod);
         currentMethod.start();
         methodStack.add(currentMethod);
-        currentMethodID = methodStack.size() - 1;
     }
 
     public void end() {
         currentMethod.end();
-        currentMethodID = currentMethod.getParentMethod();
+        MethodExecutionData parentMethod = currentMethod.getParentMethod();
 
-        if (finished()) {
-            long last_end = methodStack.get(methodStack.size() - 1).getEnd();
-            execTime = last_end - methodStack.get(0).getStart();
+        if (parentMethod != null) {
+            parentMethod.subtractTime(currentMethod.getExecTime());
         } else {
-            long execTime = currentMethod.getExecTime();
-            currentMethod = methodStack.get(currentMethodID);
-            currentMethod.subtractTime(execTime);
+            long last_end = methodStack.get(methodStack.size() - 1).getEnd();
+            execTime = last_end - currentMethod.getStart();
         }
+        currentMethod = parentMethod;
     }
+
+
+	public boolean finished() {
+		return currentMethod == null;
+	}
 
     public void addGasCost(long gas) {
         currentMethod.addGasCost(gas);
         gasCost += gas;
     }
 
-    public boolean finished() {
-        return currentMethodID < 0;
+    /*
+     * GETTERS
+    */
+    public int getTaskID() {
+        return taskID;
     }
 
-    public boolean isRunning() {
-        return ! finished();
+    public String getLabel() {
+        return label;
+    }
+
+    public List<MethodExecutionData> getMethodStack() {
+        return methodStack;
+    }
+
+    public long getExecTime() {
+        return execTime;
+    }
+
+    public long getGasCost() {
+        return gasCost;
     }
 
     @Override
