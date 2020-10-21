@@ -29,7 +29,8 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
  */
 public class Recording {
 
-    private static final Logger log = LoggerFactory.getLogger(Recording.class);
+    private final Logger log = LoggerFactory.getLogger(Recording.class);
+    private final int BUFFER_SIZE = 1024;
 
     public enum FileMode {
         OriginalFile,
@@ -45,16 +46,15 @@ public class Recording {
     private Message AESKey;
     private CiphertextJSON ct;
     private String recordingFileName;
-    private int BUFFER_SIZE = 1024;
     private long timestamp;
     private String hash;
-    private String filePath;
+    private String folderPath;
     private boolean fileChanged = false;
     private int recordingID;
     private boolean ciphertextChanged = false;
 
     public Recording(String filePath, String fileName, CiphertextJSON ct) {
-        this.filePath = filePath;
+        this.folderPath = filePath;
         this.originalFileName = fileName;
         this.encryptedFileName = "(enc)" + fileName;
         // gets only file name without extension
@@ -80,7 +80,7 @@ public class Recording {
         this.key = key;
         this.recordingFileName = recordingName;
         this.timestamp = timestamp;
-        this.filePath = filePath;
+        this.folderPath = filePath;
         this.hash = hash;
         this.AESKey = AESKey;
         this.fileChanged = fileChanged;
@@ -195,39 +195,31 @@ public class Recording {
         this.domain = domain;
     }
 
-    public String getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
-
     public void decrypt(Message m) {
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), false);
-        File f = new File(filePath + originalFileName);
+        File f = new File(folderPath, originalFileName);
         f.delete();
-        processDataWithBlockCipher(aes, filePath, encryptedFileName, originalFileName);
+        processDataWithBlockCipher(aes, folderPath, encryptedFileName, originalFileName);
         log.info("Arquivo descriptografado: {}", originalFileName);
     }
 
-    public void encryptFile(Message m) {
+    public void encrypt(Message m) {
         if (this.AESKey != null) {
             ciphertextChanged = true;
         }
         this.AESKey = m;
         PaddedBufferedBlockCipher aes = Utility.initializeAES(AESKey.getM(), true);
-        File f = new File(filePath + encryptedFileName);
+        File f = new File(folderPath, encryptedFileName);
         f.delete();
-        processDataWithBlockCipher(aes, filePath, originalFileName, encryptedFileName);
+        processDataWithBlockCipher(aes, folderPath, originalFileName, encryptedFileName);
         log.info("Arquivo criptografado: {}", originalFileName);
     }
 
     private void processDataWithBlockCipher(PaddedBufferedBlockCipher aes, String path, String inputFileName,
             String outputFileName) {
-        try (FileOutputStream fos = new FileOutputStream(path + outputFileName);
-                FileInputStream fis = new FileInputStream(path + inputFileName);
+        try (FileOutputStream fos = new FileOutputStream(new File(path, outputFileName).getPath());
+                FileInputStream fis = new FileInputStream(new File(path, inputFileName).getPath());
                 BufferedInputStream bis = new BufferedInputStream(fis)) {
 
             byte[] inBuff = new byte[aes.getBlockSize()];
@@ -256,9 +248,9 @@ public class Recording {
     }
 
     private void writeData(List<byte[]> data, String file) {
-        File f = new File(filePath, file);
+        File f = new File(folderPath, file);
         f.delete();
-        try (FileOutputStream fos = new FileOutputStream(filePath + file)) {
+        try (FileOutputStream fos = new FileOutputStream(new File(folderPath, file).getPath())) {
             for (byte[] buff : data) {
                 fos.write(buff);
             }
@@ -330,7 +322,7 @@ public class Recording {
 
     private List<byte[]> readData(String file) {
         List<byte[]> data = null;
-        try (FileInputStream fis = new FileInputStream(filePath + file);
+        try (FileInputStream fis = new FileInputStream(new File(folderPath, file).getPath());
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             data = new ArrayList<byte[]>();
             byte[] buff = new byte[BUFFER_SIZE];

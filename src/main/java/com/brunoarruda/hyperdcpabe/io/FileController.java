@@ -73,7 +73,7 @@ public final class FileController {
         folder.mkdirs();
         path = path + fileName;
         try {
-            mapper.writeValue(new File(path), obj);
+            mapper.writeValue(new File(path, fileName), obj);
         } catch (IOException e) {
             if (printErrorsFlag) {
                 e.printStackTrace();

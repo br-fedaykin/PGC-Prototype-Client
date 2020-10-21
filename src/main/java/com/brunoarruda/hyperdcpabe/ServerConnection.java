@@ -123,10 +123,10 @@ public class ServerConnection {
     }
 
 	public void sendFile(String userID, String fileName, List<byte[]> data) {
-        String path = getServerDataPath() + serverKeys.get(userID) + "\\";
+        String path = getServerDataPath() + serverKeys.get(userID);
         File f = new File(path);
         f.mkdirs();
-        try (FileOutputStream fos = new FileOutputStream(path + fileName)) {
+        try (FileOutputStream fos = new FileOutputStream(new File(path, fileName).getPath())) {
                 for (byte[] buff : data) {
                     fos.write(buff);
                 }
@@ -140,8 +140,8 @@ public class ServerConnection {
 
 	public List<byte[]> getFile(String key, String fileName) {
         List<byte[]> data = new ArrayList<byte[]>();
-        String path = getServerDataPath() + key.replace("/", "-") + "\\";
-        try (FileInputStream fis = new FileInputStream(path + fileName);
+        String path = getServerDataPath() + key.replace("/", "-");
+        try (FileInputStream fis = new FileInputStream(new File(path, fileName).getPath());
         BufferedInputStream bis = new BufferedInputStream(fis)) {
             byte[] buff = new byte[BUFFER_SIZE];
             int readBytes;
