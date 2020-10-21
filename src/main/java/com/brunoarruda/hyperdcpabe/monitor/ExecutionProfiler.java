@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ExecutionProfiler implements Serializable {
     private static final long serialVersionUID = 1L;
-    private List<TaskExecutionData> tasks;
-    private TaskExecutionData activeTask;
+    private List<CommandExecutionData> commands;
+    private CommandExecutionData activeCommand;
     private long timestamp;
     private boolean enabled;
 
@@ -25,7 +25,7 @@ public class ExecutionProfiler implements Serializable {
 
     private ExecutionProfiler() {
         timestamp = Instant.now().toEpochMilli();
-        tasks = new ArrayList<TaskExecutionData>(50);
+        commands = new ArrayList<CommandExecutionData>(50);
         Map<String,Object> options = fc.readAsMap(Client.getClientPath(), "profiling.json", String.class, Object.class);
         if (options.get("persistent profiling") != null) {
             enabled = (boolean) options.get("persistent profiling");
@@ -37,7 +37,7 @@ public class ExecutionProfiler implements Serializable {
     }
 
     @JsonCreator
-    public static ExecutionProfiler getInstance(@JsonProperty("tasks") List<TaskExecutionData> tasks, @JsonProperty("activeTask") TaskExecutionData activeTask, @JsonProperty("timestamp") long timestamp) {
+    public static ExecutionProfiler getInstance(@JsonProperty("tasks") List<CommandExecutionData> tasks, @JsonProperty("activeTask") CommandExecutionData activeTask, @JsonProperty("timestamp") long timestamp) {
         INSTANCE.setActiveTask(activeTask);
         INSTANCE.setTasks(tasks);
         INSTANCE.setTimestamp(timestamp);
@@ -46,25 +46,25 @@ public class ExecutionProfiler implements Serializable {
 
      public <T> void start(Class<T> c, String task) {
         if (enabled) {
-            if (activeTask == null) {
-                activeTask = new TaskExecutionData(tasks.size(), task);
+            if (activeCommand == null) {
+                activeCommand = new CommandExecutionData(commands.size(), task);
             }
-            activeTask.start(c.getSimpleName(), task);
+            activeCommand.start(c.getSimpleName(), task);
         }
     }
 
     public void addGasCost(BigInteger gas) {
         if (enabled) {
-            activeTask.addGasCost(gas.longValue());
+            activeCommand.addGasCost(gas.longValue());
         }
     }
 
     public void end() {
         if (enabled) {
-            activeTask.end();
-            if (activeTask.finished()) {
-                tasks.add(activeTask);
-                activeTask = null;
+            activeCommand.end();
+            if (activeCommand.finished()) {
+                commands.add(activeCommand);
+                activeCommand = null;
             }
         }
     }
@@ -92,12 +92,12 @@ public class ExecutionProfiler implements Serializable {
      * GETTERS
      */
 
-    public TaskExecutionData activeTask() {
-        return activeTask;
+    public CommandExecutionData activeTask() {
+        return activeCommand;
     }
 
-    public List<TaskExecutionData> getTasks() {
-        return tasks;
+    public List<CommandExecutionData> getTasks() {
+        return commands;
     }
 
     public long getTimestamp() {
@@ -108,23 +108,23 @@ public class ExecutionProfiler implements Serializable {
      * SETTERS
      */
 
-    private void setActiveTask(TaskExecutionData activeTask) {
-        this.activeTask = activeTask;
+    private void setActiveTask(CommandExecutionData activeTask) {
+        this.activeCommand = activeTask;
     }
 
     private void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
-    private void setTasks(List<TaskExecutionData> tasks) {
-        this.tasks = tasks;
+    private void setTasks(List<CommandExecutionData> tasks) {
+        this.commands = tasks;
     }
 
     @Override
     public String toString() {
         String base_str = "{\"timestamp\": %d, \"tasks\": [\n%s\n]}";
-        List<String> tasks_str = new ArrayList<String>(tasks.size());
-        tasks.forEach((t) -> tasks_str.add(t.toString()));
+        List<String> tasks_str = new ArrayList<String>(commands.size());
+        commands.forEach((t) -> tasks_str.add(t.toString()));
         return String.format(base_str, timestamp, String.join(",\n", tasks_str));
     }
 }

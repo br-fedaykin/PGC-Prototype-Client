@@ -7,7 +7,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-class TaskExecutionData implements Serializable {
+class CommandExecutionData implements Serializable {
     private static final long serialVersionUID = 1L;
     private final int taskID;
     private final String label;
@@ -17,7 +17,7 @@ class TaskExecutionData implements Serializable {
     MethodExecutionData currentMethod;
 
     @JsonCreator
-    public TaskExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost) {
+    public CommandExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = methodStack;
@@ -25,7 +25,7 @@ class TaskExecutionData implements Serializable {
         this.gasCost = gasCost;
     }
 
-    public TaskExecutionData (int taskID, String label) {
+    public CommandExecutionData (int taskID, String label) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = new ArrayList<MethodExecutionData>(20);
