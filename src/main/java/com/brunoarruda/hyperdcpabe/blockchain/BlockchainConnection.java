@@ -165,6 +165,7 @@ public class BlockchainConnection {
             Tuple4<String, String, String, BigInteger> certifier = scAuthority.getCertifier(address).send();
             if (certifier.getValue4().equals(BigInteger.ZERO)) {
                 log.info("A autoridade {} não publicou nenhum atributo.", authName);
+                profiler.end();
                 return null;
             } else {
                 Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
@@ -172,6 +173,7 @@ public class BlockchainConnection {
                     Tuple3<String, byte[], byte[]> keyData = scKeys.getPublicKey(address, attr).send();
                     keys.put(attr, new PublicKey(keyData.getValue2(), keyData.getValue3()));
                 }
+                profiler.end();
                 return keys;
             }
         } catch (Exception e1) {
