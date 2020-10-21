@@ -76,7 +76,9 @@ public class CommandLine implements Runnable {
             profiler.end();
         }
 
-        abstract public Class<?> getCommandClass();
+        public Class<?> getCommandClass() {
+            return this.getClass();
+        }
 
         abstract public void commandBody();
     }
@@ -94,12 +96,6 @@ public class CommandLine implements Runnable {
 
         @Option(names = {"--network", "-n"}, description = "network address of Ethereum provider")
         private String url = "http://127.0.0.1:7545";
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Init.class;
-        }
-
         @Override
         public void commandBody () {
             client = new Client(url, adminName, adminEmail, adminPrivateKey);
@@ -121,10 +117,6 @@ public class CommandLine implements Runnable {
         String privateKey;
 
         @Override
-        public Class<?> getCommandClass() {
-            return CreateUser.class;
-        }
-        @Override
         public void commandBody() {
             client.createUser(name, email, privateKey);
         }
@@ -141,12 +133,6 @@ public class CommandLine implements Runnable {
 
         @Parameters(index = "2", defaultValue = "", description = "certifier's wallet private key")
         String privateKey;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return CreateCertifier.class;
-        }
-
         @Override
         public void commandBody() {
             validate();
@@ -170,12 +156,6 @@ public class CommandLine implements Runnable {
     static class Load extends BasicCommand {
 
         @Parameters(index = "0", description = "user ID") String userID;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Load.class;
-        }
-
         @Override
         public void commandBody() {
             client.setActiveUser(userID);
@@ -189,12 +169,6 @@ public class CommandLine implements Runnable {
     static class CreateAttributes extends BasicCommand {
 
         @Parameters(arity="1..*", description = "attributes") String[] attributes;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return CreateAttributes.class;
-        }
-
         @Override
         public void commandBody() {
             client.createABEKeys(attributes);
@@ -209,12 +183,6 @@ public class CommandLine implements Runnable {
 
         @Parameters(index = "1", description = "decision about user request")
         int decision;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return YieldAttributes.class;
-        }
-
         @Override
         public void commandBody() {
             client.yieldAttribute(requester, decision);
@@ -228,12 +196,6 @@ public class CommandLine implements Runnable {
         @Parameters(index = "1") String policy;
         @Parameters(index = "2", arity = "1..*", description = "certifier addresses of attributes used in policy")
         String[] certifiers;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Encrypt.class;
-        }
-
         @Override
         public void commandBody() {
             client.encrypt(file, policy, certifiers);
@@ -244,12 +206,6 @@ public class CommandLine implements Runnable {
     static class Decrypt extends BasicCommand {
 
         @Parameters(index= "0") String file;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Decrypt.class;
-        }
-
         @Override
         public void commandBody() {
             client.decrypt(file);
@@ -266,12 +222,6 @@ public class CommandLine implements Runnable {
         String certifier;
 
         @Parameters(index = "1", arity = "1..*") String[] attributes;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return RequestAttributes.class;
-        }
-
         @Override
         public void commandBody() {
             client.requestAttribute(certifier, attributes);
@@ -284,10 +234,6 @@ public class CommandLine implements Runnable {
         @Parameters(index = "0") String status;
 
         @Override
-        public Class<?> getCommandClass() {
-            return CheckRequests.class;
-        }
-        @Override
         public void commandBody() {
             client.checkAttributeRequests(RequestStatus.valueOf(status.toUpperCase()));
         }
@@ -295,12 +241,6 @@ public class CommandLine implements Runnable {
 
     @Command(name = "get-personal-keys")
     static class GetPersonalKeys extends BasicCommand {
-
-        @Override
-        public Class<?> getCommandClass() {
-            return GetPersonalKeys.class;
-        }
-
         @Override
         public void commandBody() {
             client.getPersonalKeys();
@@ -314,10 +254,6 @@ public class CommandLine implements Runnable {
         @Parameters(index = "1", arity = "1..*") String[] attributes;
 
         @Override
-        public Class<?> getCommandClass() {
-            return GetAttributes.class;
-        }
-        @Override
         public void commandBody() {
             client.getAttributes(certifier, attributes);
         }
@@ -327,12 +263,6 @@ public class CommandLine implements Runnable {
     static class Publish extends BasicCommand {
         @Parameters(index = "0", arity = "1..*", description = "objects to publish")
         String[] content;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Publish.class;
-        }
-
         @Override
         public void commandBody() {
             for (String c : content) {
@@ -351,12 +281,6 @@ public class CommandLine implements Runnable {
 
         @Option(names = "attributes", description = "treat input as atributes")
         boolean attributes;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Send.class;
-        }
-
         @Override
         public void commandBody() {
             if (attributes) {
@@ -375,12 +299,6 @@ public class CommandLine implements Runnable {
     static class GetRecordings extends BasicCommand {
         @Parameters(index = "0", description = "owner of the files") String userID;
         @Parameters(index = "1", arity = "1..*") String[] recordings;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return GetRecordings.class;
-        }
-
         @Override
         public void commandBody() {
             client.getRecordings(userID, recordings);
@@ -393,12 +311,6 @@ public class CommandLine implements Runnable {
 
         @Parameters(index = "1", defaultValue = "0", description = "(optional) subscenario")
         int subscenario;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Demonstration.class;
-        }
-
         @Override
         public void run() {
             Class<?> command = getCommandClass();
@@ -437,12 +349,6 @@ public class CommandLine implements Runnable {
     static class Help extends BasicCommand {
 
         @Parameters(arity = "0..1", defaultValue = "") String command;
-
-        @Override
-        public Class<?> getCommandClass() {
-            return Help.class;
-        }
-
         @Override
         public void commandBody() {
             if (command.equals("")) {
