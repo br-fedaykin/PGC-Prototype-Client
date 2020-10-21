@@ -62,18 +62,21 @@ public class CommandLine implements Runnable {
 
         @Override
         public void run() {
+            Class<?> command = getCommandClass();
             if (enableProfile) {
                 profiler.enablePersistentProfiling();
             } else if (disableProfile) {
                 profiler.disablePersistentProfiling();
             }
             profiler.start(command, command.getSimpleName());
-            client = new Client();
+            if (command != Init.class) {
+                client = new Client();
+            }
             commandBody();
             profiler.end();
         }
 
-        abstract public String getCommandName();
+        abstract public Class<?> getCommandClass();
 
         abstract public void commandBody();
     }
@@ -93,16 +96,14 @@ public class CommandLine implements Runnable {
         private String url = "http://127.0.0.1:7545";
 
         @Override
-        public String getCommandName() {
-            return Init.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Init.class;
         }
 
         @Override
-        public void run() {
+        public void commandBody () {
             client = new Client(url, adminName, adminEmail, adminPrivateKey);
         }
-        @Override
-        public void commandBody () {}
     }
 
     // /*
@@ -120,8 +121,8 @@ public class CommandLine implements Runnable {
         String privateKey;
 
         @Override
-        public String getCommandName() {
-            return CreateUser.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return CreateUser.class;
         }
         @Override
         public void commandBody() {
@@ -142,8 +143,8 @@ public class CommandLine implements Runnable {
         String privateKey;
 
         @Override
-        public String getCommandName() {
-            return CreateCertifier.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return CreateCertifier.class;
         }
 
         @Override
@@ -171,8 +172,8 @@ public class CommandLine implements Runnable {
         @Parameters(index = "0", description = "user ID") String userID;
 
         @Override
-        public String getCommandName() {
-            return Load.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Load.class;
         }
 
         @Override
@@ -190,8 +191,8 @@ public class CommandLine implements Runnable {
         @Parameters(arity="1..*", description = "attributes") String[] attributes;
 
         @Override
-        public String getCommandName() {
-            return CreateAttributes.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return CreateAttributes.class;
         }
 
         @Override
@@ -210,8 +211,8 @@ public class CommandLine implements Runnable {
         int decision;
 
         @Override
-        public String getCommandName() {
-            return YieldAttributes.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return YieldAttributes.class;
         }
 
         @Override
@@ -229,8 +230,8 @@ public class CommandLine implements Runnable {
         String[] certifiers;
 
         @Override
-        public String getCommandName() {
-            return Encrypt.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Encrypt.class;
         }
 
         @Override
@@ -245,8 +246,8 @@ public class CommandLine implements Runnable {
         @Parameters(index= "0") String file;
 
         @Override
-        public String getCommandName() {
-            return Decrypt.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Decrypt.class;
         }
 
         @Override
@@ -267,8 +268,8 @@ public class CommandLine implements Runnable {
         @Parameters(index = "1", arity = "1..*") String[] attributes;
 
         @Override
-        public String getCommandName() {
-            return RequestAttributes.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return RequestAttributes.class;
         }
 
         @Override
@@ -283,8 +284,8 @@ public class CommandLine implements Runnable {
         @Parameters(index = "0") String status;
 
         @Override
-        public String getCommandName() {
-            return CheckRequests.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return CheckRequests.class;
         }
         @Override
         public void commandBody() {
@@ -296,8 +297,8 @@ public class CommandLine implements Runnable {
     static class GetPersonalKeys extends BasicCommand {
 
         @Override
-        public String getCommandName() {
-            return GetPersonalKeys.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return GetPersonalKeys.class;
         }
 
         @Override
@@ -313,8 +314,8 @@ public class CommandLine implements Runnable {
         @Parameters(index = "1", arity = "1..*") String[] attributes;
 
         @Override
-        public String getCommandName() {
-            return GetAttributes.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return GetAttributes.class;
         }
         @Override
         public void commandBody() {
@@ -328,8 +329,8 @@ public class CommandLine implements Runnable {
         String[] content;
 
         @Override
-        public String getCommandName() {
-            return Publish.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Publish.class;
         }
 
         @Override
@@ -352,8 +353,8 @@ public class CommandLine implements Runnable {
         boolean attributes;
 
         @Override
-        public String getCommandName() {
-            return Send.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Send.class;
         }
 
         @Override
@@ -376,8 +377,8 @@ public class CommandLine implements Runnable {
         @Parameters(index = "1", arity = "1..*") String[] recordings;
 
         @Override
-        public String getCommandName() {
-            return GetRecordings.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return GetRecordings.class;
         }
 
         @Override
@@ -394,15 +395,25 @@ public class CommandLine implements Runnable {
         int subscenario;
 
         @Override
-        public String getCommandName() {
-            return Demonstration.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Demonstration.class;
+        }
+
+        @Override
+        public void run() {
+            Class<?> command = getCommandClass();
+            if (enableProfile) {
+                profiler.enablePersistentProfiling();
+            } else if (disableProfile) {
+                profiler.disablePersistentProfiling();
+            }
+            commandBody();
         }
 
         @Override
         public void commandBody() {
             validate();
             SmartDCPABEDemonstration.runMilestone(scenario, subscenario);
-            System.out.println(profiler);
         }
 
         private void validate() {
@@ -428,8 +439,8 @@ public class CommandLine implements Runnable {
         @Parameters(arity = "0..1", defaultValue = "") String command;
 
         @Override
-        public String getCommandName() {
-            return Help.class.getSimpleName();
+        public Class<?> getCommandClass() {
+            return Help.class;
         }
 
         @Override
@@ -440,7 +451,6 @@ public class CommandLine implements Runnable {
                 System.out.println("Unknown command: " + command);
             } else {
                 cmd.getSubcommands().get(command).usage(System.out);
-                //System.out.println(cmd.getHelp().allSubcommands().get(command).synopsis(10));
             }
         }
     }
