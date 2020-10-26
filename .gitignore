@@ -3,6 +3,7 @@
 
 # local folder for files
 /data/
+temp/
 
 # Compiled class file
 *.class
