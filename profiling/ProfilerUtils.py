@@ -1,24 +1,27 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-import csv
-import shlex, subprocess
-import random, string
-import os
-import io
-import javaobj
 import contextlib
+import csv
+import io
+import os
+import random
+import shlex
+import string
+import subprocess
+import time
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
-from shutil import copyfile
-import time
-import math
 
-ALPHABET = string.ascii_letters + string.digits + '_' + ''.join([x + x.upper() for x in 'çãéúáõâêû'])
+import javaobj
+
+ALPHABET = string.ascii_letters + string.digits + \
+    '_' + ''.join([x + x.upper() for x in 'çãéúáõâêû'])
+
 TEMP_FOLDER = '../profiling/temp/'
 NUM_THREADS = 2
 DEBUG = False
-START = None
+START = time.time()
 
 class TreeNode:
     def __init__(self):
@@ -28,13 +31,14 @@ class TreeNode:
     def isLeaf(self):
         return self.left is None and self.right is None
 
-    def buildRandomBinaryTree(self, number_leafs):
-        if (number_leafs == 1):
+    def build_random_binary_tree(self, number_leafs):
+        if number_leafs == 1:
             return self
-        leftSize = random.randint(1, number_leafs - 1)
-        self.left = TreeNode().buildRandomBinaryTree(leftSize)
-        self.right = TreeNode().buildRandomBinaryTree(number_leafs - leftSize)
+        left_size = random.randint(1, number_leafs - 1)
+        self.left = TreeNode().build_random_binary_tree(left_size)
+        self.right = TreeNode().build_random_binary_tree(number_leafs - left_size)
         return self
+
 
     def parseTreeToABEPolicy(self, autoridades, operators):
         if self.isLeaf():
@@ -43,20 +47,22 @@ class TreeNode:
         pks = []
         result = random.choice(operators)
         for subTree in [self.left, self.right]:
-            subPolicy, partial_pks = subTree.parseTreeToABEPolicy(autoridades, operators)
+            sub_policy, partial_pks = subTree.parseTreeToABEPolicy(
+                autoridades, operators)
             pks.extend([x for x in partial_pks if x not in pks])
-            result = result + ' ' + subPolicy
+            result = result + ' ' + sub_policy
         return result, pks
+
 
 def runJAVACommand(jar, command, params):
     args = 'java -jar {} {} {}'.format(jar, command, params)
-    exitCode = None
+    exit_code = None
     try:
-        sanitizedArgs = shlex.split(args)
-        exitCode = subprocess.call(sanitizedArgs, timeout = 30)
+        sanitized_args = shlex.split(args)
+        exit_code = subprocess.call(sanitized_args, timeout=30)
     except Exception as e:
         print(e)
-    return exitCode
+    return exit_code
 
 
 def inspectJSONObject(data, measurer_func):
@@ -70,22 +76,24 @@ def inspectJSONObject(data, measurer_func):
         all_results.extend(partial_results)
     return all_results
 
-def generateRandomString(minSize = 5, maxSize = 30):
-    return ''.join(random.choices(ALPHABET, k=random.randint(minSize, maxSize)))
 
-def randomPolicy(policySize, autoridades, operators):
-    randomTree = TreeNode().buildRandomBinaryTree(policySize)
-    return randomTree.parseTreeToABEPolicy(autoridades, operators)
+def generate_random_string(min_size=5, max_size=30):
+    return ''.join(random.choices(ALPHABET, k=random.randint(min_size, max_size)))
 
-def gatherDataFromCommand(n, command, csv_output_file, label, command_kwargs, rodada = 0, max_rodadas=1):
+
+def random_policy(policy_size, autoridades, operators):
+    random_tree = TreeNode().build_random_binary_tree(policy_size)
+    return random_tree.parseTreeToABEPolicy(autoridades, operators)
+
+
+def gather_data_from_command(n, command, csv_output_file, label, command_kwargs, rodada=0, max_rodadas=1):
     with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
-        buffer_size = NUM_THREADS*5
-        TET = []
-        for i in range(int(n/buffer_size)):
+        buffer_size = NUM_THREADS * 5
+        for i in range(int(n / buffer_size)):
             partial_start = time.time()
             jobs = []
             for j in range(buffer_size):
-                run_id = n*rodada + i*buffer_size + j
+                run_id = n * rodada + i * buffer_size + j
                 jobs.append(executor.submit(command, run_id, **command_kwargs))
             file_mode = 'w'
             if os.path.exists(csv_output_file):
@@ -100,25 +108,28 @@ def gatherDataFromCommand(n, command, csv_output_file, label, command_kwargs, ro
                 if label is not None:
                     writer.writerow(label)
                 writer.writerows(results)
-            percentage = ((i+1)*buffer_size + n*rodada)/(n*max_rodadas)
-            if int(10000*percentage) > 0:
+            percentage = ((i + 1) * buffer_size + n *
+                          rodada) / (n * max_rodadas)
+            if int(10000 * percentage) > 0:
                 partial_time = printNumberAsTime(time.time() - partial_start)
                 elapsed_time_ = time.time() - START
                 elapsed_time = printNumberAsTime(elapsed_time_)
-                TET = printNumberAsTime(elapsed_time_/percentage)
-                print('{:.2%} pronto em {}. Tempo total: {}. TET: {}'.format(percentage, partial_time, elapsed_time, TET))
-        if (max_rodadas != 1):
+                tet = printNumberAsTime(elapsed_time_ / percentage)
+                print(
+                    '{:.2%} pronto em {}. Tempo total: {}. tet: {}'.format(percentage, partial_time, elapsed_time, tet))
+        if max_rodadas != 1:
             print('subrotina {} terminada.'.format(rodada))
         else:
             print('Terminado.')
 
+
 def printNumberAsTime(measure):
-    h = int(measure/3600)
-    m = int(measure/60 - h*60)
-    s = measure - h*3600 - m*60
-    time_str = '{:.02}s'.format(s)
-    if (m != 0):
+    h = int(measure / 3600)
+    m = int(measure / 60 - h * 60)
+    s = round(measure - h * 3600 - m * 60, ndigits=2)
+    time_str = '{}s'.format(s)
+    if m != 0:
         time_str = '{}m'.format(m) + time_str
-    if (h != 0):
+    if h != 0:
         time_str = '{}h'.format(h) + time_str
     return time_str
