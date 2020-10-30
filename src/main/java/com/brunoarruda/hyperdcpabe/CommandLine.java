@@ -98,8 +98,9 @@ public class CommandLine implements Runnable {
         @Parameters(index = "2", description = "administrator's wallet private key")
         private String adminPrivateKey;
 
-        @Option(names = {"--network", "-n"}, description = "network address of Ethereum provider")
-        private String url = "http://127.0.0.1:7545";
+        @Option(names = {"--network", "-n"}, defaultValue = "http://127.0.0.1:7545", description = "network address of Ethereum provider. Defaults to ${DEFAULT VALUE}")
+        private String url;
+
         @Override
         public void commandBody () {
             client = new Client(url, adminName, adminEmail, adminPrivateKey);
@@ -344,11 +345,13 @@ public class CommandLine implements Runnable {
     }
 
     @Command(name = "help")
-    static class Help extends BasicCommand {
+    static class Help implements Runnable {
 
-        @Parameters(arity = "0..1", defaultValue = "") String command;
+        @Parameters(index = "0..1",defaultValue = "") String command;
+
         @Override
-        public void commandBody() {
+        public void run() {
+            System.out.println("test");
             if (command.equals("")) {
                 cmd.usage(System.out);
             } else if (!cmd.getHelp().allSubcommands().containsKey(command)) {
