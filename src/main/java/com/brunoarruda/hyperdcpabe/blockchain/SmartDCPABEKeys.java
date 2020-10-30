@@ -21,6 +21,7 @@ import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 
+// cSpell:disable
 /**
  * <p>Auto generated code.
  * <p><strong>Do not modify!</strong>
