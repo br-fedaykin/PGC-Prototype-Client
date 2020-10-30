@@ -126,7 +126,7 @@ def experiment_ciphertext_size():
         for j in range(0, max_rodadas, 5):
             command_kwargs = {'measurer': ciphertext_byte_size_measure,
                               'policy_size': j + 1, 'operators': ops_list[i]}
-            Util.gather_data_from_command(100, encrypt, 'sizeOfCiphertext{}.csv'.format(ops_names[i]), label, rodada=j,
+            Util.gather_data_from_command_multicore(100, encrypt, 'sizeOfCiphertext{}.csv'.format(ops_names[i]), label, rodada=j,
                                           max_rodadas=max_rodadas * 3, command_kwargs=command_kwargs)
     print('Finished experiment to measure Ciphertext size.')
 

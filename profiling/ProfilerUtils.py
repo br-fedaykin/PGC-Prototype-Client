@@ -87,6 +87,37 @@ def random_policy(policy_size, autoridades, operators):
 
 
 def gather_data_from_command(n, command, csv_output_file, label, command_kwargs, rodada=0, max_rodadas=1):
+    buffer_size = NUM_THREADS * 5
+    for i in range(int(n / buffer_size)):
+        partial_start = time.time()
+        results = []
+        for j in range(buffer_size):
+            run_id = n * rodada + i * buffer_size + j
+            results.extend(command(run_id, **command_kwargs))
+        file_mode = 'w'
+        if os.path.exists(csv_output_file):
+            file_mode = 'a'
+            label = None
+        with open(csv_output_file, file_mode, newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if label is not None:
+                writer.writerow(label)
+            writer.writerows(results)
+        percentage = ((i + 1) * buffer_size + n *
+                        rodada) / (n * max_rodadas)
+        if int(10000 * percentage) > 0:
+            partial_time = printNumberAsTime(time.time() - partial_start)
+            elapsed_time_ = time.time() - START
+            elapsed_time = printNumberAsTime(elapsed_time_)
+            tet = printNumberAsTime(elapsed_time_ / percentage)
+            print(
+                '{:.2%} pronto em {}. Tempo total: {}. tet: {}'.format(percentage, partial_time, elapsed_time, tet))
+    if max_rodadas != 1:
+        print('subrotina {} terminada.'.format(rodada))
+    else:
+        print('Terminado.')
+
+def gather_data_from_command_multicore(n, command, csv_output_file, label, command_kwargs, rodada=0, max_rodadas=1):
     with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
         buffer_size = NUM_THREADS * 5
         for i in range(int(n / buffer_size)):
