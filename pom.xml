@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.web3j</groupId>
             <artifactId>core</artifactId>
-            <version>4.3.1</version>
+            <version>4.8.0</version>
         </dependency>
         <!-- BUG: In order to Maven detect ethereum dependencies, all _remote.positories files inside their folders must be deleted -->
         <!-- https://mvnrepository.com/artifact/org.ethereum/ethereumj-core -->
