@@ -7,7 +7,7 @@ contract SmartDCPABEFiles is Collection {
 
     struct Recording {
         uint64 serverID;
-        bytes32 key;
+        bytes32 uRIPathname;
         bytes32 hashing;
         uint64 timestamp;
     }
@@ -21,8 +21,8 @@ contract SmartDCPABEFiles is Collection {
     }
 
     struct FileServer {
-        bytes32 domain;
-        bytes32 path;
+        string domain;
+        string path;
         uint16 port;
     }
 
@@ -49,7 +49,7 @@ contract SmartDCPABEFiles is Collection {
     }
 
     function addServer(string memory domain, string memory path, uint16 port) public returns (uint64 serverIndex) {
-        servers.push(FileServer(util.stringToBytes32(domain), util.stringToBytes32(path), port));
+        servers.push(FileServer(domain, path, port));
         serverIndex = numServers;
         numServers++;
     }
@@ -58,7 +58,7 @@ contract SmartDCPABEFiles is Collection {
         address addr,
         string memory filename,
         uint64 serverID,
-        bytes32 key,
+        bytes32 uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
@@ -70,7 +70,7 @@ contract SmartDCPABEFiles is Collection {
         if (files[addr][filename].timestamp == 0) {
             fileNames[addr].push(filename);
         }
-        files[addr][filename] = Recording(serverID, key, hashing, timestamp);
+        files[addr][filename] = Recording(serverID, uRIPathname, hashing, timestamp);
     }
 
     function addRecordingCiphertext
@@ -117,9 +117,8 @@ contract SmartDCPABEFiles is Collection {
     }
 
     function getServerID(string memory domain) public view returns (int64) {
-        bytes32 domainBytes32 = util.stringToBytes32(domain);
         for (uint64 i = 0; i < numServers; i++) {
-            if (domainBytes32 == servers[i].domain) {
+            if (keccak256(bytes(domain)) == keccak256(bytes(servers[i].domain))) {
                 return int64(i);
             }
         }
@@ -129,7 +128,7 @@ contract SmartDCPABEFiles is Collection {
     function getServer(uint64 index) public view returns (string memory domain, string memory path, uint16 port) {
         assert(index < numServers);
         FileServer storage s = servers[index];
-        return (util.bytes32ToString(s.domain), util.bytes32ToString(s.path), s.port);
+        return (s.domain, s.path, s.port);
     }
 
     function getRecording
@@ -143,7 +142,7 @@ contract SmartDCPABEFiles is Collection {
     (
         string memory,
         uint64 serverID,
-        bytes32 key,
+        bytes32 uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
@@ -162,7 +161,7 @@ contract SmartDCPABEFiles is Collection {
     (
         string memory,
         uint64 serverID,
-        bytes32 key,
+        bytes32 uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
@@ -171,7 +170,7 @@ contract SmartDCPABEFiles is Collection {
         return (
             name,
             r.serverID,
-            r.key,
+            r.uRIPathname,
             r.hashing,
             r.timestamp
         );
