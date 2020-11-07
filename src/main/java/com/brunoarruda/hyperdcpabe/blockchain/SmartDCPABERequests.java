@@ -148,6 +148,7 @@ public class SmartDCPABERequests extends Contract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
+    @SuppressWarnings("unchecked")
     public RemoteCall<Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<String>>> getRequest(String certifier, String requester, BigInteger index) {
         final Function function = new Function(FUNC_GETREQUEST,
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(certifier),
