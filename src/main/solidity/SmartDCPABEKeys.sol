@@ -20,8 +20,8 @@ contract SmartDCPABEKeys is Collection {
 
     SmartDCPABEUtility util;
     SmartDCPABEAuthority authority;
-    mapping (address => bytes32[]) publicKeyNames;
-    mapping (address => mapping (bytes32 => PublicKey)) ABEKeys;
+    mapping (address => string[]) publicKeyNames;
+    mapping (address => mapping (string => PublicKey)) ABEKeys;
 
     constructor(address root) Collection(root) public {}
 
@@ -34,7 +34,6 @@ contract SmartDCPABEKeys is Collection {
     }
 
     function addPublicKey(address addr, string memory name, bytes memory eg1g1ai, bytes memory g1yi) public {
-        bytes32 nameBytes32 = util.stringToBytes32(name);
         bytes32[3] memory eg1g1aiChunks;
         bytes31 eg1g1aiLastChunk;
         uint8 eg1g1aiLastChunkSize = uint8(eg1g1ai.length % 32);
@@ -56,14 +55,14 @@ contract SmartDCPABEKeys is Collection {
             g1yiLastChunk := mload(add(g1yi, 0x80))
         }
 
-        addPublicKey(addr, nameBytes32, eg1g1aiChunks, eg1g1aiLastChunk, eg1g1aiLastChunkSize,
+        addPublicKey(addr, name, eg1g1aiChunks, eg1g1aiLastChunk, eg1g1aiLastChunkSize,
                      g1yiChunks, g1yiLastChunk, g1yiLastChunkSize);
     }
 
     function addPublicKey
     (
         address addr,
-        bytes32 name,
+        string memory name,
         bytes32[3] memory eg1g1aiChunks,
         bytes31 eg1g1aiLastChunk,
         uint8 eg1g1aiLastChunkSize,
@@ -99,7 +98,7 @@ contract SmartDCPABEKeys is Collection {
         bytes memory g1yi
     )
     {
-        PublicKey storage pk = ABEKeys[addr][util.stringToBytes32(name)];
+        PublicKey storage pk = ABEKeys[addr][name];
         return (
             name,
             abi.encodePacked(
