@@ -1,5 +1,4 @@
 pragma solidity ^0.5.1;
-import "./SmartDCPABEUtility.sol";
 import "./SmartDCPABEUsers.sol";
 import "./Collection.sol";
 
@@ -35,15 +34,12 @@ contract SmartDCPABEFiles is Collection {
      */
 
     FileServer[] servers;
-    SmartDCPABEUtility util;
     SmartDCPABEUsers users;
 
     constructor(address root) Collection(root) public {}
 
     function setContractDependencies(ContractType contractType, address addr) public onlyOwner {
-        if (contractType == ContractType.UTILITY) {
-            util = SmartDCPABEUtility(addr);
-        } else if (contractType == ContractType.USERS) {
+        if (contractType == ContractType.USERS) {
             users = SmartDCPABEUsers(addr);
         }
     }
