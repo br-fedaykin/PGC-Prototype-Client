@@ -1,11 +1,9 @@
 package com.brunoarruda.hyperdcpabe.blockchain;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -156,7 +154,7 @@ public class BlockchainConnection {
         String address = authority.split("-")[1];
         try {
             Tuple4<String, String, String, BigInteger> certifier = scAuthority.getCertifier(address).send();
-            if (certifier.getValue4().equals(BigInteger.ZERO)) {
+            if (certifier.component4().equals(BigInteger.ZERO)) {
                 log.info("A autoridade {} não publicou nenhum atributo.", authName);
                 profiler.end();
                 return null;
@@ -164,7 +162,7 @@ public class BlockchainConnection {
                 Map<String, PublicKey> keys = new HashMap<String, PublicKey>();
                 for (String attr : attributes) {
                     Tuple3<String, byte[], byte[]> keyData = scKeys.getPublicKey(address, attr).send();
-                    keys.put(attr, new PublicKey(keyData.getValue2(), keyData.getValue3()));
+                    keys.put(attr, new PublicKey(keyData.component2(), keyData.component3()));
                 }
                 profiler.end();
                 return keys;
@@ -292,21 +290,21 @@ public class BlockchainConnection {
         CiphertextJSON ct = null;
         Tuple5<String, byte[], byte[], byte[], byte[]> ciphertextData;
         ciphertextData = scFiles.getCiphertext(user, fileName).send();
-        if (!ciphertextData.getValue1().equals("")) {
-            AccessStructure as = AccessStructure.buildFromPolicy(ciphertextData.getValue1());
-            String c0_ = new String(ciphertextData.getValue2(), "UTF-8");
+        if (!ciphertextData.component1().equals("")) {
+            AccessStructure as = AccessStructure.buildFromPolicy(ciphertextData.component1());
+            String c0_ = new String(ciphertextData.component2(), "UTF-8");
             byte[] c0 = Base64.getDecoder().decode(c0_);
-            String c1x_ = new String(ciphertextData.getValue3(), "UTF-8");
+            String c1x_ = new String(ciphertextData.component3(), "UTF-8");
             List<byte[]> c1x = new ArrayList<>();
             for (String x : c1x_.replace("[", "").replace("]", "").split(",")) {
                 c1x.add(Base64.getDecoder().decode(x.replace("\"", "")));
             }
-            String c2x_ = new String(ciphertextData.getValue4(), "UTF-8");
+            String c2x_ = new String(ciphertextData.component4(), "UTF-8");
             List<byte[]> c2x = new ArrayList<>();
             for (String x : c2x_.replace("[", "").replace("]", "").split(",")) {
                 c2x.add(Base64.getDecoder().decode(x.replace("\"", "")));
             }
-            String c3x_ = new String(ciphertextData.getValue5(), "UTF-8");
+            String c3x_ = new String(ciphertextData.component5(), "UTF-8");
             List<byte[]> c3x = new ArrayList<>();
             for (String x : c3x_.replace("[", "").replace("]", "").split(",")) {
                 c3x.add(Base64.getDecoder().decode(x.replace("\"", "")));
@@ -323,14 +321,14 @@ public class BlockchainConnection {
         try {
             Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
             recordingData = scFiles.getRecording(user, fileName).send();
-            if (recordingData.getValue5().intValue() != 0) {
-                String key = Base64.getEncoder().encodeToString(recordingData.getValue3());
-                String hash = Base64.getEncoder().encodeToString(recordingData.getValue4());
-                long timestamp = recordingData.getValue5().longValue();
-                Tuple3<String, String, BigInteger> serverData = scFiles.getServer(recordingData.getValue2()).send();
-                String domain = serverData.getValue1();
-                String serverPath = serverData.getValue2();
-                int port = serverData.getValue3().intValue();
+            if (recordingData.component5().intValue() != 0) {
+                String key = Base64.getEncoder().encodeToString(recordingData.component3());
+                String hash = Base64.getEncoder().encodeToString(recordingData.component4());
+                long timestamp = recordingData.component5().longValue();
+                Tuple3<String, String, BigInteger> serverData = scFiles.getServer(recordingData.component2()).send();
+                String domain = serverData.component1();
+                String serverPath = serverData.component2();
+                int port = serverData.component3().intValue();
                 String recordingFN = fileName.split("\\.")[0];
                 CiphertextJSON ct = getCiphertext(user, fileName);
                 if (ct != null) {
@@ -363,16 +361,16 @@ public class BlockchainConnection {
             }
             BigInteger numRequests = scRequests.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
-                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<String>> requestTuple;
                 requestTuple = scRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
-                request.put("status", requestTuple.getValue1().intValue());
-                request.put("index", requestTuple.getValue2().intValue());
-                request.put("timestamp", requestTuple.getValue3());
-                request.put("responseTimestamp", requestTuple.getValue4());
+                request.put("status", requestTuple.component1().intValue());
+                request.put("index", requestTuple.component2().intValue());
+                request.put("timestamp", requestTuple.component3());
+                request.put("responseTimestamp", requestTuple.component4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (byte[] attrName : requestTuple.getValue5()) {
-                    attributes.add(trimmedToString(attrName));
+                for (String attribute : requestTuple.component5()) {
+                    attributes.add(attribute);
                 }
                 requests.add(request);
             }
@@ -383,26 +381,13 @@ public class BlockchainConnection {
         return requests;
     }
 
-    // NOTE: check if this code and others could be confined in a util class
-    private String trimmedToString(byte[] data) throws UnsupportedEncodingException {
-        return new String(data, "UTF-8").replaceFirst("\u0000+$", "");
-    }
-
     public ObjectNode publishAttributeRequest(String authority, String address, List<String> attributes) {
         profiler.start(this.getClass(), "publishAttributeRequest");
-        List<byte[]> attributes_ = new ArrayList<byte[]>();
-        attributes.forEach(s -> {
-            try {
-                attributes_.add(Arrays.copyOf(s.getBytes("UTF-8"), 32));
-            } catch (UnsupportedEncodingException e) {
-                log.error("Não foi possível transformar o nome dos atributos em uma lista de bytes", e);
-            }
-        });
         ObjectNode request = null;
         try {
             BigInteger index = scRequests.getRequestListSize(authority, address).send();
             long timestamp = System.currentTimeMillis();
-            TransactionReceipt tr = scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_).send();
+            TransactionReceipt tr = scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes).send();
             profiler.addGasCost(tr.getGasUsed());
             request = fc.getMapper().createObjectNode();
             request.put("index", index);
@@ -426,7 +411,7 @@ public class BlockchainConnection {
             log.error("Não foi possível averiguar se o usuário {} exite. ", address, e);
         }
         profiler.end();
-        return user != null && !user.getValue1().equals("");
+        return user != null && !user.component1().equals("");
     }
 
     public ArrayNode getAttributeRequestsForUser(String userID, String status) {
@@ -562,17 +547,17 @@ public class BlockchainConnection {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < pendingRequests.size(); i++) {
-                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<byte[]>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<String>> requestTuple;
                 requestTuple = scRequests.getRequest(authority, address, pendingRequests.get(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("pendingIndex", i);
-                request.put("status", requestTuple.getValue1().intValue());
-                request.put("index", requestTuple.getValue2().intValue());
-                request.put("timestamp", requestTuple.getValue3());
-                request.put("responseTimestamp", requestTuple.getValue4());
+                request.put("status", requestTuple.component1().intValue());
+                request.put("index", requestTuple.component2().intValue());
+                request.put("timestamp", requestTuple.component3());
+                request.put("responseTimestamp", requestTuple.component4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (byte[] attrName : requestTuple.getValue5()) {
-                    attributes.add(trimmedToString(attrName));
+                for (String attrName : requestTuple.component5()) {
+                    attributes.add(attrName);
                 }
                 requests.add(request);
             }
@@ -624,6 +609,6 @@ public class BlockchainConnection {
             log.error("Não foi possível verificar se o certificador {} existe.", address, e);
         }
         profiler.end();
-        return certifier != null && !certifier.getValue1().equals("");
+        return certifier != null && !certifier.component1().equals("");
     }
 }
