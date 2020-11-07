@@ -68,28 +68,26 @@ contract SmartDCPABERoot {
     }
 
     function receiveContractDependencies(Collection.ContractType contractType) private {
+        if (contractType != UTILITY || contractType != USERS) {
+            return;
+        }
         Collection.ContractType[numContracts] memory dependencies;
         uint8 numDependencies = 0;
-        if (contractType != UTILITY) {
+        if (contractType == AUTHORITY) {
+            dependencies[0] = KEYS;
+            dependencies[1] = USERS;
+            numDependencies = 2;
+        } else if (contractType == FILES) {
+            dependencies[0] = USERS;
+            numDependencies = 1;
+        } else if (contractType == KEYS) {
             dependencies[0] = UTILITY;
-            if (contractType == AUTHORITY) {
-                dependencies[1] = KEYS;
-                dependencies[2] = USERS;
-                numDependencies = 3;
-            } else if (contractType == FILES) {
-                dependencies[1] = USERS;
-                numDependencies = 2;
-            } else if (contractType == KEYS) {
-                dependencies[1] = AUTHORITY;
-                numDependencies = 2;
-            } else if (contractType == REQUESTS) {
-                // overwrites utility preset dependency, its the only contract that doesn't use it (yet).
-                dependencies[0] = USERS;
-                dependencies[1] = AUTHORITY;
-                numDependencies = 2;
-            } else if (contractType == USERS) {
-                numDependencies = 1;
-            }
+            dependencies[1] = AUTHORITY;
+            numDependencies = 2;
+        } else if (contractType == REQUESTS) {
+            dependencies[0] = USERS;
+            dependencies[1] = AUTHORITY;
+            numDependencies = 2;
         }
 
         uint8 index = uint8(contractType);
@@ -102,6 +100,9 @@ contract SmartDCPABERoot {
     }
 
     function supplyContractDependencies(Collection.ContractType contractType) private {
+        if (contractType != FILES || contractType != REQUESTS) {
+            return;
+        }
         Collection.ContractType[numContracts] memory dependencies;
         uint8 numDependencies = 0;
         if (contractType == AUTHORITY) {
@@ -117,12 +118,8 @@ contract SmartDCPABERoot {
             dependencies[2] = REQUESTS;
             numDependencies = 3;
         } else if (contractType == UTILITY) {
-            dependencies[0] = AUTHORITY;
-            dependencies[1] = FILES;
             dependencies[2] = KEYS;
-            dependencies[3] = USERS;
-            dependencies[4] = UTILITY;
-            numDependencies = 5;
+            numDependencies = 1;
         }
 
         uint8 index = uint8(contractType);
