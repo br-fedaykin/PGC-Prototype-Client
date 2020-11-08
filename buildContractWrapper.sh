@@ -15,11 +15,11 @@ fi
 
 echo ""
 echo -n "Generating Java wrapper classes for each contract ... "
-web3j solidity generate -a=bin/src/solidity/smartDCPABEAuthority.abi -b=bin/src/solidity/smartDCPABEAuthority.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABEFiles.abi -b=bin/src/solidity/smartDCPABEFiles.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABEKeys.abi -b=bin/src/solidity/smartDCPABEKeys.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABERequests.abi -b=bin/src/solidity/smartDCPABERequests.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABERoot.abi -b=bin/src/solidity/smartDCPABERoot.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABEUsers.abi -b=bin/src/solidity/smartDCPABEUsers.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
-web3j solidity generate -a=bin/src/solidity/smartDCPABEUtility.abi -b=bin/src/solidity/smartDCPABEUtility.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABEAuthority.abi -b=bin/src/solidity/smartDCPABEAuthority.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABEFiles.abi -b=bin/src/solidity/smartDCPABEFiles.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABEKeys.abi -b=bin/src/solidity/smartDCPABEKeys.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABERequests.abi -b=bin/src/solidity/smartDCPABERequests.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABERoot.abi -b=bin/src/solidity/smartDCPABERoot.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABEUsers.abi -b=bin/src/solidity/smartDCPABEUsers.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
+epirus generate solidity generate -a=bin/src/solidity/smartDCPABEUtility.abi -b=bin/src/solidity/smartDCPABEUtility.bin -o=src/main/java -p=com.brunoarruda.hyperdcpabe.blockchain > /dev/null
 echo "Done, classes are inside blockchain package."

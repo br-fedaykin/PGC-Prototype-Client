@@ -34,6 +34,8 @@ contract SmartDCPABEKeys is Collection {
     }
 
     function addPublicKey(address addr, string memory name, bytes memory eg1g1ai, bytes memory g1yi) public {
+        require(authority.isCertifier(addr), "certifier not found");
+
         bytes32[3] memory eg1g1aiChunks;
         bytes31 eg1g1aiLastChunk;
         uint8 eg1g1aiLastChunkSize = uint8(eg1g1ai.length % 32);
@@ -70,18 +72,16 @@ contract SmartDCPABEKeys is Collection {
         bytes31 g1yiLastChunk,
         uint8 g1yiLastChunkSize
     )
-        public
+        internal
     {
-
-        assert(authority.isCertifier(addr));
         Bytes127 memory eg1g1ai = Bytes127(eg1g1aiChunks[0], eg1g1aiChunks[1], eg1g1aiChunks[2], eg1g1aiLastChunk, eg1g1aiLastChunkSize);
         Bytes127 memory g1yi = Bytes127(g1yiChunks[0], g1yiChunks[1], g1yiChunks[2], g1yiLastChunk, g1yiLastChunkSize);
-        ABEKeys[addr][name] = PublicKey(eg1g1ai, g1yi);
         // checks existence of data to decide whether to push or not name into the stack
         if (uint(ABEKeys[addr][name].eg1g1ai.chunk1) == uint(0)) {
             publicKeyNames[addr].push(name);
+            authority.incrementPublicKeyCount(addr);
         }
-        authority.incrementPublicKeyCount(addr);
+        ABEKeys[addr][name] = PublicKey(eg1g1ai, g1yi);
     }
 
     function getPublicKey
