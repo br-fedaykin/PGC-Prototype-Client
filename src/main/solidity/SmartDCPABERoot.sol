@@ -68,7 +68,7 @@ contract SmartDCPABERoot {
     }
 
     function receiveContractDependencies(Collection.ContractType contractType) private {
-        if (contractType != UTILITY || contractType != USERS) {
+        if (contractType == UTILITY || contractType == USERS) {
             return;
         }
         Collection.ContractType[numContracts] memory dependencies;
@@ -100,7 +100,7 @@ contract SmartDCPABERoot {
     }
 
     function supplyContractDependencies(Collection.ContractType contractType) private {
-        if (contractType != FILES || contractType != REQUESTS) {
+        if (contractType == FILES || contractType == REQUESTS) {
             return;
         }
         Collection.ContractType[numContracts] memory dependencies;
@@ -118,7 +118,7 @@ contract SmartDCPABERoot {
             dependencies[2] = REQUESTS;
             numDependencies = 3;
         } else if (contractType == UTILITY) {
-            dependencies[2] = KEYS;
+            dependencies[0] = KEYS;
             numDependencies = 1;
         }
 
