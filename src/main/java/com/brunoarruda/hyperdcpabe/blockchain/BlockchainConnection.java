@@ -208,7 +208,7 @@ public class BlockchainConnection {
         byte[] c3 = obj.get("ciphertext").get("c3").toString().getBytes();
         try {
             BigInteger numRecording_ = scFiles.getFileCounting(address).send();
-            byte[] key = obj.get("key").binaryValue();
+            String key = obj.get("key").asText();
             byte[] hash = obj.get("hash").binaryValue();
             profiler.start(this.getClass(), "addRecording");
             tr = scFiles.addRecording(address, fileName, serverID, key, hash, timestamp).send();
@@ -319,10 +319,10 @@ public class BlockchainConnection {
         profiler.start(this.getClass(), "getRecording");
         Recording r = null;
         try {
-            Tuple5<String, BigInteger, byte[], byte[], BigInteger> recordingData;
+            Tuple5<String, BigInteger, String, byte[], BigInteger> recordingData;
             recordingData = scFiles.getRecording(user, fileName).send();
             if (recordingData.component5().intValue() != 0) {
-                String key = Base64.getEncoder().encodeToString(recordingData.component3());
+                String key = recordingData.component3();
                 String hash = Base64.getEncoder().encodeToString(recordingData.component4());
                 long timestamp = recordingData.component5().longValue();
                 Tuple3<String, String, BigInteger> serverData = scFiles.getServer(recordingData.component2()).send();
@@ -361,7 +361,7 @@ public class BlockchainConnection {
             }
             BigInteger numRequests = scRequests.getRequestListSize(authority, address).send();
             for (int i = listSizeLocal; i < numRequests.intValue(); i++) {
-                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<String>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, String> requestTuple;
                 requestTuple = scRequests.getRequest(authority, address, BigInteger.valueOf(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("status", requestTuple.component1().intValue());
@@ -369,7 +369,7 @@ public class BlockchainConnection {
                 request.put("timestamp", requestTuple.component3());
                 request.put("responseTimestamp", requestTuple.component4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (String attribute : requestTuple.component5()) {
+                for (String attribute : requestTuple.component5().split(",\\s*")) {
                     attributes.add(attribute);
                 }
                 requests.add(request);
@@ -387,7 +387,8 @@ public class BlockchainConnection {
         try {
             BigInteger index = scRequests.getRequestListSize(authority, address).send();
             long timestamp = System.currentTimeMillis();
-            TransactionReceipt tr = scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes).send();
+            String attributes_str = String.join(", ", attributes);
+            TransactionReceipt tr = scRequests.addRequest(authority, address, BigInteger.valueOf(timestamp), attributes_str).send();
             profiler.addGasCost(tr.getGasUsed());
             request = fc.getMapper().createObjectNode();
             request.put("index", index);
@@ -547,7 +548,7 @@ public class BlockchainConnection {
         ArrayNode requests = fc.getMapper().createArrayNode();
         try {
             for (int i = 0; i < pendingRequests.size(); i++) {
-                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, List<String>> requestTuple;
+                Tuple5<BigInteger, BigInteger, BigInteger, BigInteger, String> requestTuple;
                 requestTuple = scRequests.getRequest(authority, address, pendingRequests.get(i)).send();
                 ObjectNode request = fc.getMapper().createObjectNode();
                 request.put("pendingIndex", i);
@@ -556,7 +557,7 @@ public class BlockchainConnection {
                 request.put("timestamp", requestTuple.component3());
                 request.put("responseTimestamp", requestTuple.component4());
                 ArrayNode attributes = request.putArray("attributes");
-                for (String attrName : requestTuple.component5()) {
+                for (String attrName : requestTuple.component5().split(",\\s*")) {
                     attributes.add(attrName);
                 }
                 requests.add(request);

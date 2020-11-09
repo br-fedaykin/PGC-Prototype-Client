@@ -1,5 +1,4 @@
 pragma solidity ^0.5.1;
-pragma experimental ABIEncoderV2;
 
 import "./SmartDCPABEAuthority.sol";
 import "./SmartDCPABEUsers.sol";
@@ -17,7 +16,7 @@ contract SmartDCPABERequests is Collection {
         KeyRequestStatus status;
         uint64 timestamp;
         uint64 responseTimestamp;
-        string[] attrNames;
+        string attrNames;
     }
 
     event pendingRequestIndexChanged (
@@ -50,7 +49,7 @@ contract SmartDCPABERequests is Collection {
      * attrNames are bytes32 instead of string because I don't tested if web3j works well
      * with dynamic array of dynamic types string/bytes
      */
-    function addRequest(address certifier, address requester, uint64 timestamp, string[] memory attrNames) public {
+    function addRequest(address certifier, address requester, uint64 timestamp, string memory attrNames) public {
         assert(user.isUser(requester));
         assert(authority.isCertifier(certifier));
         // cria uma lista de espera para aquele endereço
@@ -119,7 +118,7 @@ contract SmartDCPABERequests is Collection {
         uint64,
         uint64 timestamp,
         uint64 responseTimestamp,
-        string[] memory attrNames
+        string memory attrNames
     )
     {
         KeyRequest memory kr = requests[certifier][requester][index];

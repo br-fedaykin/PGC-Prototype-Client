@@ -27,9 +27,9 @@ public class SmartDCPABEDemonstration {
     }
 
     private static final PersonData ADMIN = new PersonData(
-            "admin",
-            "0xFae373E0BFfaE794fA818D749D6da38D4f7cA986",
-            "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241"
+        "admin",
+        "0xFae373E0BFfaE794fA818D749D6da38D4f7cA986",
+        "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241"
     );
     private static final PersonData CRM = new PersonData(
         "crm",

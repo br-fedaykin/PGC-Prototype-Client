@@ -6,7 +6,7 @@ contract SmartDCPABEFiles is Collection {
 
     struct Recording {
         uint64 serverID;
-        bytes32 uRIPathname;
+        string uRIPathname;
         bytes32 hashing;
         uint64 timestamp;
     }
@@ -54,7 +54,7 @@ contract SmartDCPABEFiles is Collection {
         address addr,
         string memory filename,
         uint64 serverID,
-        bytes32 uRIPathname,
+        string memory uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
@@ -136,9 +136,9 @@ contract SmartDCPABEFiles is Collection {
         view
         returns
     (
-        string memory,
+        string memory name,
         uint64 serverID,
-        bytes32 uRIPathname,
+        string memory uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
@@ -155,9 +155,9 @@ contract SmartDCPABEFiles is Collection {
         view
         returns
     (
-        string memory,
+        string memory name_,
         uint64 serverID,
-        bytes32 uRIPathname,
+        string memory uRIPathname,
         bytes32 hashing,
         uint64 timestamp
     )
