@@ -81,9 +81,9 @@ public class BlockchainConnection {
             this.contractAddress = contractAddress;
         }
         profiler.end();
-	}
+    }
 
-	public Map<String, String> deployContracts(Credentials credentials) {
+    public Map<String, String> deployContracts(Credentials credentials) {
         profiler.start(this.getClass(), "deployContracts");
         try {
             scRoot = SmartDCPABERoot.deploy(web3j, credentials, dgp).send();
@@ -105,7 +105,7 @@ public class BlockchainConnection {
 
             List<String> addressList = new ArrayList<String>();
             List<BigInteger> indexes = new ArrayList<BigInteger>();
-            String[] keys = {"Authority", "Files", "Keys", "Requests", "Users", "Utility"};
+            String[] keys = { "Authority", "Files", "Keys", "Requests", "Users", "Utility" };
             for (int i = 0; i < keys.length; i++) {
                 addressList.add(contractAddress.get(keys[i]));
                 indexes.add(BigInteger.valueOf(i));
@@ -114,6 +114,24 @@ public class BlockchainConnection {
             profiler.addGasCost(tr.getGasUsed());
         } catch (Exception e) {
             log.error("Não foi possível publicar os Smart Contracts na Blockchain.", e);
+        }
+        profiler.end();
+        return contractAddress;
+    }
+
+    public Map<String, String> loadContracts(String adminPrivateKey, String rootAddress) {
+        profiler.start(this.getClass(), "loadContracts");
+        scRoot = SmartDCPABERoot.load(rootAddress, web3j, Credentials.create(adminPrivateKey), dgp);
+        try {
+            List<String> adressess = scRoot.getAllContractAddresses().send();
+            contractAddress.put("Authority", adressess.get(0));
+            contractAddress.put("Files", adressess.get(1));
+            contractAddress.put("Keys", adressess.get(2));
+            contractAddress.put("Requests", adressess.get(3));
+            contractAddress.put("Users", adressess.get(4));
+            contractAddress.put("Utility", adressess.get(5));
+        } catch (Exception e) {
+            log.error("Não foi possível carregar os Smart Contracts da Blockchain.", e);
         }
         profiler.end();
         return contractAddress;

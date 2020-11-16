@@ -118,6 +118,29 @@ public final class Client {
         profiler.end();
     }
 
+    public Client(String networkURL, String rootAddress, String adminPrivateKey) {
+        ExecutionProfiler.getInstance();
+        profiler.start(this.getClass(), "constructor");
+        this.server = new ServerConnection(SERVER_PORT);
+        this.blockchain = new BlockchainConnection(networkURL);
+        profiler.start(DCPABE.class, "globalSetup");
+        gp = DCPABE.globalSetup(160);
+        profiler.end();
+
+        contractAddress = blockchain.loadContracts(adminPrivateKey, rootAddress);
+        ObjectNode address = fc.getMapper().createObjectNode();
+        contractAddress.forEach((key, val) -> address.put(key, val));
+        ObjectNode gpJSON = fc.getMapper().convertValue(gp, ObjectNode.class);
+        ObjectNode clientData = fc.getMapper().createObjectNode();
+        clientData.put("currentUserID", "");
+        clientData.put("networkURL", networkURL);
+        clientData.set("globalParameters", gpJSON);
+        clientData.set("contractAddress", address);
+        fc.writeToDir(CLIENT_PATH, "clientData.json", clientData);
+        log.debug("Módulo cliente configurado.");
+        profiler.end();
+    }
+
     public Client(String networkURL, String adminName, String adminEmail, String adminPrivateKey) {
         ExecutionProfiler.getInstance();
         profiler.start(this.getClass(), "constructor");

@@ -4,6 +4,7 @@ import com.brunoarruda.hyperdcpabe.Client.RequestStatus;
 import com.brunoarruda.hyperdcpabe.monitor.ExecutionProfiler;
 
 import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -89,11 +90,25 @@ public class CommandLine implements Runnable {
 
     @Command(name = "init")
     static class Init extends BasicCommand {
-        @Parameters(index = "0", description = "administrator name")
-        private String adminName;
 
-        @Parameters(index = "1", description = "administrator e-mail")
-        private String adminEmail;
+        @ArgGroup(exclusive = true, multiplicity = "1")
+        DeployArguments deploy;
+
+        static class DeployArguments {
+            @Parameters(index = "0", description = "administrator name")
+            private String adminName;
+
+            @Parameters(index = "1", description = "administrator e-mail")
+            private String adminEmail;
+        }
+
+        @ArgGroup(exclusive = true, multiplicity = "1")
+        LoadArguments load;
+
+        static class LoadArguments {
+            @Parameters(index = "0", defaultValue = "", description = "SmartDCPABERoot address")
+            String rootAddress;
+        }
 
         @Parameters(index = "2", description = "administrator's wallet private key")
         private String adminPrivateKey;
@@ -103,7 +118,11 @@ public class CommandLine implements Runnable {
 
         @Override
         public void commandBody () {
-            client = new Client(url, adminName, adminEmail, adminPrivateKey);
+            if (load.rootAddress.equals("")) {
+                client = new Client(url, load.rootAddress, adminPrivateKey);
+            } else {
+                client = new Client(url, deploy.adminName, deploy.adminEmail, adminPrivateKey);
+            }
         }
     }
 
