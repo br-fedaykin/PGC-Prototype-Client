@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import contextlib
 import csv
 import io
@@ -119,7 +116,7 @@ def gather_data_from_command(n, command, csv_output_file, label, command_kwargs,
 
 def gather_data_from_command_multicore(n, command, csv_output_file, label, command_kwargs, rodada=0, max_rodadas=1):
     with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
-        buffer_size = NUM_THREADS * 5
+        buffer_size = NUM_THREADS * 25
         for i in range(int(n / buffer_size)):
             partial_start = time.time()
             jobs = []

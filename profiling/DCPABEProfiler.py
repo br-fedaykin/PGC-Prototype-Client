@@ -1,9 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import javaobj
 import io
 import contextlib
 import base64
 import random
 import time
+import os
 
 import ProfilerUtils as Util
 
@@ -100,6 +104,7 @@ def encrypt(run_id, policy_size=1, measurer=None, operators=('and', 'or')):
     if exit_code != 0:
         print('ATENÇÃO: o seguinte input causou um erro de execução em java: {}.'.format(params))
         errorfolder = TEMP_FOLDER + 'erro{}/'.format(time.time())
+        os.mkdir(errorfolder)
         for pubKey in pks:
             copyfile(pubKey, errorfolder + pubKey)
         resource_file = 'file{}.txt'.format(worker_number)
@@ -123,7 +128,8 @@ def experiment_ciphertext_size():
     max_rodadas = 100
     gsetup()
     for i in range(len(ops_list)):
-        for j in range(0, max_rodadas, 5):
+        min_rodadas = 0
+        for j in range(min_rodadas, max_rodadas):
             command_kwargs = {'measurer': ciphertext_byte_size_measure,
                               'policy_size': j + 1, 'operators': ops_list[i]}
             Util.gather_data_from_command_multicore(100, encrypt, 'sizeOfCiphertext{}.csv'.format(ops_names[i]), label, rodada=j,
