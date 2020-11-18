@@ -59,3 +59,9 @@ buildNumber.properties
 .classpath
 .project
 .vscode/
+
+#
+# API TOKEN PLACEHOLDER
+#
+*API_KEY
+*API_KEYS

@@ -51,12 +51,12 @@ class TreeNode:
         return result, pks
 
 
-def runJAVACommand(jar, command, params):
+def runJAVACommand(jar, command, params = '', timeout = 30):
     args = 'java -jar {} {} {}'.format(jar, command, params)
     exit_code = None
     try:
         sanitized_args = shlex.split(args)
-        exit_code = subprocess.call(sanitized_args, timeout=30)
+        exit_code = subprocess.call(sanitized_args, timeout=timeout)
     except Exception as e:
         print(e)
     return exit_code

@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import csv
+import json
 import os
 import random
 import time
@@ -8,8 +13,18 @@ import bitcoinaddress as btc
 
 from ProfilerUtils import TEMP_FOLDER, DEBUG, START, NUM_THREADS
 
-SMART_DCPABE = '../lib/hyperdcpabe-client-0.1-SNAPSHOT-jar-with-dependencies.jar'
+SMART_DCPABE = '../lib/rinkeby/hyperdcpabe-client-0.1.1-SNAPSHOT-jar-with-dependencies.jar'
+LOG_FOLDER = 'logs'
 
+MAX_ATRIBUTOS = 100
+ATTRIBUTES = ['atributo{:03}'.format(x) for x in range(MAX_ATRIBUTOS)]
+TOKEN = None
+with open('API_KEY', 'r') as f:
+    try:
+        TOKEN = f.read()
+    except Exception:
+        print('file API_KEY not found. Please create the file and put inside it your Infura Token.')
+TOKEN = 'http://127.0.0.1:7545'
 
 class User:
     def __init__(self, name, wallet=None, private_key=None):
@@ -17,6 +32,9 @@ class User:
         self.email = name.lower() + '@email.com'
         if wallet is None or private_key is None:
             new_wallet()
+        else:
+            self.wallet = wallet
+            self.private_key = private_key
         self.gid = '{}-{}'.format(self.name, self.wallet)
 
     def new_wallet(self):
@@ -26,95 +44,86 @@ class User:
         self.wallet = wallet
         self.private_key = private_key
 
+    def data(self):
+        return {'name': self.name, 'email': self.email, 'gid': self.gid, 'wallet': self.wallet, 'privkey': self.private_key}
+
 
 ADMIN = User('admin', '0xFae373E0BFfaE794fA818D749D6da38D4f7cA986',
              'e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241')
-
-BOB = User('Bob')
-ALICE = User('Alice')
-CRM = User('CRM')
-
-
-def start_blockchain():
-    mnemonic = 'pumpkin immense certain snack please patch universe leisure reopen truth eight gown'
-    args = 'ganache-cli -a 10 -d -m "{}" -p 7545 -k petersburg'.format(
-        mnemonic)
-    os.system('start cmd /k {}'.format(args))
-    time.sleep(5)
-    print('Blockchain initialized')
+BOB = User('Bob', '0xF7908374b1a445cCf65F729887dbB695c918BEfc',
+           'ab0439882857ffb5859c1a3a6bf40a6848daeaab6605c873c3e425de53c2c4ab')
+ALICE = User('Alice', '0xb038476875480BCE0D0FCf0991B4BB108A3FCB47',
+             '4237a475aa6579f2a0fc85d90cbcda1fad3db70391315a6c37b51de3a8cb503a')
+CRM = User('CRM', '0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0',
+           'e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc')
 
 
-def init_smart_dcpabe(folder):
-    params = '{} {} {} --profile -d'.format(ADMIN.name,
-                                            ADMIN.email, ADMIN.private_key, folder)
+def start_system():
+    params = '{name} {email} {privkey} -n {network}'.format(**ADMIN.data(), network=TOKEN)
     Util.runJAVACommand(SMART_DCPABE, 'init', params)
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**BOB.data()))
+    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**ALICE.data()))
+    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
+    with open(r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file.txt', 'w') as f:
+        f.write('File created for testing and profiling.')
+    print('system initialized')
 
 
-def ciphertext_byte_size_measure(cipher, policy_size=None, policy=None, run_id=None):
-    result = []
-    len_c0 = len(cipher.c0)
-    len_c1 = sum([len(x) for x in cipher.c1])
-    len_c2 = sum([len(x) for x in cipher.c2])
-    len_c3 = sum([len(x) for x in cipher.c3])
-    len_c0_encoded = len(base64.b64encode(
-        bytes([x & 0xff for x in cipher.c0])))
-    len_c1_encoded = len(
-        b','.join([base64.b64encode(bytes([x & 0xff for x in y])) for y in cipher.c1]))
-    len_c2_encoded = len(
-        b','.join([base64.b64encode(bytes([x & 0xff for x in y])) for y in cipher.c2]))
-    len_c3_encoded = len(
-        b','.join([base64.b64encode(bytes([x & 0xff for x in y])) for y in cipher.c3]))
-    result.append([run_id, policy_size, policy, len_c0, len_c1, len_c2, len_c3,
-                   len_c0_encoded, len_c1_encoded, len_c2_encoded, len_c3_encoded])
-    return result
+def publishAttributes():
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**CRM.data()))
+    Util.runJAVACommand(SMART_DCPABE, 'create-certifier')
+    Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES), timeout=120)
+    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user certifier attributes', timeout=3000)
+    Util.runJAVACommand(SMART_DCPABE, 'get-attributes', '{} {}'.format(CRM.gid, ' '.join(ATTRIBUTES)))
 
 
-def publishAuthorities(run_id, policy_size, num_authorities):
-    worker_number = run_id % NUM_THREADS
-    atributos = [Util.generate_random_string() for _ in range(policy_size)]
-    autoridades = {'{:02}.{:06}.{}.'.format(worker_number, x, Util.generate_random_string()): [] for x in
-                   range(num_authorities)}
-    for attr in atributos:
-        autoridades[random.choice(list(autoridades.keys()))].append(attr)
-    autoridades = {nome: autoridades[nome]
-                   for nome in autoridades if len(autoridades[nome]) > 0}
-    for name in autoridades:
-        auth_number = name[:9]
-        authority = User('CRM.' + auth_number)
-
-        params = '-f {p}gpfile {auth} {p}{an}secKey {p}{an}pubKey {attr}'
-        params = params.format(p=TEMP_FOLDER, an=auth_number,
-                               auth=name, attr=' '.join(autoridades[name]))
-        Util.runJAVACommand(SMART_DCPABE, 'asetup', params)
-        # cmd.execute("create-user", CRM.NAME, CRM.EMAIL, CRM.PRIV_KEY)
-        # cmd.execute("create-certifier")
-        # cmd.execute("create-attributes", "atributo1",
-        #             "atributo2",  "atributo3")
-        # cmd.execute("publish", "user", "certifier", "attributes")
+def publish_encrypted_file(policy_size, operators = ['and', ' or']):
+    policy, _ = Util.random_policy(policy_size, {CRM.gid: ATTRIBUTES}, operators)
+    params = 'data_file.txt "{policy}" {authority}'.format(policy=policy, authority=CRM.gid)
+    Util.runJAVACommand(SMART_DCPABE, 'encrypt', params)
+    exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file.txt --profile --finish-profile')
+    logfile = [x for x in os.listdir('logs') if x.startswith('execData-')][0]
+    data = [policy_size, policy, exitCode]
+    with open('{}/{}'.format(LOG_FOLDER, logfile), 'r') as f:
+        json_obj = json.load(f)
+        data.extend([json_obj['execTime'], json_obj['gasCost'], json_obj['timestamp']])
+    return data
 
 
-def publish_encrypted_file(run_id, policy_size=1, measurer=None, operators=['and', 'or']):
-    worker_number = run_id % Util.NUM_THREADS
-    init_smart_dcpabe(str(worker_number))
-    autoridades = publishAuthorities(
-        policy_size, int(run_id, 1 + policy_size/3))
+def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
+    partial_start = time.time()
+    results = []
+    results.extend(publish_encrypted_file(rodada + 1))
+    file_mode = 'w'
+    if os.path.exists(csv_output_file):
+        file_mode = 'a'
+        label = None
+    with open(csv_output_file, file_mode, newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if label is not None:
+            writer.writerow(label)
+        writer.writerows(results)
+    percentage = rodada / max_rodadas
+    if int(10000 * percentage) > 0:
+        partial_time = Util.printNumberAsTime(time.time() - partial_start)
+        elapsed_time_ = time.time() - START
+        elapsed_time = Util.printNumberAsTime(elapsed_time_)
+        tet = Util.printNumberAsTime(elapsed_time_ / percentage)
+        print(
+            '{:.2%} pronto em {}. Tempo total: {}. tet: {}'.format(percentage, partial_time, elapsed_time, tet))
 
 
 def experiment_maximum_ciphertext_allowed():
     global START
     print('Start experiment to measure maximum size o Ciphertext to publish.')
-    label = ['run_id', 'policy_size', 'policy', 'len_c0', 'len_c1', 'len_c2', 'len_c3',
-             'len_c0_encoded', 'len_c1_encoded', 'len_c2_encoded', 'len_c3_encoded', 'gasCost']
-    ops_list = [['and', 'or'], ['and'], ['or']]
+    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'timestamp']
     ops_names = ['RandomOps', 'ANDOperator', 'OROperator']
-    max_rodadas = 100
-    start_blockchain()
-    for i in range(len(ops_list)):
-        for j in range(0, max_rodadas):
-            command_kwargs = {'measurer': ciphertext_byte_size_measure,
-                              'policy_size': j+1, 'operators': ops_list[i]}
-            Util.gather_data_from_command(10, publish_encrypted_file, 'sizeOfCiphertext{}.csv'.format(
-                ops_names[i]), label, rodada=j, max_rodadas=max_rodadas * 3, command_kwargs=command_kwargs)
+    start_system()
+    publishAttributes()
+    Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid)
+    for j in range(0, MAX_ATRIBUTOS):
+        gather_data('sizeOfCiphertextRinkeby.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
     print('Finished experiment to measure Ciphertext size.')
 
 
