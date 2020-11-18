@@ -91,24 +91,11 @@ public class CommandLine implements Runnable {
     @Command(name = "init")
     static class Init extends BasicCommand {
 
-        @ArgGroup(exclusive = true, multiplicity = "1")
-        DeployArguments deploy;
+        @Parameters(index = "0", defaultValue = "", description = "administrator name")
+        private String adminName;
 
-        static class DeployArguments {
-            @Parameters(index = "0", description = "administrator name")
-            private String adminName;
-
-            @Parameters(index = "1", description = "administrator e-mail")
-            private String adminEmail;
-        }
-
-        @ArgGroup(exclusive = true, multiplicity = "1")
-        LoadArguments load;
-
-        static class LoadArguments {
-            @Parameters(index = "0", defaultValue = "", description = "SmartDCPABERoot address")
-            String rootAddress;
-        }
+        @Parameters(index = "1", defaultValue = "", description = "administrator e-mail")
+        private String adminEmail;
 
         @Parameters(index = "2", description = "administrator's wallet private key")
         private String adminPrivateKey;
@@ -116,12 +103,15 @@ public class CommandLine implements Runnable {
         @Option(names = {"--network", "-n"}, defaultValue = "http://127.0.0.1:7545", description = "network address of Ethereum provider. Defaults to ${DEFAULT VALUE}")
         private String url;
 
+        @Option(names = {"--rootAddress", "-r"}, defaultValue = "", description = "rootAddress")
+        private String rootAddress;
+
         @Override
         public void commandBody () {
-            if (load.rootAddress.equals("")) {
-                client = new Client(url, load.rootAddress, adminPrivateKey);
+            if (rootAddress.equals("")) {
+                client = new Client(url, adminName, adminEmail, adminPrivateKey);
             } else {
-                client = new Client(url, deploy.adminName, deploy.adminEmail, adminPrivateKey);
+                client = new Client(url, rootAddress, adminPrivateKey);
             }
         }
     }
