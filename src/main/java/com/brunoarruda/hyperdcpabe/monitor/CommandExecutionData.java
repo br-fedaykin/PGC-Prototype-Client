@@ -12,23 +12,27 @@ class CommandExecutionData implements Serializable {
     private final int taskID;
     private final String label;
     private final List<MethodExecutionData> methodStack;
-    private long execTime;
-    private long gasCost;
+    private long execTime, gasCost;
+    private List<Long> gasPrice;
+    private double etherCost;
     MethodExecutionData currentMethod;
 
     @JsonCreator
-    public CommandExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost) {
+    public CommandExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost, @JsonProperty("etherCost") double etherCost, @JsonProperty("gasPrice") List<Long> gasPrice) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = methodStack;
         this.execTime = execTime;
         this.gasCost = gasCost;
+        this.etherCost =  etherCost;
+        this.gasPrice = gasPrice;
     }
 
     public CommandExecutionData (int taskID, String label) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = new ArrayList<MethodExecutionData>(20);
+        this.gasPrice = new ArrayList<Long>();
     }
 
     public void start(String className, String task) {
@@ -50,14 +54,15 @@ class CommandExecutionData implements Serializable {
         currentMethod = parentMethod;
     }
 
-
 	public boolean finished() {
 		return currentMethod == null;
 	}
 
-    public void addGasCost(long gas) {
-        currentMethod.addGasCost(gas);
-        gasCost += gas;
+    public void addGasCost(long gas, long gasPrice) {
+        double etherCost = currentMethod.addGasCost(gas, gasPrice);
+        this.gasCost += gas;
+        this.gasPrice.add(gasPrice);
+        this.etherCost += etherCost;
     }
 
     /*
@@ -81,6 +86,14 @@ class CommandExecutionData implements Serializable {
 
     public long getGasCost() {
         return gasCost;
+    }
+
+    public double getEtherCost() {
+        return etherCost;
+    }
+
+    public List<Long> getGasPrice() {
+        return gasPrice;
     }
 
     @Override

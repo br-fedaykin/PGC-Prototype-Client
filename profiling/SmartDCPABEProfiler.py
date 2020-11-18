@@ -89,10 +89,12 @@ def publish_encrypted_file(policy_size, operators = ['and', ' or']):
     Util.runJAVACommand(SMART_DCPABE, 'encrypt', params)
     exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file.txt --profile --finish-profile')
     logfile = [x for x in os.listdir('logs') if x.startswith('execData-')][0]
+    logpath = '{}/{}'.format(LOG_FOLDER, logfile)
     data = [policy_size, policy, exitCode]
-    with open('{}/{}'.format(LOG_FOLDER, logfile), 'r') as f:
+    with open(logpath, 'r') as f:
         json_obj = json.load(f)
-        data.extend([json_obj['tasks'][0]['execTime'], json_obj['tasks'][0]['gasCost'], json_obj['timestamp']])
+        data.extend([json_obj['tasks'][0]['execTime'], json_obj['tasks'][0]['gasCost'], json_obj['tasks'][0]['gasPrice'], json_obj['tasks'][0]['etherCost'], json_obj['timestamp']])
+    os.remove(logpath)
     return data
 
 
@@ -122,7 +124,7 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
 def experiment_maximum_ciphertext_allowed():
     global START
     print('Start experiment to measure maximum size o Ciphertext to publish.')
-    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'timestamp']
+    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'timestamp']
     ops_names = ['RandomOps', 'ANDOperator', 'OROperator']
     rootAddress = "0xab294a1d8ad889d39ac257a61d4cf73a6ce1f19f"
     start_system(rootAddress)

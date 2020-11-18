@@ -27,7 +27,7 @@ public class ExecutionProfiler implements Serializable {
 
     private ExecutionProfiler() {
         timestamp = Instant.now().toEpochMilli();
-        commands = fc.readAsList(PROFILER_DATA_PATH, "profiling.json", "active task commands", CommandExecutionData.class);
+        commands = fc.readAsList(PROFILER_DATA_PATH, "profiling.json", "tasks", CommandExecutionData.class);
         Map<String,Object> options = fc.readAsMap(Client.getClientPath(), "profiling.json", String.class, Object.class);
         if (options.get("persistent profiling") != null) {
             enabled = (boolean) options.get("persistent profiling");
@@ -55,9 +55,9 @@ public class ExecutionProfiler implements Serializable {
         }
     }
 
-    public void addGasCost(BigInteger gas) {
+    public void addGasCost(BigInteger gas, BigInteger gasPrice) {
         if (enabled) {
-            activeCommand.addGasCost(gas.longValue());
+            activeCommand.addGasCost(gas.longValue(), gasPrice.longValue());
         }
     }
 
@@ -77,7 +77,7 @@ public class ExecutionProfiler implements Serializable {
             disablePersistentProfiling();
         } else {
             Map<String,Object> file = fc.readAsMap(PROFILER_DATA_PATH, "profiling.json", String.class, Object.class);
-            file.put("active task commands", commands);
+            file.put("tasks", commands);
             fc.writeToDir(PROFILER_DATA_PATH, "profiling.json", file);
         }
     }
@@ -86,6 +86,7 @@ public class ExecutionProfiler implements Serializable {
         enabled = true;
         Map<String, Object> profileData = new HashMap<>();
         profileData.put("persistent profiling", true);
+        profileData.put("tasks", commands);
         fc.writeToDir(PROFILER_DATA_PATH, "profiling.json", profileData);
 	}
 
