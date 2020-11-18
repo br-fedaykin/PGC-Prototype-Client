@@ -107,7 +107,11 @@ public class SmartDCPABEDemonstration {
         cmd.execute("check-requests", "ok");
         cmd.execute("get-personal-keys");
         cmd.execute("get-recordings", ALICE.GID, "lorem_ipsum.md");
-        cmd.execute("decrypt", "lorem_ipsum.md", "--finish-profile");
+        if (profileEnabled) {
+            cmd.execute("decrypt", "lorem_ipsum.md", "--finish-profile");
+        } else {
+            cmd.execute("decrypt", "lorem_ipsum.md");
+        }
     }
 
     public static void runMilestone2(int subcenario, boolean profileEnabled) {

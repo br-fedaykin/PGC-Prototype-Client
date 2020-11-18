@@ -79,6 +79,9 @@ public class CommandLine implements Runnable {
             }
             commandBody();
             profiler.end();
+            if (finishProfile) {
+                profiler.disablePersistentProfiling();
+            }
         }
 
         public Class<?> getCommandClass() {

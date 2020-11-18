@@ -24,7 +24,7 @@ with open('API_KEY', 'r') as f:
         TOKEN = f.read()
     except Exception:
         print('file API_KEY not found. Please create the file and put inside it your Infura Token.')
-TOKEN = 'http://127.0.0.1:7545'
+#TOKEN = 'http://127.0.0.1:7545'
 
 class User:
     def __init__(self, name, wallet=None, private_key=None):
@@ -58,8 +58,10 @@ CRM = User('CRM', '0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0',
            'e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc')
 
 
-def start_system():
+def start_system(rootAddress = None):
     params = '{name} {email} {privkey} -n {network}'.format(**ADMIN.data(), network=TOKEN)
+    if rootAddress is not None:
+        params = params + ' -r ' + rootAddress
     Util.runJAVACommand(SMART_DCPABE, 'init', params)
     Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**BOB.data()))
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
@@ -75,6 +77,9 @@ def publishAttributes():
     Util.runJAVACommand(SMART_DCPABE, 'create-certifier')
     Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES), timeout=120)
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user certifier attributes', timeout=3000)
+
+
+def getAttributes():
     Util.runJAVACommand(SMART_DCPABE, 'get-attributes', '{} {}'.format(CRM.gid, ' '.join(ATTRIBUTES)))
 
 
@@ -87,7 +92,7 @@ def publish_encrypted_file(policy_size, operators = ['and', ' or']):
     data = [policy_size, policy, exitCode]
     with open('{}/{}'.format(LOG_FOLDER, logfile), 'r') as f:
         json_obj = json.load(f)
-        data.extend([json_obj['execTime'], json_obj['gasCost'], json_obj['timestamp']])
+        data.extend([json_obj['tasks'][0]['execTime'], json_obj['tasks'][0]['gasCost'], json_obj['timestamp']])
     return data
 
 
@@ -105,7 +110,7 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
             writer.writerow(label)
         writer.writerows(results)
     percentage = rodada / max_rodadas
-    if int(10000 * percentage) > 0:
+    if int(1000 * percentage) > 0:
         partial_time = Util.printNumberAsTime(time.time() - partial_start)
         elapsed_time_ = time.time() - START
         elapsed_time = Util.printNumberAsTime(elapsed_time_)
@@ -119,8 +124,11 @@ def experiment_maximum_ciphertext_allowed():
     print('Start experiment to measure maximum size o Ciphertext to publish.')
     label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'timestamp']
     ops_names = ['RandomOps', 'ANDOperator', 'OROperator']
-    start_system()
-    publishAttributes()
+    rootAddress = "0xab294a1d8ad889d39ac257a61d4cf73a6ce1f19f"
+    start_system(rootAddress)
+    if rootAddress is None:
+        publishAttributes()
+    getAttributes()
     Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid)
     for j in range(0, MAX_ATRIBUTOS):
         gather_data('sizeOfCiphertextRinkeby.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
