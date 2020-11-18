@@ -32,7 +32,7 @@ public class SmartDCPABEDemonstration {
         "e4d8c81796894ea5bf202e3a3204948dddd62f4d709c278bf8096898957be241"
     );
     private static final PersonData CRM = new PersonData(
-        "crm",
+        "CRM",
         "0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0",
         "e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc"
     );
@@ -81,7 +81,7 @@ public class SmartDCPABEDemonstration {
         // certificador cria perfil e atributo, e os publica
         cmd.execute("create-user", CRM.NAME, CRM.EMAIL, CRM.PRIV_KEY);
         cmd.execute("create-certifier");
-        cmd.execute("create-attributes", "atributo1", "atributo2",  "atributo3");
+        cmd.execute("create-attributes", "atributo1", "atributo2", "atributo3");
         cmd.execute("publish", "user", "certifier", "attributes");
 
         // usuário 1 - Bob, cria perfil e solicita concessão do atributo 1 (chave pessoal ABE)

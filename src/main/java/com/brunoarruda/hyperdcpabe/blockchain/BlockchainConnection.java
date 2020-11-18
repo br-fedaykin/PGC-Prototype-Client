@@ -121,15 +121,17 @@ public class BlockchainConnection {
 
     public Map<String, String> loadContracts(String adminPrivateKey, String rootAddress) {
         profiler.start(this.getClass(), "loadContracts");
-        scRoot = SmartDCPABERoot.load(rootAddress, web3j, Credentials.create(adminPrivateKey), dgp);
+        Credentials cred = Credentials.create(adminPrivateKey);
+        scRoot = SmartDCPABERoot.load(rootAddress, web3j, cred, dgp);
         try {
-            List<String> adressess = scRoot.getAllContractAddresses().send();
-            contractAddress.put("Authority", adressess.get(0));
-            contractAddress.put("Files", adressess.get(1));
-            contractAddress.put("Keys", adressess.get(2));
-            contractAddress.put("Requests", adressess.get(3));
-            contractAddress.put("Users", adressess.get(4));
-            contractAddress.put("Utility", adressess.get(5));
+            List<String> addresses = scRoot.getAllContractAddresses().send();
+            contractAddress.put("Authority", addresses.get(0));
+            contractAddress.put("Files", addresses.get(1));
+            contractAddress.put("Keys", addresses.get(2));
+            contractAddress.put("Requests", addresses.get(3));
+            contractAddress.put("Users", addresses.get(4));
+            contractAddress.put("Utility", addresses.get(5));
+            loadContracts(cred);
         } catch (Exception e) {
             log.error("Não foi possível carregar os Smart Contracts da Blockchain.", e);
         }
