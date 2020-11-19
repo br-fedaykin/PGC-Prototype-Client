@@ -67,15 +67,13 @@ def start_system(rootAddress = None):
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
     Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**ALICE.data()))
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
-    with open(r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file.txt', 'w') as f:
-        f.write('File created for testing and profiling.')
     print('system initialized')
 
 
 def publishAttributes():
     Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**CRM.data()))
     Util.runJAVACommand(SMART_DCPABE, 'create-certifier')
-    Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES), timeout=120)
+    Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES))
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user certifier attributes', timeout=3000)
 
 
@@ -84,24 +82,33 @@ def getAttributes():
 
 
 def publish_encrypted_file(policy_size, operators = ['and', ' or']):
+    filepath = r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file{}.txt'
+    with open(filepath.format(policy_size), 'w') as f:
+        f.write('File created for testing and profiling.')
     policy, _ = Util.random_policy(policy_size, {CRM.gid: ATTRIBUTES}, operators)
-    params = 'data_file.txt "{policy}" {authority}'.format(policy=policy, authority=CRM.gid)
+    params = 'data_file{number}.txt "{policy}" {authority}'.format(number=policy_size, policy=policy, authority=CRM.gid)
     Util.runJAVACommand(SMART_DCPABE, 'encrypt', params)
-    exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file.txt --profile --finish-profile')
+    exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file{}.txt --profile --finish-profile'.format(policy_size))
     logfile = [x for x in os.listdir('logs') if x.startswith('execData-')][0]
     logpath = '{}/{}'.format(LOG_FOLDER, logfile)
     data = [policy_size, policy, exitCode]
     with open(logpath, 'r') as f:
         json_obj = json.load(f)
-        data.extend([json_obj['tasks'][0]['execTime'], json_obj['tasks'][0]['gasCost'], json_obj['tasks'][0]['gasPrice'], json_obj['tasks'][0]['etherCost'], json_obj['timestamp']])
+        profile = None
+        for obj in json_obj['tasks'][0]['methodStack']:
+            if obj['method'] == 'addCiphertext':
+                profile = obj
+                break
+        else:
+            raise Exception('métricas de Ciphertext não foram encontrados.')
+        data.extend([profile['execTime'], profile['gasCost'], profile['gasPrice'], profile['etherCost'], profile['gasLimit'], json_obj['timestamp']])
     os.remove(logpath)
+    os.remove(filepath.format(policy_size))
     return data
 
 
 def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
     partial_start = time.time()
-    results = []
-    results.extend(publish_encrypted_file(rodada + 1))
     file_mode = 'w'
     if os.path.exists(csv_output_file):
         file_mode = 'a'
@@ -110,7 +117,7 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
         writer = csv.writer(f)
         if label is not None:
             writer.writerow(label)
-        writer.writerows(results)
+        writer.writerow(publish_encrypted_file(rodada + 1))
     percentage = rodada / max_rodadas
     if int(1000 * percentage) > 0:
         partial_time = Util.printNumberAsTime(time.time() - partial_start)
@@ -124,9 +131,8 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
 def experiment_maximum_ciphertext_allowed():
     global START
     print('Start experiment to measure maximum size o Ciphertext to publish.')
-    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'timestamp']
-    ops_names = ['RandomOps', 'ANDOperator', 'OROperator']
-    rootAddress = "0xab294a1d8ad889d39ac257a61d4cf73a6ce1f19f"
+    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
+    rootAddress = None
     start_system(rootAddress)
     if rootAddress is None:
         publishAttributes()

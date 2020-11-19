@@ -11,11 +11,11 @@ class MethodExecutionData implements Serializable {
     private static final long serialVersionUID = 1L;
     private final String className, method;
     private final MethodExecutionData parentMethod;
-    private long start, end, execTime, execTimeLiquid, gasCost, gasPrice;
+    private long start, end, execTime, execTimeLiquid, gasCost, gasPrice, gasLimit;
     private double etherCost;
 
     @JsonCreator
-    public MethodExecutionData(@JsonProperty("class") String className, @JsonProperty("method") String method, @JsonProperty("start") long start, @JsonProperty("end") long end, @JsonProperty("execTime") long execTime, @JsonProperty("execTimeLiquid") long execTimeLiquid, @JsonProperty("gasCost") long gasCost, @JsonProperty("gasPrice") long gasPrice, @JsonProperty("etherCost") double etherCost) {
+    public MethodExecutionData(@JsonProperty("class") String className, @JsonProperty("method") String method, @JsonProperty("start") long start, @JsonProperty("end") long end, @JsonProperty("execTime") long execTime, @JsonProperty("execTimeLiquid") long execTimeLiquid, @JsonProperty("gasCost") long gasCost, @JsonProperty("gasPrice") long gasPrice, @JsonProperty("etherCost") double etherCost, @JsonProperty("gasLimit") long gasLimit){
         this.className = className;
         this.method = method;
         this.start = start;
@@ -25,6 +25,7 @@ class MethodExecutionData implements Serializable {
         this.gasCost = gasCost;
         this.gasPrice = gasPrice;
         this.etherCost = etherCost;
+        this.gasLimit = gasLimit;
         this.parentMethod = null;
     }
 
@@ -54,6 +55,10 @@ class MethodExecutionData implements Serializable {
         this.etherCost = gas / (double) gasPrice;
         return etherCost;
     }
+
+    public void saveGasLimit(long gasLimit) {
+        this.gasLimit = gasLimit;
+	}
 
     /*
      * GETTERS
@@ -90,6 +95,10 @@ class MethodExecutionData implements Serializable {
 
     public long getGasPrice() {
         return gasPrice;
+    }
+
+    public long getGasLimit() {
+        return gasLimit;
     }
 
     public long getExecTime() {

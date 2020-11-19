@@ -51,7 +51,7 @@ class TreeNode:
         return result, pks
 
 
-def runJAVACommand(jar, command, params = '', timeout = 30):
+def runJAVACommand(jar, command, params = '', timeout = 300):
     args = 'java -jar {} {} {}'.format(jar, command, params)
     exit_code = None
     try:

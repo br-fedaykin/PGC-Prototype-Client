@@ -14,11 +14,12 @@ class CommandExecutionData implements Serializable {
     private final List<MethodExecutionData> methodStack;
     private long execTime, gasCost;
     private List<Long> gasPrice;
+    private List<Long> gasLimit;
     private double etherCost;
     MethodExecutionData currentMethod;
 
     @JsonCreator
-    public CommandExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost, @JsonProperty("etherCost") double etherCost, @JsonProperty("gasPrice") List<Long> gasPrice) {
+    public CommandExecutionData (@JsonProperty("taskID") int taskID, @JsonProperty("label") String label, @JsonProperty("methodStack") List<MethodExecutionData> methodStack, @JsonProperty("execTime") long execTime, @JsonProperty("gasCost") long gasCost, @JsonProperty("etherCost") double etherCost, @JsonProperty("gasPrice") List<Long> gasPrice, @JsonProperty("gasLimit") List<Long> gasLimit) {
         this.taskID = taskID;
         this.label = label;
         this.methodStack = methodStack;
@@ -26,6 +27,7 @@ class CommandExecutionData implements Serializable {
         this.gasCost = gasCost;
         this.etherCost =  etherCost;
         this.gasPrice = gasPrice;
+        this.gasLimit = gasLimit;
     }
 
     public CommandExecutionData (int taskID, String label) {
@@ -33,6 +35,7 @@ class CommandExecutionData implements Serializable {
         this.label = label;
         this.methodStack = new ArrayList<MethodExecutionData>(20);
         this.gasPrice = new ArrayList<Long>();
+        this.gasLimit = new ArrayList<Long>();
     }
 
     public void start(String className, String task) {
@@ -64,6 +67,10 @@ class CommandExecutionData implements Serializable {
         this.gasPrice.add(gasPrice);
         this.etherCost += etherCost;
     }
+    public void saveGasLimit(long gasLimit) {
+        currentMethod.saveGasLimit(gasLimit);
+        this.gasLimit.add(gasLimit);
+	}
 
     /*
      * GETTERS
@@ -94,6 +101,10 @@ class CommandExecutionData implements Serializable {
 
     public List<Long> getGasPrice() {
         return gasPrice;
+    }
+
+    public List<Long> getGasLimit() {
+        return gasLimit;
     }
 
     @Override

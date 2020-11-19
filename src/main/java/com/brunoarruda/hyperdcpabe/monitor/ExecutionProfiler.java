@@ -61,6 +61,12 @@ public class ExecutionProfiler implements Serializable {
         }
     }
 
+	public void saveGasLimit(BigInteger gasLimit) {
+        if (enabled) {
+            activeCommand.saveGasLimit(gasLimit.longValue());
+        }
+	}
+
     public void end() {
         if (enabled) {
             activeCommand.end();
