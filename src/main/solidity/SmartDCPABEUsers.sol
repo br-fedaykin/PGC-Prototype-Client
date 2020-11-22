@@ -1,4 +1,5 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 import "./Collection.sol";
 
 contract SmartDCPABEUsers is Collection {
@@ -13,9 +14,9 @@ contract SmartDCPABEUsers is Collection {
     mapping (address => User) users;
     uint64 public numUsers;
 
-   constructor(address root) Collection(root) public {}
+   constructor(address root) Collection(root)  {}
 
-    function setContractDependencies(ContractType contractType, address addr) public onlyOwner {}
+    function setContractDependencies(ContractType contractType, address addr) override public view onlyOwner {}
 
     // TODO: create cheaper functions using bytes32 instead of string in input
     function addUser(address addr, string memory name, string memory email) public {

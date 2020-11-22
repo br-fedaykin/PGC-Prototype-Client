@@ -1,4 +1,5 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 
 import "./SmartDCPABEUsers.sol";
 import "./Collection.sol";
@@ -17,9 +18,9 @@ contract SmartDCPABEAuthority is Collection {
     SmartDCPABEUsers user;
     address contractKeys;
 
-    constructor(address root) Collection(root) public {}
+    constructor(address root) Collection(root) {}
 
-    function setContractDependencies(ContractType contractType, address addr) public onlyOwner {
+    function setContractDependencies(ContractType contractType, address addr) override public onlyOwner {
         if (contractType == ContractType.USERS) {
             user = SmartDCPABEUsers(addr);
         } else if (contractType == ContractType.KEYS) {

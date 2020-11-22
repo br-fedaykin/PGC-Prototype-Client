@@ -1,4 +1,5 @@
-pragma solidity >=0.5.1 <0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 import "remix_tests.sol"; // this import is automatically injected by Remix.
 import "./SmartDCPABEFiles.sol";
 

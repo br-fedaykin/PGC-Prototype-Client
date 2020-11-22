@@ -1,4 +1,5 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 
 import "./Collection.sol";
 
@@ -14,7 +15,7 @@ contract SmartDCPABERoot {
     Collection.ContractType UTILITY = Collection.ContractType.UTILITY;
     address owner;
 
-    constructor () public {
+    constructor () {
         owner = msg.sender;
     }
 

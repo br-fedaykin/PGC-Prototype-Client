@@ -1,4 +1,5 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 import "./SmartDCPABEUsers.sol";
 import "./Collection.sol";
 
@@ -36,9 +37,9 @@ contract SmartDCPABEFiles is Collection {
     FileServer[] servers;
     SmartDCPABEUsers users;
 
-    constructor(address root) Collection(root) public {}
+    constructor(address root) Collection(root) {}
 
-    function setContractDependencies(ContractType contractType, address addr) public onlyOwner {
+    function setContractDependencies(ContractType contractType, address addr) override public onlyOwner {
         if (contractType == ContractType.USERS) {
             users = SmartDCPABEUsers(addr);
         }
@@ -82,8 +83,19 @@ contract SmartDCPABEFiles is Collection {
         public
         onlyFileOwner(addr)
     {
-        require (msg.sender == addr, "Only file owner is allowed to change file register.");
         ciphertexts[addr][fileName] = Ciphertext(policy, c0, c1, c2, c3);
+    }
+
+    function deleteFileAndCiphertext
+    (
+        address addr,
+        string memory filename
+    )
+        public
+        onlyFileOwner(addr)
+    {
+        delete files[addr][filename];
+        delete ciphertexts[addr][filename];
     }
 
     function getCiphertext

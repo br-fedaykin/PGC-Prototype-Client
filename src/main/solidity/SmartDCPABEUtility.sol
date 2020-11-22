@@ -1,11 +1,12 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 
 import "./Collection.sol";
 
 // TODO: change Utility to a Library
 contract SmartDCPABEUtility is Collection {
 
-    constructor(address root) Collection(root) public {}
+    constructor(address root) Collection(root) {}
 
     function stringToBytes32(string memory source) public pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
@@ -46,8 +47,5 @@ contract SmartDCPABEUtility is Collection {
         return output;
     }
 
-    function setContractDependencies(ContractType contractType, address addr) public {
-        delete contractType;
-        delete addr;
-    }
+    function setContractDependencies(ContractType contractType, address addr) override public view onlyOwner {}
 }

@@ -1,15 +1,19 @@
 #!/bin/bash
 
+if [[ ! -d "logs" ]]; then
+    mkdir logs
+fi
+
 echo ""
 if [[ "$1" = "--compile" ]]; then
     echo -n "Compiling solidity contracts into EVM Binary code and ABI ... "
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABEAuthority.sol > logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABEFiles.sol >> logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABEKeys.sol >> logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABERequests.sol >> logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABERoot.sol >> logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABEUsers.sol >> logs/solc_build.log
-    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version petersburg src/main/solidity/smartDCPABEUtility.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABEFiles.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABEAuthority.sol > logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABEKeys.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABERequests.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABERoot.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABEUsers.sol >> logs/solc_build.log
+    solc -o bin/src/solidity --bin --abi --asm --optimize --overwrite --gas --evm-version istanbul src/main/solidity/smartDCPABEUtility.sol >> logs/solc_build.log
     echo "Done, files are in bin/src/solidity"
 fi
 

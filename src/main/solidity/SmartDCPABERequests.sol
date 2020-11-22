@@ -1,4 +1,5 @@
-pragma solidity ^0.5.1;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0 <= 0.7.5;
 
 import "./SmartDCPABEAuthority.sol";
 import "./SmartDCPABEUsers.sol";
@@ -35,9 +36,9 @@ contract SmartDCPABERequests is Collection {
     SmartDCPABEUsers user;
     SmartDCPABEAuthority authority;
 
-    constructor(address root) Collection(root) public {}
+    constructor(address root) Collection(root) {}
 
-    function setContractDependencies(Collection.ContractType contractType, address addr) public onlyOwner {
+    function setContractDependencies(Collection.ContractType contractType, address addr) override public onlyOwner {
         if (contractType == ContractType.AUTHORITY) {
             authority = SmartDCPABEAuthority(addr);
         } else if (contractType == ContractType.USERS) {
@@ -66,17 +67,16 @@ contract SmartDCPABERequests is Collection {
         uint64 index = pendingRequests[certifier][requester][pendingIndex];
         requests[certifier][requester][index].status = newStatus;
         if (listSize == 1) {
-            // BUG: pop() function leads to error. Workaround is to decrement length of array
-            pendingRequests[certifier][requester].length--;
+            pendingRequests[certifier][requester].pop();
             address lastRequester = pendingRequesters[certifier][pendingRequesters[certifier].length - 1];
-            pendingRequesters[certifier].length--;
+            pendingRequesters[certifier].pop();
             if (requesterIndex != pendingRequesters[certifier].length) {
                 pendingRequesters[certifier][requesterIndex] = lastRequester;
                 emit pendingRequesterIndexChanged(uint64(pendingRequesters[certifier].length), requesterIndex);
             }
         } else {
             uint64 lastIndex = pendingRequests[certifier][requester][listSize - 1];
-            pendingRequests[certifier][requester].length--;
+            pendingRequests[certifier][requester].pop();
             if (pendingIndex != listSize - 1) {
                 pendingRequests[certifier][requester][pendingIndex] = lastIndex;
                 emit pendingRequestIndexChanged(listSize - 1, pendingIndex);
