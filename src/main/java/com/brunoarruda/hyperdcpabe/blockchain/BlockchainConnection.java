@@ -67,6 +67,7 @@ public class BlockchainConnection {
     private ContractGasProvider dgp;
     private Request<?, EthGasPrice> ethGasPrice;
     private Request<?, EthBlock> ethLatestBlock;
+
     public BlockchainConnection(String networkURL) {
         this(networkURL, null);
     }
@@ -150,7 +151,8 @@ public class BlockchainConnection {
     }
 
     public BlockchainConnection loadContracts(Credentials credentials) {
-        // TODO: check local addresses against the addresses returned by getAddresses() function from scRoot
+        // TODO: check local addresses against the addresses returned by getAddresses()
+        // function from scRoot
         profiler.start(this.getClass(), "loadContracts");
         String address = contractAddress.get("Authority");
         scAuthority = SmartDCPABEAuthority.load(address, web3j, credentials, dgp);
@@ -177,6 +179,7 @@ public class BlockchainConnection {
         profiler.end();
         return keys;
     }
+
     public Map<String, PublicKey> getABEPublicKeys(String authority, String[] attributes) {
         // TODO: alternar isso para um JSON
         profiler.start(this.getClass(), "getABEPublicKeys");
@@ -202,6 +205,16 @@ public class BlockchainConnection {
         }
         profiler.end();
         return null;
+    }
+
+    public void deleteFile(String userID, ObjectNode obj) {
+        String address = obj.get("address").asText();
+        String filename = obj.get("filename").asText();
+        try {
+            scFiles.deleteFileAndCiphertext(address, filename).send();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public int publishData(String userID, ObjectNode obj) {

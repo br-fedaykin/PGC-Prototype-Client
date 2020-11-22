@@ -17,6 +17,7 @@ import picocli.CommandLine.Parameters;
     CommandLine.CreateAttributes.class,
     CommandLine.CreateCertifier.class,
     CommandLine.CreateUser.class,
+    CommandLine.Delete.class,
     CommandLine.Decrypt.class,
     CommandLine.Encrypt.class,
     CommandLine.GetPersonalKeys.class,
@@ -309,6 +310,20 @@ public class CommandLine implements Runnable {
                     client.send(file);
                 }
             }
+        }
+    }
+
+    /*
+     * NETWORK (BLOCKCHAIN / FILE SERVER) COMMANDS
+     */
+    @Command(name = "delete")
+    static class Delete extends BasicCommand {
+        @Parameters(index = "0", description = "file to delete from server and Blockchain")
+        String filename;
+
+        @Override
+        public void commandBody() {
+            client.delete(filename);
         }
     }
 

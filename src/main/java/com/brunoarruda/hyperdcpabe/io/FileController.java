@@ -143,6 +143,18 @@ public final class FileController {
         return readFromDir(path, fileName, "", typeReference);
     }
 
+    public <K, V> JsonNode getJSONFromMap(Map<K, V> map) {
+        JsonNode obj = null;
+        try {
+            String jsonStr = mapper.writeValueAsString(map);
+            obj = mapper.readTree(jsonStr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return obj;
+    }
+
+
     public JsonNode loadAsJSON(String path, String file) {
         JsonNode obj = null;
         try {

@@ -5,7 +5,7 @@
 
     <groupId>com.brunoarruda.hyperdcpabe</groupId>
     <artifactId>hyperdcpabe-client</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
 
     <scm>
         <connection>scm:git:github.com/brunoarruda/PGC-Prototype-Client.git</connection>

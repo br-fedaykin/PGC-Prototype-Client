@@ -767,4 +767,18 @@ public final class Client {
         }
         profiler.end();
     }
+
+	public void delete(String filename) {
+        String serverKey = user.getRecordingByFile(filename).getKey();
+        if (serverKey != null) {
+            server.deleteFile(user.getID(), filename, serverKey);
+            user.removeRecordByFileName(filename);
+            String path = CLIENT_PATH + user.getID();
+            fc.writeToDir(path, "recordings.json", user.getRecordings());
+        }
+        Map<String, String> params = new HashMap<>();
+        params.put("address", user.getID().split("-")[1]);
+        params.put("filename", filename);
+        blockchain.deleteFile(user.getID(), (ObjectNode) fc.getJSONFromMap(params));
+	}
 }

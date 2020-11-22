@@ -195,4 +195,14 @@ public class ServerConnection {
             return "";
         }
 	}
+
+	public void deleteFile(String id, String filename, String key) {
+        key = key.replace("/", "-");
+        File file = new File(SERVER_PATH + key, filename);
+        file.delete();
+        File folder = new File(SERVER_PATH + key);
+        if (folder.list() != null && folder.list().length == 0) {
+            folder.delete();
+        }
+	}
 }
