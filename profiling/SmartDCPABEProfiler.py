@@ -18,13 +18,9 @@ LOG_FOLDER = 'logs'
 
 MAX_ATRIBUTOS = 100
 ATTRIBUTES = ['atributo{:03}'.format(x) for x in range(MAX_ATRIBUTOS)]
-TOKEN = None
-with open('API_KEY', 'r') as f:
-    try:
-        TOKEN = f.read()
-    except Exception:
-        print('file API_KEY not found. Please create the file and put inside it your Infura Token.')
-#TOKEN = 'http://127.0.0.1:7545'
+
+JVM_DISABLE_WARNING = "--add-opens java.base/sun.security.provider=ALL-UNNAMED -jar"
+TOKEN="http://127.0.0.1:7545"
 
 class User:
     def __init__(self, name, wallet=None, private_key=None):
@@ -58,41 +54,51 @@ CRM = User('CRM', '0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0',
            'e15b910f8c61580befebecff2d79abf38998035cbc317400a96c4736a424f6dc')
 
 
-def start_system(rootAddress = None):
+def start_system(rootAddress):
     params = '{name} {email} {privkey} -n {network}'.format(**ADMIN.data(), network=TOKEN)
     if rootAddress is not None:
         params = params + ' -r ' + rootAddress
-    Util.runJAVACommand(SMART_DCPABE, 'init', params)
-    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**BOB.data()))
+    Util.runJAVACommand(SMART_DCPABE, 'init', params, timeout=3000, javaargs = JVM_DISABLE_WARNING)
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**BOB.data()), javaargs = JVM_DISABLE_WARNING)
     Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
-    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**ALICE.data()))
-    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user')
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**ALICE.data()), javaargs = JVM_DISABLE_WARNING)
+    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user', javaargs = JVM_DISABLE_WARNING)
     print('system initialized')
 
 
 def publishAttributes():
-    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**CRM.data()))
-    Util.runJAVACommand(SMART_DCPABE, 'create-certifier')
-    Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES))
-    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user certifier attributes', timeout=3000)
+    Util.runJAVACommand(SMART_DCPABE, 'create-user', '{name} {email} {privkey}'.format(**CRM.data()), javaargs = JVM_DISABLE_WARNING)
+    Util.runJAVACommand(SMART_DCPABE, 'create-certifier', javaargs = JVM_DISABLE_WARNING)
+    Util.runJAVACommand(SMART_DCPABE, 'create-attributes', ' '.join(ATTRIBUTES), javaargs = JVM_DISABLE_WARNING)
+    Util.runJAVACommand(SMART_DCPABE, 'publish', 'user certifier attributes', timeout=9000, javaargs = JVM_DISABLE_WARNING)
 
 
 def getAttributes():
-    Util.runJAVACommand(SMART_DCPABE, 'get-attributes', '{} {}'.format(CRM.gid, ' '.join(ATTRIBUTES)))
+    Util.runJAVACommand(SMART_DCPABE, 'get-attributes', '{} {}'.format(CRM.gid, ' '.join(ATTRIBUTES)), timeout=3000, javaargs = JVM_DISABLE_WARNING)
 
 
 def publish_encrypted_file(policy_size, operators = ['and', ' or']):
     filepath = r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file{}.txt'
     with open(filepath.format(policy_size), 'w') as f:
-        f.write('File created for testing and profiling.')
+        f.write('File created for testing and profiling...')
     policy, _ = Util.random_policy(policy_size, {CRM.gid: ATTRIBUTES}, operators)
     params = 'data_file{number}.txt "{policy}" {authority}'.format(number=policy_size, policy=policy, authority=CRM.gid)
-    Util.runJAVACommand(SMART_DCPABE, 'encrypt', params)
-    exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file{}.txt --profile --finish-profile'.format(policy_size))
-    logfile = [x for x in os.listdir('logs') if x.startswith('execData-')][0]
-    logpath = '{}/{}'.format(LOG_FOLDER, logfile)
+    Util.runJAVACommand(SMART_DCPABE, 'encrypt', params, javaargs = JVM_DISABLE_WARNING)
+    exitCode = None
+    exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file{}.txt --profile --finish-profile'.format(policy_size), timeout=3600, javaargs = JVM_DISABLE_WARNING)
     data = [policy_size, policy, exitCode]
-    with open(logpath, 'r') as f:
+    if exitCode == 1 or len(os.listdir(LOG_FOLDER)) == 0:
+        data.extend([0, 0, 0, 0, 0, 0])
+        return data
+    files = [x for x in os.listdir(LOG_FOLDER) if x.startswith('execData-')]
+    files.sort()
+    logPath = None
+    for log in files:
+        with open('{}/{}'.format(LOG_FOLDER, log), 'r') as f:
+            if 'addCiphertext' in f.read():
+                logPath = '{}/{}'.format(LOG_FOLDER, log)
+                break
+    with open(logPath, 'r') as f:
         json_obj = json.load(f)
         profile = None
         for obj in json_obj['tasks'][0]['methodStack']:
@@ -102,8 +108,8 @@ def publish_encrypted_file(policy_size, operators = ['and', ' or']):
         else:
             raise Exception('métricas de Ciphertext não foram encontrados.')
         data.extend([profile['execTime'], profile['gasCost'], profile['gasPrice'], profile['etherCost'], profile['gasLimit'], json_obj['timestamp']])
-    os.remove(logpath)
-    os.remove(filepath.format(policy_size))
+    for log in os.listdir(LOG_FOLDER):
+        os.remove('{}/{}'.format(LOG_FOLDER, log))
     return data
 
 
@@ -130,15 +136,15 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
 
 def experiment_maximum_ciphertext_allowed():
     global START
-    print('Start experiment to measure maximum size o Ciphertext to publish.')
+    print('Start experiment to measure maximum size o Ciphertext to publish...')
     label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
     rootAddress = None
     start_system(rootAddress)
     if rootAddress is None:
         publishAttributes()
     getAttributes()
-    Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid)
-    for j in range(0, MAX_ATRIBUTOS):
+    Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid, javaargs = JVM_DISABLE_WARNING)
+    for j in range(16, MAX_ATRIBUTOS):
         gather_data('sizeOfCiphertextRinkeby.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
     print('Finished experiment to measure Ciphertext size.')
 

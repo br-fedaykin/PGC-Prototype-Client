@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.response.EthBlock;
@@ -252,7 +251,7 @@ public class BlockchainConnection {
             }
             profiler.end();
             profiler.start(this.getClass(), "addCiphertext");
-            scFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
+            tr = scFiles.addRecordingCiphertext(address, fileName, policy, c0, c1, c2, c3).send();
             if (profiler.isEnabled()) {
                 profiler.addGasCost(tr.getGasUsed(), ethGasPrice.send().getGasPrice());
                 profiler.saveGasLimit(ethLatestBlock.send().getBlock().getGasLimit());

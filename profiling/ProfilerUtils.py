@@ -51,8 +51,8 @@ class TreeNode:
         return result, pks
 
 
-def runJAVACommand(jar, command, params = '', timeout = 300):
-    args = 'java -jar {} {} {}'.format(jar, command, params)
+def runJAVACommand(jar, command, params = '', timeout = 300, javaargs = ''):
+    args = 'java -jar {} {} {} {}'.format(javaargs, jar, command, params)
     exit_code = None
     try:
         sanitized_args = shlex.split(args)
