@@ -13,11 +13,11 @@ import bitcoinaddress as btc
 
 from ProfilerUtils import TEMP_FOLDER, DEBUG, START, NUM_THREADS
 
-SMART_DCPABE = '../lib/rinkeby/hyperdcpabe-client-0.1.1-SNAPSHOT-jar-with-dependencies.jar'
+SMART_DCPABE = '../lib/hyperdcpabe-client-0.1.2-SNAPSHOT-jar-with-dependencies.jar'
 LOG_FOLDER = 'logs'
 
 MAX_ATRIBUTOS = 100
-ATTRIBUTES = ['atributo{:03}'.format(x) for x in range(MAX_ATRIBUTOS)]
+ATTRIBUTES = ['atributo{:04}'.format(x) for x in range(MAX_ATRIBUTOS)]
 
 JVM_DISABLE_WARNING = "--add-opens java.base/sun.security.provider=ALL-UNNAMED -jar"
 TOKEN="http://127.0.0.1:7545"
@@ -77,19 +77,14 @@ def getAttributes():
     Util.runJAVACommand(SMART_DCPABE, 'get-attributes', '{} {}'.format(CRM.gid, ' '.join(ATTRIBUTES)), timeout=3000, javaargs = JVM_DISABLE_WARNING)
 
 
-def publish_encrypted_file(policy_size, operators = ['and', ' or']):
-    filepath = r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file{}.txt'
-    with open(filepath.format(policy_size), 'w') as f:
-        f.write('File created for testing and profiling...')
+def publish_encrypted_file(i, policy_size, operators = ['and', ' or']):
+    run_id = i  + (policy_size - 1)*100
     policy, _ = Util.random_policy(policy_size, {CRM.gid: ATTRIBUTES}, operators)
     params = 'data_file{number}.txt "{policy}" {authority}'.format(number=policy_size, policy=policy, authority=CRM.gid)
     Util.runJAVACommand(SMART_DCPABE, 'encrypt', params, javaargs = JVM_DISABLE_WARNING)
     exitCode = None
     exitCode = Util.runJAVACommand(SMART_DCPABE, 'send', 'data_file{}.txt --profile --finish-profile'.format(policy_size), timeout=3600, javaargs = JVM_DISABLE_WARNING)
-    data = [policy_size, policy, exitCode]
-    if exitCode == 1 or len(os.listdir(LOG_FOLDER)) == 0:
-        data.extend([0, 0, 0, 0, 0, 0])
-        return data
+    data = [run_id, policy_size, policy, exitCode]
     files = [x for x in os.listdir(LOG_FOLDER) if x.startswith('execData-')]
     files.sort()
     logPath = None
@@ -98,24 +93,35 @@ def publish_encrypted_file(policy_size, operators = ['and', ' or']):
             if 'addCiphertext' in f.read():
                 logPath = '{}/{}'.format(LOG_FOLDER, log)
                 break
-    with open(logPath, 'r') as f:
-        json_obj = json.load(f)
-        profile = None
-        for obj in json_obj['tasks'][0]['methodStack']:
-            if obj['method'] == 'addCiphertext':
-                profile = obj
-                break
-        else:
-            raise Exception('métricas de Ciphertext não foram encontrados.')
-        data.extend([profile['execTime'], profile['gasCost'], profile['gasPrice'], profile['etherCost'], profile['gasLimit'], json_obj['timestamp']])
+    if exitCode == 1 or logPath is None:
+        time.sleep(4)
+        data.extend([0, 0, 0, 0, 0, 0])
+    else:
+        with open(logPath, 'r') as f:
+            json_obj = json.load(f)
+            profile = None
+            for obj in json_obj['tasks'][0]['methodStack']:
+                if obj['method'] == 'addCiphertext':
+                    profile = obj
+                    break
+            else:
+                raise Exception('métricas de Ciphertext não foram encontrados.')
+            data.extend([profile['execTime'], profile['gasCost'], profile['gasPrice'], profile['etherCost'], profile['gasLimit'], json_obj['timestamp']])
     for log in os.listdir(LOG_FOLDER):
         os.remove('{}/{}'.format(LOG_FOLDER, log))
+    Util.runJAVACommand(SMART_DCPABE, 'delete', 'data_file{}.txt'.format(policy_size), javaargs = JVM_DISABLE_WARNING)
     return data
 
 
-def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
+
+def gather_data_file_publish(csv_output_file, label, rodada=0, max_rodadas=1):
     partial_start = time.time()
     file_mode = 'w'
+    policy_size = rodada + 1
+    filepath = r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file{}.txt'
+    with open(filepath.format(policy_size), 'w') as f:
+        f.write('File created for testing and profiling...')
+    result = request_attribute(policy_size)
     if os.path.exists(csv_output_file):
         file_mode = 'a'
         label = None
@@ -123,7 +129,60 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
         writer = csv.writer(f)
         if label is not None:
             writer.writerow(label)
-        writer.writerow(publish_encrypted_file(rodada + 1))
+        writer.writerow(result)
+    percentage = rodada / max_rodadas
+    if int(1000 * percentage) > 0:
+        partial_time = Util.printNumberAsTime(time.time() - partial_start)
+        elapsed_time_ = time.time() - START
+        elapsed_time = Util.printNumberAsTime(elapsed_time_)
+        tet = Util.printNumberAsTime(elapsed_time_ / percentage)
+        print(
+            '{:.2%} pronto em {}. Tempo total: {}. tet: {}'.format(percentage, partial_time, elapsed_time, tet))
+
+def request_attribute(num_attributes):
+    attributes = ['atributo{:04}'.format(x) for x in range(num_attributes)]
+    exitCode = None
+    params = '{} {} --profile --finish-profile'.format(CRM.gid, ' '.join(attributes))
+    exitCode = Util.runJAVACommand(SMART_DCPABE, 'request-attributes', params, timeout=3600, javaargs = JVM_DISABLE_WARNING)
+    data = [num_attributes, exitCode]
+    files = [x for x in os.listdir(LOG_FOLDER) if x.startswith('execData-')]
+    files.sort()
+    logPath = None
+    for log in files:
+        with open('{}/{}'.format(LOG_FOLDER, log), 'r') as f:
+            if 'addCiphertext' in f.read():
+                logPath = '{}/{}'.format(LOG_FOLDER, log)
+                break
+    if exitCode == 1 or logPath is None:
+        time.sleep(4)
+        data.extend([0, 0, 0, 0, 0, 0])
+    else:
+        with open(logPath, 'r') as f:
+            json_obj = json.load(f)
+            profile = None
+            for obj in json_obj['tasks'][0]['methodStack']:
+                if obj['method'] == 'addCiphertext':
+                    profile = obj
+                    break
+            else:
+                raise Exception('métricas de Ciphertext não foram encontrados.')
+            data.extend([profile['execTime'], profile['gasCost'], profile['gasPrice'], profile['etherCost'], profile['gasLimit'], json_obj['timestamp']])
+    for log in os.listdir(LOG_FOLDER):
+        os.remove('{}/{}'.format(LOG_FOLDER, log))
+    return data
+
+def gather_data_request_publish(i, csv_output_file, label, rodada=0, max_rodadas=1):
+    partial_start = time.time()
+    file_mode = 'w'
+    policy_size = rodada + 1
+    if os.path.exists(csv_output_file):
+        file_mode = 'a'
+        label = None
+    with open(csv_output_file, file_mode, newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if label is not None:
+            writer.writerow(label)
+        writer.writerow(request_attribute(i, rodada+1))
     percentage = rodada / max_rodadas
     if int(1000 * percentage) > 0:
         partial_time = Util.printNumberAsTime(time.time() - partial_start)
@@ -134,18 +193,35 @@ def gather_data(csv_output_file, label, rodada=0, max_rodadas=1):
             '{:.2%} pronto em {}. Tempo total: {}. tet: {}'.format(percentage, partial_time, elapsed_time, tet))
 
 
-def experiment_maximum_ciphertext_allowed():
+def experiment_maximum_ciphertext_allowed(start=0, initialized = True, rootAddress = None):
     global START
     print('Start experiment to measure maximum size o Ciphertext to publish...')
-    label = ['policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
-    rootAddress = None
-    start_system(rootAddress)
-    if rootAddress is None:
-        publishAttributes()
-    getAttributes()
+    label = ['run_id', 'policy_size', 'policy', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
+    if not initialized:
+        start_system(rootAddress)
+        if rootAddress is None:
+            publishAttributes()
+        getAttributes()
     Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid, javaargs = JVM_DISABLE_WARNING)
-    for j in range(16, MAX_ATRIBUTOS):
-        gather_data('sizeOfCiphertextRinkeby.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
+    for j in range(start, MAX_ATRIBUTOS):
+        gather_data_file_publish(100, 'ciphertextGasCost.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
+    print('Finished experiment to measure Ciphertext size.')
+
+
+def experiment_maximum_request_size_allowed(start=0, initialized = True, rootAddress = None):
+    global START, MAX_ATRIBUTOS, ATTRIBUTES
+    print('Start experiment to measure maximum size o Ciphertext to publish...')
+    label = ['id', 'num_attributes', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
+    if not initialized:
+        start_system(rootAddress)
+        if rootAddress is None:
+            MAX_ATRIBUTOS =  1000
+            ATTRIBUTES = ['atributo{:04}'.format(x) for x in range(MAX_ATRIBUTOS)]
+            publishAttributes()
+        getAttributes()
+    Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid, javaargs = JVM_DISABLE_WARNING)
+    for j in range(start, MAX_ATRIBUTOS):
+        gather_data_file_publish('requestGasCost.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
     print('Finished experiment to measure Ciphertext size.')
 
 
@@ -155,7 +231,8 @@ def main():
     global DEBUG, START
     Util.START = time.time()
     Util.DEBUG = True
-    experiment_maximum_ciphertext_allowed()
+    #experiment_maximum_ciphertext_allowed(18, initialized=False)
+    experiment_maximum_request_size_allowed(initialized=False)
 
 
 if __name__ == "__main__":
