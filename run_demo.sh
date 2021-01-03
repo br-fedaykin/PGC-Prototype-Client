@@ -18,11 +18,17 @@ if [[ "$OSTYPE" = "msys" ]]; then
     shell=cmd
     option="//c start"
 fi
+
+persist_option = ""
+if [[ "$1" = "--persist" ]]; then
+    persist_option = "--db data/ganache"
+fi
+
 echo -e "SmartDCPABE DEMONSTRATION:\n"
 echo -e "Initalizing Ganache...\n"
 
 mnemonic="pumpkin immense certain snack please patch universe leisure reopen truth eight gown"
-$shell $option ganache-cli -a 4 -d -m "$mnemonic" -p 7545 -k muirGlacier -g 32203857762 -l 124743880 --keepAliveTimeout 60000
+$shell $option ganache-cli -a 4 -d -m "$mnemonic" -p 7545 -k muirGlacier -g 32203857762 -l 124743880 --keepAliveTimeout 0 "$persist_option"
 
 # cleaning data of previous runnings
 if [ -d "data" ]; then
