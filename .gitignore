@@ -4,14 +4,14 @@
 # local folder for files
 /data/
 temp/
-profiling/data
+profiling*/data
 
 # Compiled class file
 *.class
 
 # Log file
 /logs
-profiling/logs
+profiling*/logs
 *.log
 
 # BlueJ files

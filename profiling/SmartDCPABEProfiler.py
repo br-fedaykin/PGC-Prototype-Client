@@ -114,14 +114,16 @@ def publish_encrypted_file(i, policy_size, operators = ['and', ' or']):
 
 
 
-def gather_data_file_publish(csv_output_file, label, rodada=0, max_rodadas=1):
+def gather_ciphertext_publish_data(n, csv_output_file, label, rodada=0, max_rodadas=1):
     partial_start = time.time()
     file_mode = 'w'
     policy_size = rodada + 1
     filepath = r'data\client\Bob-0xf7908374b1a445ccf65f729887dbb695c918befc\data_file{}.txt'
+    results = []
     with open(filepath.format(policy_size), 'w') as f:
         f.write('File created for testing and profiling...')
-    result = request_attribute(policy_size)
+    for i in range(n):
+        results.append(publish_encrypted_file(i, policy_size))
     if os.path.exists(csv_output_file):
         file_mode = 'a'
         label = None
@@ -129,7 +131,7 @@ def gather_data_file_publish(csv_output_file, label, rodada=0, max_rodadas=1):
         writer = csv.writer(f)
         if label is not None:
             writer.writerow(label)
-        writer.writerow(result)
+        writer.writerows(results)
     percentage = rodada / max_rodadas
     if int(1000 * percentage) > 0:
         partial_time = Util.printNumberAsTime(time.time() - partial_start)
@@ -150,10 +152,20 @@ def request_attribute(num_attributes):
     logPath = None
     for log in files:
         with open('{}/{}'.format(LOG_FOLDER, log), 'r') as f:
-            if 'addCiphertext' in f.read():
+            if 'publishAttributeRequest' in f.read():
                 logPath = '{}/{}'.format(LOG_FOLDER, log)
                 break
     if exitCode == 1 or logPath is None:
+        obj = None
+        with open(r'data\client\Alice-0xb038476875480bce0d0fcf0991b4bb108a3fcb47\attributeRequests.json', 'r+') as f:
+            obj = json.load(f)
+        with open(r'data\client\Alice-0xb038476875480bce0d0fcf0991b4bb108a3fcb47\attributeRequests.json', 'w+') as f:
+            crm ="0xFB7EAfB7fBdaA775d0D52fAaEBC525C1cE173EE0"
+            print(len(obj[crm]))
+            debug = obj[crm][-1]
+            obj[crm] = [x for x in obj[crm] if x != None]
+            print(len(obj[crm]))
+            json.dump(obj, f)
         time.sleep(4)
         data.extend([0, 0, 0, 0, 0, 0])
     else:
@@ -161,7 +173,7 @@ def request_attribute(num_attributes):
             json_obj = json.load(f)
             profile = None
             for obj in json_obj['tasks'][0]['methodStack']:
-                if obj['method'] == 'addCiphertext':
+                if obj['method'] == 'publishAttributeRequest':
                     profile = obj
                     break
             else:
@@ -171,7 +183,7 @@ def request_attribute(num_attributes):
         os.remove('{}/{}'.format(LOG_FOLDER, log))
     return data
 
-def gather_data_request_publish(i, csv_output_file, label, rodada=0, max_rodadas=1):
+def gather_request_publish_data(csv_output_file, label, rodada=0, max_rodadas=1):
     partial_start = time.time()
     file_mode = 'w'
     policy_size = rodada + 1
@@ -182,7 +194,7 @@ def gather_data_request_publish(i, csv_output_file, label, rodada=0, max_rodadas
         writer = csv.writer(f)
         if label is not None:
             writer.writerow(label)
-        writer.writerow(request_attribute(i, rodada+1))
+        writer.writerow(request_attribute(rodada+1))
     percentage = rodada / max_rodadas
     if int(1000 * percentage) > 0:
         partial_time = Util.printNumberAsTime(time.time() - partial_start)
@@ -204,24 +216,24 @@ def experiment_maximum_ciphertext_allowed(start=0, initialized = True, rootAddre
         getAttributes()
     Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid, javaargs = JVM_DISABLE_WARNING)
     for j in range(start, MAX_ATRIBUTOS):
-        gather_data_file_publish(100, 'ciphertextGasCost.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
+        gather_ciphertext_publish_data(100, 'ciphertextGasCost.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
     print('Finished experiment to measure Ciphertext size.')
 
 
 def experiment_maximum_request_size_allowed(start=0, initialized = True, rootAddress = None):
     global START, MAX_ATRIBUTOS, ATTRIBUTES
     print('Start experiment to measure maximum size o Ciphertext to publish...')
-    label = ['id', 'num_attributes', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
+    label = ['num_attributes', 'exitCode', 'execTime', 'gasCost', 'gasPrice', 'etherCost', 'gasLimit', 'timestamp']
+    MAX_ATRIBUTOS =  1000
     if not initialized:
         start_system(rootAddress)
         if rootAddress is None:
-            MAX_ATRIBUTOS =  1000
             ATTRIBUTES = ['atributo{:04}'.format(x) for x in range(MAX_ATRIBUTOS)]
             publishAttributes()
         getAttributes()
-    Util.runJAVACommand(SMART_DCPABE, 'load', BOB.gid, javaargs = JVM_DISABLE_WARNING)
-    for j in range(start, MAX_ATRIBUTOS):
-        gather_data_file_publish('requestGasCost.csv', label, rodada=j, max_rodadas=MAX_ATRIBUTOS)
+    Util.runJAVACommand(SMART_DCPABE, 'load', ALICE.gid, javaargs = JVM_DISABLE_WARNING)
+    for j in [435, 436, 462, 465, 493, 495]: #range(start, MAX_ATRIBUTOS):
+        gather_request_publish_data('requestGasCost.csv', label, rodada=j-1, max_rodadas=MAX_ATRIBUTOS)
     print('Finished experiment to measure Ciphertext size.')
 
 
@@ -231,8 +243,9 @@ def main():
     global DEBUG, START
     Util.START = time.time()
     Util.DEBUG = True
-    #experiment_maximum_ciphertext_allowed(18, initialized=False)
-    experiment_maximum_request_size_allowed(initialized=False)
+    #experiment_maximum_ciphertext_allowed(19, initialized=False)
+    obj = None
+    experiment_maximum_request_size_allowed(start=0)
 
 
 if __name__ == "__main__":
