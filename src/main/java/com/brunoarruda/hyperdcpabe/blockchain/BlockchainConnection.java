@@ -460,6 +460,7 @@ public class BlockchainConnection {
             request.put("timestamp", timestamp);
             ArrayNode attributesNode = request.putArray("attributes");
             attributes.forEach(s -> attributesNode.add(s));
+            log.info("Requisição de atributos feita à autoridade {}.", authority);
         } catch (Exception e) {
             log.error("Não foi possível publicar a requisição de atributos feita pelo usuário {} à autoridade {}", address, authority, e);
         }
