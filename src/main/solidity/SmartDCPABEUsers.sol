@@ -18,7 +18,6 @@ contract SmartDCPABEUsers is Collection {
 
     function setContractDependencies(ContractType contractType, address addr) override public view onlyOwner {}
 
-    // TODO: create cheaper functions using bytes32 instead of string in input
     function addUser(address addr, string memory name, string memory email) public {
         userAddresses.push(addr);
         numUsers++;

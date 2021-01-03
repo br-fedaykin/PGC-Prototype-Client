@@ -46,14 +46,9 @@ contract SmartDCPABERequests is Collection {
         }
     }
 
-    /**
-     * attrNames are bytes32 instead of string because I don't tested if web3j works well
-     * with dynamic array of dynamic types string/bytes
-     */
     function addRequest(address certifier, address requester, uint64 timestamp, string memory attrNames) public {
         assert(user.isUser(requester));
         assert(authority.isCertifier(certifier));
-        // cria uma lista de espera para aquele endereço
         uint64 pendingIndex = uint64(requests[certifier][requester].length);
         requests[certifier][requester].push(KeyRequest(KeyRequestStatus.PENDING, timestamp, 0, attrNames));
         pendingRequests[certifier][requester].push(pendingIndex);

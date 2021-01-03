@@ -30,9 +30,6 @@ contract SmartDCPABEFiles is Collection {
     mapping (address => string[]) fileNames;
     mapping (address => mapping(string => Recording)) files;
     mapping (address => mapping(string => Ciphertext)) ciphertexts;
-    /* IDEIA: in order to allow ciphertext changes, ciphertext must be decoupled from Recording,
-     * maybe in a map of the recording to a Ciphertext object
-     */
 
     FileServer[] servers;
     SmartDCPABEUsers users;
